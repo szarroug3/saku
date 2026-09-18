@@ -82,8 +82,14 @@ export interface RelatedGroup {
 export type PitchComponent = ComponentType<{ reading: string; downstep: number; className?: string }>;
 
 /** What a hear button takes: the kana to say and, for a word, the mora its
- * pitch falls after. */
-export type HearComponent = ComponentType<{ glyph: string; downstep?: number; className?: string; label?: string }>;
+ * pitch falls after.
+ *
+ * `word` names which word is asking, for the rows that are one word. Two words
+ * can be written differently and read the same way without sounding the same
+ * (囲う ends on the verb's own う, 加工 on a long o), and the button needs to
+ * know which of them it is saying; a row that is not one word (a kanji's
+ * reading) passes none. */
+export type HearComponent = ComponentType<{ glyph: string; word?: string; downstep?: number; className?: string; label?: string }>;
 
 /** What each kind is, in the learner's terms.
  *
@@ -200,7 +206,7 @@ export function LessonCard({ item, teach, madeOf, partOf, onSelect, onRead, writ
               : <span className={`font-sky-display text-[22px] text-sky-muted ${japaneseFont(reading)}`}>{reading}</span>
           )}
           {Hear && (item.kind === "kana" || item.kind === "word" || item.kind === "counter" || item.kind === "keigo") && !item.glyph.includes("〜") && (
-            <Hear glyph={item.kind === "kana" ? item.glyph : (reading ?? item.glyph)} downstep={teach?.pitch ?? undefined} />
+            <Hear glyph={item.kind === "kana" ? item.glyph : (reading ?? item.glyph)} word={item.kind === "kana" ? undefined : item.glyph} downstep={teach?.pitch ?? undefined} />
           )}
         </span>
       </div>
@@ -297,7 +303,7 @@ export function LessonCard({ item, teach, madeOf, partOf, onSelect, onRead, writ
                     ? <Pitch reading={f.reading} downstep={f.pitch} className={`font-sky-display text-[14px] text-sky-muted ${japaneseFont(f.reading)}`} />
                     : <span className={`font-sky-display text-[14px] text-sky-muted ${japaneseFont(f.reading)}`}>{f.reading}</span>
                 )}
-                {Hear && <Hear glyph={f.reading ?? f.word} downstep={f.pitch ?? undefined} />}
+                {Hear && <Hear glyph={f.reading ?? f.word} word={f.word} downstep={f.pitch ?? undefined} />}
               </div>
               {f.sentence && <p className="mt-1 text-[13.5px] leading-relaxed text-sky-muted">{f.sentence}</p>}
               {f.example && <Parted line={f.example} className={`mt-1 font-sky-display text-[16px] leading-relaxed ${japaneseFont(f.example.map((r) => r.text).join(""))}`} />}
@@ -362,7 +368,7 @@ export function LessonCard({ item, teach, madeOf, partOf, onSelect, onRead, writ
             <ul className={`${readingGrid} items-baseline gap-x-3 gap-y-1.5`}>
               {teach.pronunciations.map((r) => (
                 <li key={r.reading} className="contents">
-                  {Hear && <Hear glyph={r.reading} downstep={r.pitch ?? undefined} />}
+                  {Hear && <Hear glyph={r.reading} word={item.glyph} downstep={r.pitch ?? undefined} />}
                   {Pitch && typeof r.pitch === "number"
                     ? <Pitch reading={r.reading} downstep={r.pitch} className={`font-sky-display text-[16px] text-sky-ink ${japaneseFont(r.reading)}`} />
                     : <span className={`font-sky-display text-[16px] text-sky-ink ${japaneseFont(r.reading)}`}>{r.reading}</span>}

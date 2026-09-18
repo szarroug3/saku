@@ -45,6 +45,7 @@ import { legacyUnqualifiedGloss, legacyUnqualifiedReading } from "@/data/vocab";
 import { wordPitch } from "@/data/pitch";
 import { pitchPairsFor } from "@/data/pitch-pairs";
 import { moraeOf, wrongDownstepFor } from "@/lib/pitch";
+import { speechTextFor } from "@/lib/speech-text";
 import { pitchApiUrl } from "@/lib/voice";
 
 export type PitchQuizMode = "pair" | "wrong";
@@ -53,6 +54,11 @@ export type PitchQuizMode = "pair" | "wrong";
  * build the audio and the prompt. Pure data. */
 export interface PitchQuestion {
   readonly mode: PitchQuizMode;
+  /** The word this question is about, written form and all — what
+   * `rollPitchQuestion` was asked about. Carried so each clip can be built for
+   * the word it is of: two words sharing a reading are not always said the
+   * same way (SAK-462), so which word is asking decides the clip's path. */
+  readonly keb: string;
   /** The word's own taught reading (see legacyUnqualifiedReading) — shared
    * by the partner too, in "pair" mode, by construction. */
   readonly reading: string;
@@ -105,6 +111,7 @@ export function rollPitchQuestion(
     ) {
       return {
         mode: "pair",
+        keb,
         reading,
         downstep,
         gloss,
@@ -124,6 +131,7 @@ export function rollPitchQuestion(
 
   return {
     mode: "wrong",
+    keb,
     reading,
     downstep,
     gloss,
@@ -169,14 +177,22 @@ export function buildPitchShowing(
   voiceId: string,
   rng: () => number = Math.random,
 ): PitchShowing {
-  const correctClip = pitchApiUrl(question.reading, question.downstep, voiceId);
+  // Each clip is built for the word it is of, not for the shared reading: a
+  // "pair" card's two words can be read the same way and still not sound the
+  // same (SAK-462), and the one the shared clip says wrong has a clip of its
+  // own. A "wrong" card's two clips are the same word, so both name it.
+  const correctClip = pitchApiUrl(speechTextFor(question.keb, question.reading), question.downstep, voiceId);
   const otherDownstep =
     question.mode === "pair" ? question.partnerDownstep : question.wrongDownstep;
   // Both branches of rollPitchQuestion already guarantee this is set for the
   // mode they return (a "pair" always has a partnerDownstep, a "wrong" always
   // has a wrongDownstep, or the question itself is null) — the correctDownstep
   // fallback below is unreachable in practice, not a real answer.
-  const otherClip = pitchApiUrl(question.reading, otherDownstep ?? question.downstep, voiceId);
+  const otherClip = pitchApiUrl(
+    speechTextFor(question.partnerKeb ?? question.keb, question.reading),
+    otherDownstep ?? question.downstep,
+    voiceId,
+  );
   const correctFirst = rng() < 0.5;
   return {
     mode: question.mode,

@@ -57,6 +57,7 @@ import { createClient } from "@supabase/supabase-js";
 import { emptyHistory } from "@/lib/history-ops";
 import { LIB_ENTRIES_BY_KIND } from "@/lib/library/entries";
 import { readingUnits, vocabRow, VOCAB } from "@/data/vocab";
+import { speechTextFor } from "@/lib/speech-text";
 import { VOICES } from "@/lib/voice";
 
 import { offerPicker, TSU_RULE } from "../src/app/(sky)/observatory.ts";
@@ -90,14 +91,22 @@ function walkCard(item, teach, sink, scoped) {
   // the head: a kana speaks its glyph, everything else its reading; a pattern
   // with a 〜 in it has nothing to say on its own
   if ((item.kind === "kana" || item.kind === "word" || item.kind === "counter" || item.kind === "keigo") && !item.glyph.includes("〜")) {
-    sink.say(item.kind === "kana" ? item.glyph : (reading ?? item.glyph), teach?.pitch ?? undefined, `${where} head`);
+    // Every row that is one word hands that word to the hear button (SAK-462's
+    // `word` prop) and the button speaks the word's own spelling for the eleven
+    // that cannot share their reading's clip. A kanji's reading row is not one
+    // word and hands over none, exactly as the card does.
+    sink.say(
+      item.kind === "kana" ? item.glyph : speechTextFor(item.glyph, reading ?? item.glyph),
+      teach?.pitch ?? undefined,
+      `${where} head`,
+    );
   }
   for (const r of teach?.readings ?? []) sink.say(r.reading, undefined, "kanji card reading row");
   if (teach?.exampleWord) sink.say(teach.exampleWord.word, undefined, "mnemonic example word");
-  for (const f of teach?.forms ?? []) sink.say(f.reading ?? f.word, f.pitch ?? undefined, `${item.kind} card form`);
+  for (const f of teach?.forms ?? []) sink.say(speechTextFor(f.word, f.reading ?? f.word), f.pitch ?? undefined, `${item.kind} card form`);
   // the other-readings fold only opens when there is more than one
   const pronunciations = teach?.pronunciations ?? [];
-  if (pronunciations.length > 1) for (const r of pronunciations) sink.say(r.reading, r.pitch ?? undefined, "word card other reading");
+  if (pronunciations.length > 1) for (const r of pronunciations) sink.say(speechTextFor(item.glyph, r.reading), r.pitch ?? undefined, "word card other reading");
 }
 
 /** Everything the Sky can speak, from the Sky's own code. */
@@ -122,8 +131,8 @@ export function speakable() {
   // or the exact reading the word card asks about, which is any reading the
   // word is taught under
   for (const row of VOCAB) {
-    sink.say(row.reb, undefined, "quiz listening card");
-    for (const unit of readingUnits(row)) sink.say(unit.reb, undefined, "quiz listening card");
+    sink.say(speechTextFor(row.keb, row.reb), undefined, "quiz listening card");
+    for (const unit of readingUnits(row)) sink.say(speechTextFor(row.keb, unit.reb), undefined, "quiz listening card");
   }
   return { items, found: [...sink.found.values()] };
 }

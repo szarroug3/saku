@@ -48,7 +48,7 @@ export function QuizPrompt({ card, listening, answered, listenRef, hear: Hear }:
         // reading only once it is shown or answered
         <div className="flex flex-col items-center">
           <Eyebrow>Listen</Eyebrow>
-          <span ref={listenRef} className="mt-1 inline-flex [&_button]:h-16 [&_button]:w-16 [&_button]:text-[26px]">{Hear && card.listen && <Hear glyph={card.listen} label="Play it again" />}</span>
+          <span ref={listenRef} className="mt-1 inline-flex [&_button]:h-16 [&_button]:w-16 [&_button]:text-[26px]">{Hear && card.listen && <Hear glyph={card.listen} word={card.item.kind === "word" ? card.item.glyph : undefined} label="Play it again" />}</span>
         </div>
       ) : card.prompt.within ? (
         // the word, with the glyph asked about in ink and the rest muted
@@ -133,7 +133,7 @@ export function QuizChoices({ card, state, onPick, hear: Hear, pitch: Pitch, hea
                 <span className="text-[12px] text-sky-muted">{i + 1}</span>
                 {state.hinted && Pitch && <span className={`font-sky-display text-[18px] ${japaneseFont(o.label)}`}><Pitch reading={o.label} downstep={o.pitch} /></span>}
               </button>
-              {Hear && <span ref={(el) => { if (el) hears.current.set(o.id, el); else hears.current.delete(o.id); }}><Hear glyph={o.label} downstep={o.pitch} /></span>}
+              {Hear && <span ref={(el) => { if (el) hears.current.set(o.id, el); else hears.current.delete(o.id); }}><Hear glyph={o.label} word={o.word} downstep={o.pitch} /></span>}
             </div>
           );
         }

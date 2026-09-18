@@ -56,7 +56,10 @@ test("one row per kind of fix, pinned", () => {
   // 性癖: katakana drops the ヘ entirely (セイエキ). Spelling the long vowel out
   // as え keeps both the consonant and the smoothing.
   assert.equal(OVERRIDES["せいへき"], "せえへき");
-  // 囲う: the う is the verb's own ending, and only the kanji keeps it.
+  // 囲う: the う is the verb's own ending, and only the kanji keeps it. This
+  // table cannot hold that, because かこう is 加工 too and 加工 wants the
+  // smoothed カコオ. 囲う asks for a clip of its own instead, in the other
+  // generated table (SAK-462, src/lib/speech-text.test.ts).
   assert.equal(OVERRIDES["かこう"], undefined, "かこう is shared with 加工, which wants the smoothed カコオ");
   assert.equal(OVERRIDES["あらそう"], "争う");
 });

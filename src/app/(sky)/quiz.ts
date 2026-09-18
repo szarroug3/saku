@@ -597,9 +597,13 @@ function pitchCard(history: HistoryFile, keb: string, now = Date.now()): QuizCar
   const correctFirst = Math.random() < 0.5;
   // the wrong clip says what it is: a real homophone partner when the
   // curriculum has one, else the same word said with a pitch it does not take
+  // Each choice says which word it is a clip of, so a pair card's two words get
+  // their own clips where they are not really said the same way (SAK-462: 憩う
+  // "ikou" against 以降 "ikoo"); the wrong clip of a "wrong" card is the same
+  // word at another pitch, so it names the same word.
   const pair: QuizOption[] = [
-    { id: "pitch:right", label: q.reading, jp: true, pitch: q.downstep },
-    { id: "pitch:other", label: q.reading, jp: true, pitch: other, why: q.mode === "pair" ? "another word said the same way" : "the same reading, said with the other pitch" },
+    { id: "pitch:right", label: q.reading, jp: true, word: keb, pitch: q.downstep },
+    { id: "pitch:other", label: q.reading, jp: true, word: q.partnerKeb ?? keb, pitch: other, why: q.mode === "pair" ? "another word said the same way" : "the same reading, said with the other pitch" },
   ];
   return {
     id: `${id}/pitch`,

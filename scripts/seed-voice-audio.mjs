@@ -84,6 +84,7 @@ import { legacyUnqualifiedReading, readingUnits, VOCAB } from "@/data/vocab";
 import { AUDIO_CONTENT_TYPE, encodeOpus } from "@/lib/audio-compress";
 import { counterReading, COUNTER_KINDS, numberReading } from "@/lib/number-reading";
 import { moraeOf, wrongDownstepFor } from "@/lib/pitch";
+import { speechTextFor } from "@/lib/speech-text";
 import { readingForMisreadingFix, synthesizeWordWav } from "@/lib/tts-synth";
 import { pitchObjectPath, VOICE_PREVIEW, VOICES, voiceObjectPath } from "@/lib/voice";
 import grammarCorpus from "@/data/generated/grammar-corpus.json" with { type: "json" };
@@ -186,9 +187,15 @@ export function pitchItems() {
     const downstep = wordPitch(row.keb);
     if (downstep === null) continue;
     const reading = legacyUnqualifiedReading(row.keb) ?? row.reb;
-    add(reading, downstep);
+    // SAK-462: what the quiz asks a voice for is the word's own spelling for
+    // the eleven words that cannot share their reading's clip, and the reading
+    // itself for everyone else. The distractor is still picked off the
+    // READING's beats, because that is what the live quiz does and because the
+    // drop is drawn over the reading either way.
+    const say = speechTextFor(row.keb, reading);
+    add(say, downstep);
     const wrongDownstep = wrongDownstepFor(downstep, moraeOf(reading).length);
-    if (wrongDownstep !== null) add(reading, wrongDownstep);
+    if (wrongDownstep !== null) add(say, wrongDownstep);
   }
   add(VOICE_PREVIEW.reading, VOICE_PREVIEW.downstep);
   return items;
@@ -326,7 +333,7 @@ export function verbPairTexts() {
  * above uses, and the overlap with `words` costs nothing (`textSet` dedupes,
  * and an already-uploaded clip is skipped). */
 export function taughtReadingTexts() {
-  return VOCAB.flatMap((row) => [row.reb, ...readingUnits(row).map((u) => u.reb)]);
+  return VOCAB.flatMap((row) => [row.reb, ...readingUnits(row).map((u) => u.reb)].map((reb) => speechTextFor(row.keb, reb)));
 }
 
 /** SAK-402: the example word on every kana's mnemonic card (あ's あめ, ウ's
@@ -399,8 +406,8 @@ export function lessonPitchItems() {
   for (const row of VOCAB) {
     const downstep = wordPitch(row.keb);
     if (downstep === null) continue;
-    add(row.reb, downstep);
-    for (const unit of readingUnits(row)) add(unit.reb, downstep);
+    add(speechTextFor(row.keb, row.reb), downstep);
+    for (const unit of readingUnits(row)) add(speechTextFor(row.keb, unit.reb), downstep);
   }
   for (const p of VERB_PAIRS) for (const m of [p.happens, p.doIt]) add(m.reading, wordPitch(m.word));
   for (const set of KEIGO_SETS) for (const v of set.plain) add(v.reading, wordPitch(v.keb));
@@ -426,7 +433,7 @@ export const SETS = {
   yomi: textSet(() => READINGS.map((r) => r.base)),
   // Every word's reading — the same `w.reading`/`v.reb` string HearButton
   // speaks on a word's Library entry page.
-  words: textSet(() => VOCAB.map((r) => r.reb)),
+  words: textSet(() => VOCAB.map((r) => speechTextFor(r.keb, r.reb))),
   // The full grammar corpus (Tatoeba sentences, CC BY 2.0 FR) — every
   // sentence a grammar pattern page or a quiz can show.
   sentences: textSet(() => grammarCorpus.map((r) => r.jp)),

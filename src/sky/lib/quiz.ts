@@ -40,6 +40,11 @@ export interface QuizOption {
   label: string;
   /** The label is Japanese, for its font. */
   jp: boolean;
+  /** The word this choice is a clip of, when it is one word. A pitch card's
+   * two choices can be two different words read the same way, and the hear
+   * button needs to know which of them it is playing, because two words read
+   * the same way do not always sound the same. */
+  word?: string;
   /** The label is a reading to draw with this pitch (the mora the voice
    * falls after; 0 for none): a card asking which pitch is right. */
   pitch?: number;

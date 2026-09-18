@@ -47,6 +47,7 @@
 import { cn } from "@/lib/utils";
 import { prefetchClip, speak } from "@/lib/speech";
 import { useQuizConfig } from "@/lib/quiz-config";
+import { speechTextFor } from "@/lib/speech-text";
 import { DEFAULT_VOICE_ID, pitchApiUrl } from "@/lib/voice";
 
 /** The "hear the sound" speaker, as crisp inline SVG rather than the 🔊 emoji.
@@ -80,6 +81,7 @@ function SoundIcon({ className }: { className?: string }) {
 
 export function HearButton({
   glyph,
+  word,
   voiceName,
   downstep,
   className = "",
@@ -95,6 +97,14 @@ export function HearButton({
    * set) this must be the word's kana reading: VOICEVOX is asked to read it
    * directly, not to infer it from kanji. */
   glyph: string;
+  /** The written form of the word this button says, when the caller knows it
+   * (SAK-462). Eleven words cannot share their reading's clip with the other
+   * word read the same way (囲う is "kakou" where 加工 is "kakoo"), and this is
+   * how the button tells which of them is asking; see src/lib/speech-text.ts.
+   * Omit it for anything that is not one word (a kanji's on'yomi row, a
+   * sentence, a bare kana) and the reading is spoken exactly as it always
+   * was. */
+  word?: string;
   /** Pin a specific voice; omit to speak in the learner's configured voice. */
   voiceName?: string;
   /** EXACT PITCH mode: the mora position of the word's verified downstep
@@ -107,6 +117,10 @@ export function HearButton({
 }) {
   const { cfg } = useQuizConfig();
   const voice = voiceName ?? cfg.voiceName;
+  // What actually goes to the voice, and so what the clip's path is a hash of.
+  // The same for every reading but the eleven words of SAK-462, whose clip is
+  // their own because the word read the same way wants a different sound.
+  const say = speechTextFor(word, glyph);
 
   if (downstep !== undefined) {
     const voiceId = voice || DEFAULT_VOICE_ID;
@@ -115,7 +129,7 @@ export function HearButton({
         type="button"
         onClick={(e) => {
           if (stopPropagation) e.stopPropagation();
-          const url = pitchApiUrl(glyph, downstep, voiceId);
+          const url = pitchApiUrl(say, downstep, voiceId);
           const attempt = () => new Audio(url).play();
           // SAK-208: one retry, same URL, right after the first rejection.
           // see the module header on why this is the one fallback that
@@ -126,7 +140,7 @@ export function HearButton({
         }}
         onPointerEnter={(e) => {
           if (stopPropagation) e.stopPropagation();
-          void fetch(pitchApiUrl(glyph, downstep, voiceId)).catch(() => {});
+          void fetch(pitchApiUrl(say, downstep, voiceId)).catch(() => {});
         }}
         aria-label={label ?? `Hear ${glyph} with its pitch accent`}
         className={`inline-flex flex-none cursor-pointer items-center justify-center self-center align-middle border-none bg-transparent p-0 leading-none text-sky-accent ${className}`}
@@ -141,7 +155,7 @@ export function HearButton({
       type="button"
       onClick={(e) => {
         if (stopPropagation) e.stopPropagation();
-        speak(glyph, voice);
+        speak(say, voice);
         // A mouse click leaves the button focused in some browsers, which pins
         // a `group-focus-within` hover reveal (a Library tile's 🔊/↗ corner)
         // visible after the pointer has moved away. `e.detail` is 0 for a
@@ -153,9 +167,9 @@ export function HearButton({
       // the click. Only the button you aim at fetches; hover on touch is a no-op.
       onPointerEnter={(e) => {
         if (stopPropagation) e.stopPropagation();
-        prefetchClip(glyph, voice);
+        prefetchClip(say, voice);
       }}
-      onFocus={() => prefetchClip(glyph, voice)}
+      onFocus={() => prefetchClip(say, voice)}
       aria-label={label ?? `Hear ${glyph}`}
       // `self-center` wins the alignment in a flex row (a bare icon has no text
       // baseline to line up on, so `items-baseline` siblings left it floating);

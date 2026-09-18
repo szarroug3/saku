@@ -87,14 +87,29 @@
 // as unfixable; only the kanji fixes 使う and 襲う. A reading nothing on the
 // ladder gets right is reported and left alone rather than half-fixed.
 //
-// ONE READING, ONE CLIP
-// =====================
+// ONE READING, ONE CLIP, AND THE WORDS THAT NEED THEIR OWN (SAK-462)
+// ===================================================================
 // The cache path is a hash of the text (voice.ts's voiceObjectPath) and the
-// override table is keyed by reading, so two words that share a reading share
-// one clip and must want the same sounds. Where they do not, and かこう is both
-// 囲う "kakou" and 加工 "kakoo", there is no text that serves both, so the
-// reading gets no override and is reported as a clash. Guessing one word's
-// sounds at the other's expense is the one thing this script will not do.
+// main table is keyed by reading, so two words that share a reading share one
+// clip. Ten readings are shared by words that want different sounds: かこう is
+// 囲う "kakou", where the う is the verb's own ending, and 加工 "kakoo", where
+// it is a long o. No single text serves both, and this script will not guess
+// one word's sounds at the other's expense.
+//
+// So those words stop asking for the shared clip. For each such reading, the
+// words the shared clip already says correctly keep it, and every other word
+// speaks ITS OWN WRITTEN FORM instead: 囲う sends 囲う, which the engine reads
+// カコウ, while 加工 goes on sending かこう, which it reads カコオ. The text
+// differs, so the path differs, with no change to how a path is worked out and
+// no other clip moving. Those answers go in their own table,
+// src/data/generated/speech-word-overrides.json, keyed by the written form and
+// the reading together, which src/lib/speech-text.ts reads.
+//
+// The word's own spelling is not assumed to work either. It is the witness the
+// expected sounds were taken from in the first place, so the engine says the
+// expected moras for it by construction, but it still has to keep the word in
+// one piece (the same accent-phrase rule the ladder uses), and a word whose
+// spelling fails that is reported as a clash and left alone.
 //
 // RUN IT
 // ======
@@ -114,6 +129,7 @@ import { moraeOf } from "@/lib/pitch";
 import { toKatakana } from "@/lib/romaji";
 
 const TABLE_FILE = new URL("../src/data/generated/speech-overrides.json", import.meta.url);
+const WORD_TABLE_FILE = new URL("../src/data/generated/speech-word-overrides.json", import.meta.url);
 const DEFAULT_ENGINE = "http://localhost:50021";
 const SPEAKER = 3;
 const CONCURRENCY = 8;
@@ -471,6 +487,46 @@ export function candidateTexts(reading, smoothedSites, kebs) {
 
 // ------------------------------------------------------------ the work
 
+/** Two words share this reading and want different sounds (SAK-462), so the
+ * ones the shared clip gets wrong stop asking for it.
+ *
+ * A word keeps the shared clip when the reading sent bare already says what
+ * that word wants (加工 wants カコオ and かこう says カコオ), when its normal
+ * spelling did not line up with the taught reading and so never had a vote
+ * (陽 answers ヒ), or when the word is written in kana and its spelling IS the
+ * reading. Every other word sends its own written form instead, so it hashes
+ * to a path of its own.
+ *
+ * The spelling is where the expected sounds came from, so the engine says them
+ * for it by construction; what is checked here is that it keeps the word in one
+ * piece. A word whose spelling does not is reported and left sharing the clip,
+ * the same refusal to half-fix the ladder makes. */
+async function splitReading({ reading, kebs, literal, before, phraseBudget, voters, votes, seenBy, sounds }) {
+  const words = [];
+  for (let i = 0; i < voters.length; i++) {
+    const keb = voters[i];
+    const vote = votes[i];
+    if (!vote.lined || keb === reading) continue;
+    if (vote.expected.join("|") === before.join("|")) continue;
+    const said = await sounds(keb);
+    const right = said.moras.join("|") === vote.expected.join("|") && said.phrases <= phraseBudget;
+    words.push({ keb, expected: vote.expected, moras: said.moras, phrases: said.phrases, text: right ? keb : null });
+  }
+  const parted = words.length > 0 && words.every((w) => w.text);
+  return {
+    reading,
+    kebs,
+    literal,
+    before,
+    words,
+    witnesses: seenBy,
+    status: parted ? "own-clip" : "clash",
+    why: parted
+      ? "two words share this reading; the ones the shared clip says wrong send their own written form"
+      : "two words share this reading and the engine says no spelling of one of them right",
+  };
+}
+
 /** Decide one reading: what it should sound like, what to send, and why.
  *
  * `sounds` is a cache-backed lookup so the caller controls how the engine is
@@ -479,6 +535,17 @@ async function decideReading(reading, kebs, sounds) {
   const literal = literalMoras(reading);
   const sites = longVowelSites(literal);
   const spellings = kebs.filter((keb) => keb !== reading);
+
+  const plain = await sounds(reading);
+  const before = plain.moras;
+  // How many pieces the engine may break a sent text into. The reading on its
+  // own sets the floor; the word written normally is allowed to raise it,
+  // because a compound that really is two words (休憩時間) is said in two
+  // pieces and there is nothing wrong with that.
+  const phraseBudget = Math.max(
+    plain.phrases,
+    ...(await Promise.all(spellings.map((keb) => sounds(keb)))).map((said) => said.phrases),
+  );
 
   const hand = HAND_DECIDED.get(reading);
   let expected;
@@ -508,42 +575,28 @@ async function decideReading(reading, kebs, sounds) {
       votes.push({ expected: own, lined: true });
     }
     const linedVotes = votes.filter((v) => v.lined);
-    const unresolved = (status, why) => ({
-      reading,
-      kebs,
-      literal,
-      sites,
-      status,
-      why,
-      before: null,
-      witnesses: voters.map((keb, i) => ({ keb, moras: witnesses[i] })),
-    });
+    const seenBy = voters.map((keb, i) => ({ keb, moras: witnesses[i] }));
     if (linedVotes.length === 0) {
-      const out = unresolved("undecided", "no normal spelling lines up with the taught reading");
-      out.before = (await sounds(reading)).moras;
-      return out;
+      return {
+        reading,
+        kebs,
+        literal,
+        sites,
+        status: "undecided",
+        why: "no normal spelling lines up with the taught reading",
+        before,
+        witnesses: seenBy,
+      };
     }
     const first = linedVotes[0].expected.join("|");
     if (linedVotes.some((v) => v.expected.join("|") !== first)) {
-      const out = unresolved("clash", "two words share this reading and want different sounds");
-      out.before = (await sounds(reading)).moras;
-      return out;
+      return splitReading({ reading, kebs, literal, before, phraseBudget, voters, votes, seenBy, sounds });
     }
     expected = linedVotes[0].expected;
     lined = true;
   }
 
   const smoothedSites = sites.filter((s) => expected[s.index] === s.smoothTo);
-  const plain = await sounds(reading);
-  const before = plain.moras;
-  // How many pieces the engine may break the sent text into. The reading on its
-  // own sets the floor; the word written normally is allowed to raise it,
-  // because a compound that really is two words (休憩時間) is said in two
-  // pieces and there is nothing wrong with that.
-  const phraseBudget = Math.max(
-    plain.phrases,
-    ...(await Promise.all(spellings.map((keb) => sounds(keb)))).map((said) => said.phrases),
-  );
   if (before.join("|") === expected.join("|")) {
     return { reading, kebs, literal, expected, before, status: "already-right", lined };
   }
@@ -613,14 +666,25 @@ async function run({ check, reportFile }) {
     byReason[reason] = (byReason[reason] ?? 0) + 1;
   }
 
+  // SAK-462: the words that stop sharing a reading's clip, one entry each,
+  // keyed by the written form and the reading together so an override only ever
+  // fires for the reading it was decided for.
+  const ownClip = results.filter((r) => r.status === "own-clip");
+  const ownWords = ownClip.flatMap((r) => r.words.map((w) => ({ reading: r.reading, ...w })));
+
   // The pitch clips overlay a High/Low pattern mora by mora, so a text that
   // says the word in a different number of beats would put the drop in the
   // wrong place. Expected is built from the reading's own moras and the sent
   // text is only kept when the engine matches expected exactly, so this can
-  // only fail if one of those two invariants broke.
-  const beatDrift = fixed.filter((r) => r.expected.length !== moraeOf(r.reading).length);
+  // only fail if one of those two invariants broke. A word sending its own
+  // spelling is held to the same beat count, for the same reason: its pitch
+  // clip is still the reading's accent, drawn over the reading's moras.
+  const beatDrift = [...fixed, ...ownWords].filter((r) => r.expected.length !== moraeOf(r.reading).length);
 
   const table = Object.fromEntries(fixed.map((r) => [r.reading, r.text]).sort((a, b) => (a[0] < b[0] ? -1 : 1)));
+  const wordTable = Object.fromEntries(
+    ownWords.map((w) => [`${w.keb}|${w.reading}`, w.text]).sort((a, b) => (a[0] < b[0] ? -1 : 1)),
+  );
 
   console.info(
     [
@@ -628,6 +692,7 @@ async function run({ check, reportFile }) {
       `already right   ${tally["already-right"] ?? 0}`,
       `fixed           ${fixed.length}   ${Object.entries(byReason).map(([k, v]) => `${k} ${v}`).join(", ")}`,
       `nothing works   ${tally.unfixable ?? 0}`,
+      `shared readings ${ownClip.length}   ${ownWords.length} word(s) send their own written form`,
       `clashing words  ${tally.clash ?? 0}`,
       `no witness      ${tally.undecided ?? 0}`,
       `beat drift      ${beatDrift.length}`,
@@ -642,14 +707,17 @@ async function run({ check, reportFile }) {
 
   if (check) {
     const current = (await import("../src/data/generated/speech-overrides.json", { with: { type: "json" } })).default;
+    const currentWords = (await import("../src/data/generated/speech-word-overrides.json", { with: { type: "json" } })).default;
     const problems = [];
-    for (const [reading, text] of Object.entries(current)) {
-      if (table[reading] !== text) {
-        problems.push(`${reading}: table says ${text}, the engine now wants ${table[reading] ?? "no override"}`);
+    for (const [shipped, fresh, what] of [[current, table, "reading"], [currentWords, wordTable, "word"]]) {
+      for (const [key, text] of Object.entries(shipped)) {
+        if (fresh[key] !== text) {
+          problems.push(`${key}: the ${what} table says ${text}, the engine now wants ${fresh[key] ?? "no override"}`);
+        }
       }
-    }
-    for (const reading of Object.keys(table)) {
-      if (!(reading in current)) problems.push(`${reading}: needs ${table[reading]} but the table has no entry`);
+      for (const key of Object.keys(fresh)) {
+        if (!(key in shipped)) problems.push(`${key}: needs ${fresh[key]} but the ${what} table has no entry`);
+      }
     }
     for (const r of beatDrift) problems.push(`${r.reading}: ${r.expected.length} beats, the reading has ${moraeOf(r.reading).length}`);
     if (problems.length) {
@@ -657,12 +725,16 @@ async function run({ check, reportFile }) {
       for (const p of problems.slice(0, 40)) console.error(`  ${p}`);
       process.exit(1);
     }
-    console.info(`--check passed: ${Object.keys(current).length} override(s) all still say the expected sounds.`);
+    console.info(
+      `--check passed: ${Object.keys(current).length} override(s) and ${Object.keys(currentWords).length} word(s) with a clip of their own all still say the expected sounds.`,
+    );
     return;
   }
 
   writeFileSync(TABLE_FILE, JSON.stringify(table, null, 1) + "\n");
   console.info(`wrote ${Object.keys(table).length} override(s) to ${TABLE_FILE.pathname}`);
+  writeFileSync(WORD_TABLE_FILE, JSON.stringify(wordTable, null, 1) + "\n");
+  console.info(`wrote ${Object.keys(wordTable).length} word(s) with a clip of their own to ${WORD_TABLE_FILE.pathname}`);
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {

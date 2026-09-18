@@ -26,6 +26,14 @@
 // and undefined for a meaning fact. Absent anchor → no button, which is also
 // the right failure for any fact we can't classify: a missing speaker is fine,
 // a speaker that says garbage is not.
+//
+// EVERY ANSWER HERE GOES THROUGH speechTextFor (SAK-462), because every one of
+// them is a KNOWN word: the word being taught, the anchor a kanji reading is
+// heard in, a verb pair's member, a keigo set's word. Eleven words cannot share
+// their reading's clip with the other word read the same way (囲う "kakou"
+// against 加工 "kakoo"), and they are the only ones it changes — see
+// src/lib/speech-text.ts. A kana's glyph is not a word and gets no such
+// treatment; nor does the null a grammar pattern gets.
 
 import { KANA_SUBJECT } from "@/data/characters";
 import { KANJI_SUBJECT } from "@/data/kanji";
@@ -35,6 +43,7 @@ import {
   transitivitySide,
 } from "@/data/transitivity-facts";
 import { VOCAB_SUBJECT, vocabRow, wordReadingUnit } from "@/data/vocab";
+import { speechTextFor } from "@/lib/speech-text";
 import type { FactInfo } from "@/types/facts";
 
 /**
@@ -49,10 +58,12 @@ export function speechForFact(info: FactInfo, anchor?: string): string | null {
     case KANA_SUBJECT:
       // The glyph is itself a speakable surface: one kana character.
       return info.glyph;
-    case TRANSITIVITY_SUBJECT:
+    case TRANSITIVITY_SUBJECT: {
       // Pair members store a checked reading. Use it rather than asking TTS to
       // choose among a kanji verb's possible readings.
-      return transitivitySide(info.id)?.reading ?? null;
+      const side = transitivitySide(info.id);
+      return side ? speechTextFor(side.word, side.reading) : null;
+    }
     case VOCAB_SUBJECT:
       // Speak the READING OF THIS UNIT, not the word's primary reading. A word
       // mints a fact per reading-unit (人 → ひと, じん, にん), and the audio card
@@ -63,8 +74,9 @@ export function speechForFact(info: FactInfo, anchor?: string): string | null {
       // Falls back to the primary reb, then the glyph. 何 written is free to come
       // out か (an on'yomi TTS prefers); the reading pins the one taught sound. A
       // kana word has keb === reb, so this is a no-op for it.
-      return (
-        wordReadingUnit(info.id)?.unit.reb ?? vocabRow(info.glyph)?.reb ?? info.glyph
+      return speechTextFor(
+        info.glyph,
+        wordReadingUnit(info.id)?.unit.reb ?? vocabRow(info.glyph)?.reb ?? info.glyph,
       );
     case KANJI_SUBJECT:
       // Reading fact → speak the word that carries the reading (先生), never the
@@ -72,11 +84,13 @@ export function speechForFact(info: FactInfo, anchor?: string): string | null {
       // single kanji (何's anchor is 何 itself) the written form has the same
       // free-reading ambiguity, so speak the word's kana reading — なに, not the
       // glyph the phone may voice as か.
-      return anchor ? (vocabRow(anchor)?.reb ?? anchor) : null;
-    case KEIGO_SUBJECT:
+      return anchor ? speechTextFor(anchor, vocabRow(anchor)?.reb ?? anchor) : null;
+    case KEIGO_SUBJECT: {
       // Keigo facts store the authoritative reading beside the written form.
       // Speak that reading so TTS cannot choose an unintended kanji reading.
-      return keigoWordInfo(info.id)?.word.reading ?? null;
+      const keigo = keigoWordInfo(info.id)?.word;
+      return keigo ? speechTextFor(keigo.word, keigo.reading) : null;
+    }
     default:
       // Grammar, and any subject we don't recognize: err toward silence.
       return null;

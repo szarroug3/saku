@@ -531,6 +531,11 @@
       "script": "scripts/build-speech-overrides.mjs",
       "why": "no upstream archive: built by asking the local VOICEVOX engine what it will say for every taught reading, and keeping the text whose sounds match the word. Regenerate with the engine running; --check re-asks it."
     },
+    "speech-word-overrides.json": {
+      "archives": [],
+      "script": "scripts/build-speech-overrides.mjs",
+      "why": "no upstream archive: the same pass, for the eleven words that share a reading with a word said differently (囲う against 加工) and so cannot share its clip. Each one sends its own written form, which the same engine check proves."
+    },
     "vehicles.json": {
       "archives": [],
       "script": "scripts/build-vehicles.mjs",
