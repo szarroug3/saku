@@ -170,7 +170,7 @@ function formBuildSections(
 /** Notes that teach something the generated equation cannot show by itself. */
 const FORM_RULE_NOTES: Readonly<Record<string, string>> = {
   "nai-form:v5u": "う shifts to わ, not あ.",
-  "nai-form:v5r-i": "ある's negative is just ない, not あらない.",
+  "nai-form:v5r-i": "ある's negative is ない, not あらない.",
   "ta-form:v5u": "The っ in った is a small っ, not a full-size つ.",
 };
 
@@ -189,7 +189,7 @@ export const NAI_FORM_PAGES: readonly PhaseIntro[] = [
       },
     ],
     buildSections: formBuildSections("nai-form", [{
-      text: "For an う-verb, the last kana shifts to its あ-row before ない. An る-verb just drops る and adds ない.",
+      text: "For an う-verb, the last kana shifts to its あ-row before ない. An る-verb drops る and adds ない.",
     }]),
   },
 ];
@@ -274,11 +274,11 @@ export const STEM_FORM_PAGES: readonly PhaseIntro[] = [
     title: "A verb's connecting base.",
     body: [
       {
-        text: "Unlike the other forms, the stem is never used alone. It just holds the verb ready, and a pattern gives it meaning: 〜ます (polite), 〜たい (want to), 〜ながら (while doing), 〜すぎる (too much).",
+        text: "Unlike the other forms, the stem is never used alone. It holds the verb ready, and a pattern gives it meaning: 〜ます (polite), 〜たい (want to), 〜ながら (while doing), 〜すぎる (too much).",
       },
     ],
     buildSections: formBuildSections("stem-form", [{
-      text: "For an う-verb, the last kana simply switches to its い-row. An る-verb just drops る.",
+      text: "For an う-verb, the last kana switches to its い-row. An る-verb drops る.",
     }]),
   },
 ];

@@ -118,7 +118,7 @@ const KEIGO_REGISTER_CONCEPT_PAGES: readonly PhaseIntro[] = [
     title: "Honorific raises the other person.",
     body: [
       { text: "The honorific form raises the person you are speaking about, to show respect for what they do. For their eating, たべる becomes めしあがる." },
-      { text: "You use it for the other person's actions, never your own. Raising yourself would be the opposite of respectful." },
+      { text: "You use it for the other person's actions and never for your own. Raising yourself would be the opposite of respectful." },
     ],
   },
   {
@@ -135,8 +135,8 @@ const KEIGO_REGISTER_CONCEPT_PAGES: readonly PhaseIntro[] = [
     setId: "",
     title: "Whose action it is decides which you use.",
     body: [
-      { text: "So the choice is not about the verb, it is about whose action it is. Honorific for someone else, humble for yourself." },
-      { text: "Getting this backwards is a real mistake, not just an awkward one: using a humble form for someone else's action lowers the very person you meant to raise." },
+      { text: "So the choice depends on whose action it is. Use the honorific for someone else and the humble for yourself." },
+      { text: "Getting this backwards is a real mistake: using a humble form for someone else's action lowers the very person you meant to raise." },
     ],
   },
 ];
@@ -159,7 +159,7 @@ export const GRAMMAR_CONCEPTS: readonly GrammarConcept[] = [
       "Every verb is one of two groups (with some exceptions), and the group decides how every form is built.",
     body: [
       "Japanese verbs fall into two groups, う-verbs and る-verbs, plus the two irregular verbs する and くる. A verb's group decides how every one of its forms is conjugated.",
-      "An う-verb drops its last kana and adds the ending. An る-verb just drops its final る and adds the ending. A verb ending in る can be either group, so you learn each verb's group along with the verb.",
+      "An う-verb drops its last kana and adds the ending. An る-verb drops its final る and adds the ending. A verb ending in る can be either group, so you learn each verb's group along with the verb.",
     ],
     searchAlso: [
       "verb types",

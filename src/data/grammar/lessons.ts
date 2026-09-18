@@ -124,7 +124,7 @@ const TE_FORM_PAGES: PhaseIntro[] = [
       },
       {
         lead: "Not every form is a tense.",
-        text: "A form might show time, a negative, or politeness, or it might just make a word ready for another piece.",
+        text: "A form might show time, a negative, or politeness, or it might only make a word ready for another piece.",
       },
       { text: "You learn a form once, then reuse it with many words and patterns." },
     ],
@@ -255,7 +255,7 @@ const TE_FORM_PAGES: PhaseIntro[] = [
         text: "the form doesn't indicate the sentence's tense or politeness. The final predicate does. That final predicate may be a verb or an adjective, and the earlier て/で-forms stay the same when it changes.",
       },
       {
-        text: "In たべて、のんで、はなしている, the final predicate, はなしている, is where the tense and politeness are indicated. In たかくて、べんりです, the final predicate, べんりです, does that job. Don't worry about how either ending is built yet; the point is that the earlier connector forms do not change with it.",
+        text: "In たべて、のんで、はなしている, the final predicate, はなしている, is where the tense and politeness are indicated. In たかくて、べんりです, the final predicate, べんりです, does that job. Don't worry about how either ending is built yet; the earlier connector forms do not change with it.",
       },
     ],
     buildSections: [{

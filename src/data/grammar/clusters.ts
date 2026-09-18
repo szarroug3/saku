@@ -177,7 +177,7 @@ export const CLUSTERS: readonly Cluster[] = [
     link: null,
     noLinkReason:
       "No single verified link covers the family. Tofugu's そう/よう/らしい " +
-      "pages are per-pattern, not comparative.",
+      "pages each cover one pattern and do not compare them.",
   },
   {
     id: "conditionals",
@@ -202,9 +202,9 @@ export const CLUSTERS: readonly Cluster[] = [
     feel:
       "ので is softer and more deferential; から states a reason more bluntly " +
       "and reads as more final when it ends the sentence, though ので can " +
-      "end a sentence the same way, just less sharply. Note から " +
-      "has a second, unrelated job, 東京から, 'from Tokyo', which has nothing " +
-      "to do with reasons.",
+      "end a sentence the same way, less sharply. から also has a second, " +
+      "unrelated job, 東京から, 'from Tokyo', which has nothing to do with " +
+      "reasons.",
     link: {
       url: "https://www.tofugu.com/japanese-grammar/conjunctive-particle-node/",
       label: "Tofugu: ので",
@@ -240,9 +240,9 @@ export const CLUSTERS: readonly Cluster[] = [
     members: ["koto-ga-dekiru", "potential"],
     feel:
       "ことができる is longer and more formal; the potential form is what " +
-      "people say. Note 〜られる is ALSO the passive, and for every る-verb " +
-      "the two are written the same (食べられる). That ambiguity is in " +
-      "Japanese itself, not in this list.",
+      "people say. 〜られる is ALSO the passive, and for every る-verb the two " +
+      "are written the same (食べられる). That ambiguity comes from Japanese " +
+      "itself.",
     link: null,
     noLinkReason: "No verified link compares the two.",
   },
@@ -264,8 +264,9 @@ export const CLUSTERS: readonly Cluster[] = [
     gloss: "は〜より and 〜のほうが〜より",
     members: ["wa-yori", "hou-ga-yori"],
     feel:
-      "Same comparison, different emphasis: は〜より states it plainly, while " +
-      "のほうが puts the focus on the one that comes out ahead.",
+      "The two make the same comparison with a different emphasis. は〜より " +
+      "states it plainly, while のほうが puts the focus on the one that comes " +
+      "out ahead.",
     link: null,
     noLinkReason: "No verified link compares the two.",
   },
@@ -308,8 +309,8 @@ export const CLUSTERS: readonly Cluster[] = [
     members: ["ni", "de"],
     feel:
       "Roughly: に marks existence and destination, で marks where an " +
-      "action happens. There is no rule for choosing between them: which one a sentence " +
-      "takes comes with time and exposure, not from a lesson.",
+      "action happens. There is no rule for choosing between them. You learn " +
+      "which one a sentence takes from time and exposure.",
     link: {
       url: "https://www.tofugu.com/japanese/ni-vs-de/",
       label: "Tofugu: に vs で",
@@ -335,7 +336,8 @@ export const CLUSTERS: readonly Cluster[] = [
     members: [],
     feel:
       "Japanese pairs most verbs: one you do to something (を), one that just " +
-      "happens (が). The pairing is learned word by word, not a rule you can work out.",
+      "happens (が). The pairing is learned word by word. No rule works it out " +
+      "for you.",
     link: {
       url: "https://www.tofugu.com/japanese-grammar/transitivity/",
       label: "Tofugu: Transitivity",
