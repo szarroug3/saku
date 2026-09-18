@@ -6177,21 +6177,18 @@ Sam, on "Each set opens once you know the plain verb it replaces." under Keigo: 
 
 **The Continue button is the width of the column under it (SAK-469).** Sam: "this button looks awkwardly sized here. can you make it the same size as the your sky tonight". On the Observatory the button in the heading is `lg:w-[340px]`, the right column's own width, so its edges line up with "Your sky tonight" below it. The Planetarium has no such column and keeps the button at its own width.
 
-## The lesson's bottom half can take the whole window (2026-09-17, SAK-471)
+## The lesson's bottom half can take the whole window (2026-09-17, SAK-471, replaced)
 
-Sam, on the lesson page: "i would like the bottom half of this page (the lesson details and tonight, in order) to be resizable or at least expandable so the user can make it fill up the full screen or something similar to the atlas page." The two by two (SAK-446) gives the top row a little under half the window, so a grammar pattern with its build table, its family and the pages behind it was a long read inside a short card, under a sky holding one comet and a lot of empty purple.
-
-**One control, the Atlas's own.** The round button that widens the Atlas entry panel over the shelves is the model, and the lesson has the same one in its heading, beside "Step n of N". One press puts the sky and References away and gives the card and "Tonight, in order" everything under the heading; a second press brings the two by two back. It says what the press will do rather than what is showing now, the way the Atlas's does: "Fill the screen with the details", then "Bring the sky back". The glyph is the Sky's one chevron, upright while the details are filling the window and turned over while they are not, and `aria-expanded` says which.
-
-**In the heading, not on a panel.** The heading is the one part of a Sky page that stays put and never scrolls, so "Step 1 of 4", Back and Next are in reach in either view without scrolling anything, which is what the card asked for. It also means the control is in the same place at 1440 and at 760, where the four cells are a stack rather than a grid.
-
-**The sky goes away rather than shrinking to a strip.** A strip naming the open star says nothing the card right under it does not already say in the biggest type it has, and where the lesson stands is in the heading either way. So the filled view simply does not draw the two top cells, and the grid it leaves is the same grid with one row instead of two.
-
-**Which is what keeps the two panels one height.** The card and the order are given the SAME row in both views (`lg:row-start-2` in the two by two, `lg:row-start-1` when that row is the only one), so their heights agree because they are one row of one grid, not because two columns were measured against each other. Measured at 1440: 412.1875px each in the split view, 738.25px each in the filled one.
-
-**The choice holds.** `src/sky/lib/lesson-view.ts` is the whole of it: the two views, what a stored value means, what a press moves to, whether the sky is drawn, what the control says and which rows the grid gets. It is pure and knows nothing about where the choice is kept, the way `place.ts` does not know where the lesson's place is kept. The browser's copy is one key, `sky:lesson:view`, read and written in `lesson-client.tsx`. This browser's and not this account's, deliberately: it is how a learner likes to read on the screen in front of them, the same kind of thing as the Atlas panel's width, so it does not belong in the settings an account syncs. Anything the key does not hold, including a key never written, opens the two by two. The pretend learner keeps it too, since it is a choice about the window and not about what anyone has learned.
-
-**The gates.** `npx tsc --noEmit` and `npx eslint src e2e scripts` clean. 4,178 unit tests, 4,177 pass and 1 skipped, nine of them new on the view. 72 e2e pass, one of them new: it opens a lesson at 1440, presses the control, and measures that the card starts where the sky started, ends where it ended, is as tall as the order beside it, and that Next is on screen unscrolled; then presses again for the two by two, reloads for the choice, and does the same press at 760. `scripts/unreachable.mjs --list` at zero, `scripts/unused-exports.mjs` at zero on both lists, and `scripts/button-centering.mjs` at zero over 1px across 7 pages.
+The first cut of SAK-471 put the Atlas's round widen control in the lesson's
+heading: one press gave the card and "Tonight, in order" everything under the
+heading and put the sky and References away, a second press brought the two by
+two back, and one key in this browser held which of the two views the lesson
+opened in. Sam sent it back the next day: "i want the details panel to be the
+only expandable panel. it should be draggable and have a button similar to how
+the atlas can be dragged left. the references and tonight in order can stay as
+they are and not expand." The control, the two views and the key are all gone.
+What replaced them is at the end of this file, under "The lesson's details card
+is dragged taller".
 
 ## A sentence type comes right after what it requires, and 〜な is grammar (2026-09-17, SAK-468)
 
@@ -6304,3 +6301,84 @@ pass with no change to the suite. `scripts/unreachable.mjs --list` at zero,
 `scripts/button-centering.mjs` at zero over 1px across 7 pages.
 `npm run build:library-index` was rerun, because the kana term's summary
 changed.
+
+## The lesson's details card is dragged taller (2026-09-18, SAK-471)
+
+Sam, on the first cut of this card: "i want the details panel to be the only
+expandable panel. it should be draggable and have a button similar to how the
+atlas can be dragged left. the references and tonight in order can stay as
+they are and not expand." So the details card has a handle on its top edge and
+a round button beside it, References and "Tonight, in order" keep the boxes
+they have in the two by two whatever the handle does, and the heading has no
+chevron on it any more.
+
+**The handle is the Atlas panel's, turned on its side.** The Atlas entry panel
+is dragged wider by a 12px strip in the gap to its left, with the pointer
+followed on the window rather than on the strip, so a fast drag that leaves it
+keeps resizing. The lesson's is the same strip in the gap above the card, and
+it is focusable with a grip line that lights on hover and on focus, which the
+Atlas's is not. Dragging up shortens the sky and gives the card what it takes.
+Dragging down gives the sky its room back, as far as the two by two and no
+further: the card only ever grows from where it starts, which is what leaves
+the right column nothing to give back. The arrow keys move it 24px at a time,
+about a line of the card's text, and the round button does the whole way in one
+press and the whole way back in the next.
+
+**One number, and the right column is not drawn in it.**
+`src/sky/lib/lesson-split.ts` holds the sky's share of the left column and
+nothing else:
+what a stored share means, where a drag or an arrow key or a press lands,
+whether the sky is drawn at all, the two custom properties the grid is given,
+what the button says and what the handle reports to assistive tech. The grid is
+still two columns and two rows, but the rows are the LEFT column's alone now:
+the top one is `--sky-row`, which the handle writes, and the card's row takes
+what is left. References and the order are drawn over both rows instead, each
+at its own share of the same height and pushed to the top or the bottom of that
+area, so the height of the grid fixes them and nothing the handle does can
+reach them. Measured at 1440 by 900, in all four states of the e2e test:
+References at y 145.75 and 310.0625 tall, the order at y 471.828125 and
+412.171875 tall, the same numbers to the last bit while the card goes from
+412.1875 to 738.25.
+
+**At rest the shares ARE the rows.** The top row is 42% of the grid and
+References is 42% of the same height, so the sky and References are one height;
+the card's row is the rest less the gap and the order is `calc(58% - 1rem)`, so
+those two are one height as well. That is why the two by two still measures as
+SAK-446 left it rather than as something rebuilt to look similar.
+
+**The sky is put away rather than drawn as a line.** Under 48px there is no sky
+to look at, so a drag that far, and the round button, drop the sky at lg and
+take the row gap with it, which is what lets the card have the whole column
+(738.25px at 1440 by 900) and not the column less 16px. The sky is still in the
+page: it is `lg:hidden`, so below lg it is always drawn, where the four cells
+are a stack and there is no sky above the card to take room from. The handle
+and the button are not offered there at all. With the sky put away there is no
+gap for the two of them either, and the page body clips what hangs over its
+top, so they move down onto the card's own top edge, over its padding.
+
+**The height holds.** One key in this browser, `sky:lesson:sky`, read in
+`lesson-client.tsx` and written at the end of each drag rather than on every
+move. This browser's and not this account's, deliberately: it is how a learner
+likes to read on the screen in front of them, the same kind of thing as the
+Atlas panel's width, so it does not belong in the settings an account syncs.
+Anything the key does not hold, including a key never written and the old key's
+"filled", opens the two by two. The old key, `sky:lesson:view`, is removed once
+per page load rather than left in every browser that ever pressed the old
+control. The pretend learner keeps the height too, since it is a choice about
+the window and not about what anyone has learned.
+
+**One thing the Atlas does not actually do.** The card asked for the height to
+be remembered "the way the Atlas panel's width is", and the Atlas panel does
+not remember its width at all: `panelWidth` is `useState` and a reload is back
+at 360px. The lesson remembers, which is what Sam asked for in words; making
+the Atlas do the same is a separate card and was left alone here.
+
+**The gates.** `npx tsc --noEmit` and `npx eslint src e2e scripts` clean. 4,205
+unit tests, 4,204 pass and 1 skipped, with nineteen new ones on the split and
+the nine on the old view gone with it. 73 e2e pass on port 3501, one of them the
+rewritten SAK-471 test: it drags the handle up 150px and measures the card, the
+sky and the right column's two boxes; reloads for the height; presses for the
+whole column and presses back; steps the handle with the arrow keys; and checks
+that neither control is offered at 760. `scripts/unreachable.mjs --list` at
+zero, `scripts/unused-exports.mjs` at zero on both lists, and
+`scripts/button-centering.mjs` at zero over 1px across 7 pages.
