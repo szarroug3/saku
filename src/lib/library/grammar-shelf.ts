@@ -82,6 +82,14 @@ export const PARTICLE_RECIPE_IDS: ReadonlySet<string> = new Set([
   "ka", // か — question
 ]);
 
+/** A case or binding particle rather than a pattern built on a verb form.
+ * Read by the "Particles" section below and by whatever labels a pattern for
+ * a learner (SAK-464): は and 〜ている are both `grammar`, and calling both of
+ * them "grammar pattern" is calling them the same thing. */
+export function isParticle(recipeId: string): boolean {
+  return PARTICLE_RECIPE_IDS.has(recipeId);
+}
+
 /**
  * The section a pattern belongs in: the "Particles" section for a case/binding
  * particle, else its verb attach form when that form is a real
@@ -93,7 +101,7 @@ export const PARTICLE_RECIPE_IDS: ReadonlySet<string> = new Set([
  * has no form and joins it too.
  */
 function sectionKeyOf(r: Recipe): SectionKey {
-  if (PARTICLE_RECIPE_IDS.has(r.id)) return PARTICLES;
+  if (isParticle(r.id)) return PARTICLES;
   const f = verbAttachForm(r);
   if (f && f !== "dictionary") return f;
   const adjectiveForm = r.attach.find(

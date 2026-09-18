@@ -24,7 +24,7 @@ import { StandingChip } from "@/sky/components/standing-legend";
 import { Pager, Parted, Sound, Table, TeachPageView } from "@/sky/components/teach-page";
 import { japaneseFont } from "@/sky/lib/japanese";
 import type { LessonTeach } from "@/sky/lib/lesson";
-import { KIND_LABEL } from "@/sky/lib/tokens";
+import { typeLabel } from "@/sky/lib/tokens";
 import type { SkyItem } from "@/sky/lib/types";
 
 interface LessonCardProps {
@@ -192,7 +192,7 @@ export function LessonCard({ item, teach, madeOf, partOf, onSelect, onRead, writ
   return (
     <DetailFrame toolbar={toolbar} footer={footer} scroll={scroll} className={className}>
       <div className="flex shrink-0 items-start justify-between gap-3">
-        <Eyebrow>{KIND_LABEL[item.kind]}</Eyebrow>
+        <Eyebrow>{typeLabel(item)}</Eyebrow>
         {standing && <StandingChip standing={item.standing} />}
       </div>
       <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">

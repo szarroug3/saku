@@ -209,8 +209,9 @@ function picker(sky: Pick<SkyItems, "items" | "add">, history: HistoryFile, now:
       // a counting rule (numbers 11 to 99, the 〜本 counter's system): counted with the counters
       case NUMBER_CONSTRUCTION_KIND: return offer(entry, "counter", { english: entry.name ?? entry.meanings[0] ?? entry.id });
       // a grammar pattern, with the one thing the sky needs to draw it: a
-      // bare particle is a moon and everything else is a comet (SAK-465)
-      case GRAMMAR_SUBJECT: return offer(entry, "grammar", isParticleEntry(entry.id) ? { particle: true } : {});
+      // bare particle is a moon and everything else is a comet (SAK-465), and
+      // it says "particle" on every label it gets (SAK-464)
+      case GRAMMAR_SUBJECT: return offer(entry, "grammar", isParticleEntry(entry.id) ? { particle: true, label: "particle" } : {});
       // a sentence rule has no glyph of its own: its short label stands in, as
       // on the app's tiles. The patterns it is still waiting on are its parts,
       // so it is takeable exactly when all of them are learned or picked
@@ -375,7 +376,7 @@ export function offerings(history: HistoryFile, now = Date.now()): Offerings {
     rules.push(item.id);
     if (step.kind === "tier") break;
   }
-  sections.push({ id: "grammar", title: "Sentence rules", ...COPY.grammar, items: rules.slice(0, SHOW), show: Math.min(rules.length, SHOW), shut: afterKana, started: rulesMet > 0, complete: rules.length === 0 });
+  sections.push({ id: "grammar", title: "Sentences", ...COPY.grammar, items: rules.slice(0, SHOW), show: Math.min(rules.length, SHOW), shut: afterKana, started: rulesMet > 0, complete: rules.length === 0 });
 
   // verb pairs: attached to the plain verb, with both members' kanji
   const pairs: string[] = [];

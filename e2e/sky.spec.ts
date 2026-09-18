@@ -1624,10 +1624,11 @@ test("sentence rules end on the sentence type they lead to, and it opens a lesso
   // particles offered in one row, and not one of the ten sentence types ever
   // offered at all. It runs to the next type now and stops there.
   await page.goto("/observatory?sample");
-  const cards = page.locator("section", { has: page.getByRole("heading", { name: "Sentence rules" }) }).getByRole("button");
+  const cards = page.locator("section", { has: page.getByRole("heading", { name: "Sentences", exact: true }) }).getByRole("button");
   await expect(cards.last()).toContainText("sentence type");
-  // the patterns that type needs come first, and nothing follows it
-  await expect(cards.first()).toContainText("sentence rule");
+  // the patterns that type needs come first, and nothing follows it. Each
+  // says which it is, a particle or a pattern built on a verb form (SAK-464)
+  await expect(cards.first()).toContainText(/particle|grammar pattern/);
   const type = cards.last();
   const name = ((await type.textContent()) ?? "").replace(/sentence type$/, "").trim();
   expect(name.length).toBeGreaterThan(0);
@@ -1650,8 +1651,8 @@ test("a sentence type is off the page until what it needs is learned or picked (
   // it opens."
   await page.goto("/observatory");
   await claimAllKana(page);
-  const row = page.locator("section", { has: page.getByRole("heading", { name: "Sentence rules", exact: true }) });
-  await row.getByRole("button", { name: "Start sentence rules" }).click();
+  const row = page.locator("section", { has: page.getByRole("heading", { name: "Sentences", exact: true }) });
+  await row.getByRole("button", { name: "Start sentences" }).click();
   const tile = (text: string) => row.getByRole("button").filter({ hasText: text });
   const wa = tile("marks the topic"), ga = tile("marks the subject"), simple = tile("Simple");
 
@@ -1682,7 +1683,7 @@ test("the observatory takes every pick back out in one press", async ({ page }) 
   // SAK-458. The only way to empty the picks was to take them out one at a
   // time, from the list or by clicking each card again.
   await page.goto("/observatory?sample");
-  const cards = page.locator("section", { has: page.getByRole("heading", { name: "Sentence rules" }) }).getByRole("button");
+  const cards = page.locator("section", { has: page.getByRole("heading", { name: "Sentences", exact: true }) }).getByRole("button");
   const unselect = page.getByRole("button", { name: "Unselect all" });
   // with nothing picked there is no button to press
   await expect(cards.first()).toBeVisible();

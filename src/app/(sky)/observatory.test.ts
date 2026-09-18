@@ -11,6 +11,7 @@ import { emptyHistory } from "@/lib/history-ops";
 import { knownFactsOf, libEntry, type LibEntry } from "@/lib/library/entries";
 import type { FactAggregate, HistoryFile } from "@/types/store";
 import { pickState } from "@/sky/lib/cart";
+import { typeLabel } from "@/sky/lib/tokens";
 import { buildGraph } from "@/sky/lib/graph";
 import { EMPTY_RECIPE } from "@/sky/lib/practice";
 
@@ -76,7 +77,7 @@ describe("offerPicker", () => {
   });
 });
 
-// SAK-430. The "Sentence rules" section used to be the grammar track in its
+// SAK-430. The "Sentences" section used to be the grammar track in its
 // own order, which put the nine case particles in one row and never offered a
 // sentence type at all. It is sentenceRuleOrder() now, cut at the next type,
 // so a learner is offered what that type needs and then the type itself.
@@ -97,6 +98,25 @@ describe("the sentence rules on offer", () => {
     );
     // and it lays out whole, rather than cut at the usual nine
     assert.equal(s.show, s.items.length);
+  });
+
+  // SAK-464. Sam, on the lesson page for 〜は: "if this is grammar, why is it
+  // in the sentences area and then labeled as a particle? is it a particle or
+  // grammar?" A particle says so; every other pattern is a grammar pattern,
+  // which is what `typeLabel` falls back to from the kind.
+  it("says which of its rows are particles", () => {
+    const { items } = section(emptyHistory());
+    const labels = Object.fromEntries(items.map((it) => [it.glyph, typeLabel(it)]));
+    assert.deepEqual(labels, {
+      "〜な": "grammar pattern",
+      "〜は": "particle",
+      "〜が": "particle",
+      "〜を": "particle",
+      "〜に": "particle",
+      "〜で": "particle",
+      "〜だけ": "particle",
+      Simple: "sentence type",
+    });
   });
 
   it("brings only the particles Simple's own sentences use", () => {

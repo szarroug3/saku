@@ -26,7 +26,7 @@ import { UndoLine } from "@/sky/components/undo-line";
 import { cartSummary, COMFORTABLE_PIECES, pickState, withoutPick } from "@/sky/lib/cart";
 import { buildGraph } from "@/sky/lib/graph";
 import { NOTHING } from "@/sky/lib/select";
-import { KIND_LABEL } from "@/sky/lib/tokens";
+import { typeLabel } from "@/sky/lib/tokens";
 import type { PlaceEntry } from "@/sky/lib/place";
 import type { SkyItem } from "@/sky/lib/types";
 
@@ -41,7 +41,7 @@ export interface ObservatorySection {
    * taken now, at most `SHOWN` of them. */
   items: readonly string[];
   /** How many to lay out, when the default nine is the wrong number for this
-   * section. Sentence rules is short by construction and ends on the sentence
+   * section. Sentences is short by construction and ends on the sentence
    * type its rows lead up to (SAK-430), so it shows whole: cutting it one card
    * early would drop the very thing the order exists to reach. */
   show?: number;
@@ -93,17 +93,6 @@ interface SkyObservatoryProps {
 }
 
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
-
-/** What kind of thing a card is: a kana row by its script, a grammar pattern
- * as a sentence rule, a whole shape of sentence as a sentence type (the two
- * share the "Sentence rules" section and have to read apart on the card), the
- * rest by the kind's own word. */
-function kindLabel(item: SkyItem): string {
-  if (item.kind === "kana") return /[\u30a0-\u30ff]/.test(item.glyph) ? "katakana" : "hiragana";
-  if (item.kind === "grammar") return "sentence rule";
-  if (item.kind === "sentence") return "sentence type";
-  return KIND_LABEL[item.kind];
-}
 
 export function SkyObservatory({ data, cap = COMFORTABLE_PIECES, lessonHref, initialPicks = [], height, onClaim, resume }: SkyObservatoryProps) {
   const graph = useMemo(() => buildGraph(data.items), [data.items]);
@@ -192,7 +181,7 @@ export function SkyObservatory({ data, cap = COMFORTABLE_PIECES, lessonHref, ini
                   <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-2">
                     {ids.map((id) => {
                       const item = graph.itemOf(id)!;
-                      return <ItemCard key={id} item={item} selected={picks.includes(id)} label={kindLabel(item)} onClick={(e) => clickCard(section, id, e.shiftKey)} />;
+                      return <ItemCard key={id} item={item} selected={picks.includes(id)} label={typeLabel(item)} onClick={(e) => clickCard(section, id, e.shiftKey)} />;
                     })}
                   </div>
                 )}

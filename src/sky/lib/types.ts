@@ -73,6 +73,14 @@ export interface SkyItem {
   english: string;
   /** Reading, when the item has one unambiguous one. Kana, not romaji. */
   reading?: string;
+  /**
+   * What this thing is called on a label, when the kind's own word is too
+   * broad to be useful: "particle" for は and が, which are `grammar` like
+   * 〜ている and are not the same thing to a learner. Set where the app's
+   * tables are read, and shown by `typeLabel` in src/sky/lib/tokens.ts, which
+   * is what every surface labels an item with.
+   */
+  label?: string;
   /** Its parts are its content and the card lists them itself (the 〜つ
    * rule's ten forms), so the card shows no "Made of". */
   listsParts?: boolean;

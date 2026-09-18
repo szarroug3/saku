@@ -9,7 +9,7 @@
 //
 // No hex values in this file, and none anywhere in src/sky.
 
-import type { SkyKind } from "./types";
+import type { SkyItem, SkyKind } from "./types";
 
 /** Human label for a kind, for eyebrows and tooltips. */
 export const KIND_LABEL: Record<SkyKind, string> = {
@@ -18,8 +18,11 @@ export const KIND_LABEL: Record<SkyKind, string> = {
   kanji: "kanji",
   word: "word",
   counter: "counter",
-  grammar: "grammar",
-  sentence: "sentences",
+  // the specific word, not the broad one (Sam, 2026-09-17): a learner told
+  // "grammar" on a 〜は card and shown it in a row headed Sentences cannot
+  // tell what they are looking at
+  grammar: "grammar pattern",
+  sentence: "sentence type",
   term: "term",
   // a writing rule and a grammar concept read as terms (Sam, 2026-09-05)
   mark: "term",
@@ -27,3 +30,21 @@ export const KIND_LABEL: Record<SkyKind, string> = {
   verbPair: "verb pair",
   keigo: "keigo",
 };
+
+/**
+ * What one thing is called, wherever it is labeled: the Observatory's tile,
+ * the eyebrow on the lesson card and the Atlas entry, and the tooltip over a
+ * star. One function, so the same thing is never two names (Sam, 2026-09-17:
+ * "if this is grammar, why is it in the sentences area and then labeled as a
+ * particle? is it a particle or grammar?").
+ *
+ * The item's own word wins where it has one, because only the app's tables
+ * know that は is a particle and 〜ている is not. A kana says which script it
+ * is, since "kana" is the one kind whose two halves a learner picks between.
+ * Everything else is the kind's own word.
+ */
+export function typeLabel(item: SkyItem): string {
+  if (item.label) return item.label;
+  if (item.kind === "kana") return /[゠-ヿ]/.test(item.glyph) ? "katakana" : "hiragana";
+  return KIND_LABEL[item.kind];
+}

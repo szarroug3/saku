@@ -6122,3 +6122,13 @@ The "Sentence rules" row ended on a dim "Simple" tile reading "Opens once you kn
 **A whole section behind kana says nothing either.** The section-level gate was an `ItemGate` too, carrying "Opens once kana is done. Everything else is read through it." to a page that never drew it. It is a plain `shut` flag now, so the words are not in the payload at all and the e2e can check the whole page for "Opens once" and "locked".
 
 **Where the check runs.** On the client, over the live picks, because "picked tonight" is not something the server knows at load. The parts ride along on the item, which the Atlas and the lesson build through the same `offerPick`, so one answer serves all three surfaces.
+
+## One word for what a thing is, wherever it is labeled (2026-09-17, SAK-464)
+
+は sat in a row headed "Sentence rules", wore the tile label "SENTENCE RULE", and opened a lesson card whose eyebrow read "GRAMMAR". Sam: "if this is grammar, why is it in the sentences area and then labeled as a particle? is it a particle or grammar?"
+
+**One function, `typeLabel` in src/sky/lib/tokens.ts.** The Observatory's tile, the eyebrow on the lesson card (which is also the Atlas entry's and the quiz card's) and the tooltip over a star all call it, so the same thing can no longer be two names. It takes the item's own word where it has one, says which script a kana is, and falls back to the kind's word. The Observatory's private `kindLabel`, which knew about "sentence rule" and "sentence type" and nothing else did, is gone.
+
+**The words.** "Particle" for は, が, を, に, で, だけ and their kin; "sentence type" for Simple and the other nine; "grammar pattern" for 〜ている and the rest. Only the app's tables know that は is a particle and 〜ている is not, so that one is set where they are read: `offerPick` puts `label: "particle"` on the item, from `isParticle` in src/lib/library/grammar-shelf.ts, which is the same list the Library's own "Particles" section is cut by. The other two are `KIND_LABEL`, which said "grammar" and "sentences" and now says the specific word.
+
+**The row is "Sentences".** It holds the particles a sentence needs and the sentence type they lead to, and "Sentence rules" made the particles sound like rules of sentence building. The Library's own shelf of the ten types keeps its name; that shelf really is the sentence rules.

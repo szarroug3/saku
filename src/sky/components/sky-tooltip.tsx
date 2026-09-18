@@ -11,7 +11,7 @@ import { Glyph } from "@/sky/components/glyph";
 import { Eyebrow, SkyCard } from "@/sky/components/sky-card";
 import { japaneseFont } from "@/sky/lib/japanese";
 import { STANDING } from "@/sky/lib/standing";
-import { KIND_LABEL } from "@/sky/lib/tokens";
+import { typeLabel } from "@/sky/lib/tokens";
 import type { SkyItem } from "@/sky/lib/types";
 
 interface SkyTooltipProps {
@@ -31,7 +31,7 @@ export function SkyTooltip({ item, pieces = [], brief = false, tonight = false, 
   const discovered = tonight || item.standing !== "not-seen";
   return (
     <SkyCard className={`max-w-[260px] ${className}`}>
-      <Eyebrow>{KIND_LABEL[item.kind]}</Eyebrow>
+      <Eyebrow>{typeLabel(item)}</Eyebrow>
       <div className="flex items-baseline gap-2">
         <Glyph glyph={item.glyph} standing={tonight ? undefined : item.standing} size="text-2xl" />
         {discovered && item.reading && <span className={`font-sky-display text-sm text-sky-muted ${japaneseFont(item.reading)}`}>{item.reading}</span>}
