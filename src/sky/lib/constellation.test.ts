@@ -4,7 +4,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { asteroidShape, BODY_ORDER, bodyOfItem, bodyRadius, cometAway, hashUnit, layoutConstellation, linePaintFor, paintFor, placeConstellation, roleOf, sizeFor, STAR_RADIUS, TONIGHT_HALO, type StarLook } from "@/sky/lib/constellation";
+import { asteroidShape, BODY_ORDER, bodyOfItem, bodyRadius, COMET, cometAway, cometTail, cometTurn, hashUnit, layoutConstellation, linePaintFor, paintFor, placeConstellation, roleOf, sizeFor, STAR_RADIUS, TONIGHT_HALO, type StarLook } from "@/sky/lib/constellation";
 import { buildGraph } from "@/sky/lib/graph";
 import type { Standing } from "@/sky/lib/standing";
 import type { SkyItem, SkyKind } from "@/sky/lib/types";
@@ -165,6 +165,57 @@ describe("the constellation layout", () => {
     assert.deepEqual(middle, cometAway("grammar:teiru", 0, 0));
     assert.notDeepEqual(middle, cometAway("grammar:tai", 0, 0));
     assert.ok(Math.abs(Math.hypot(...middle) - 1) < 1e-3, "a direction, not a length");
+  });
+
+  it("draws the comet's tail inside its reach, spreading gently from the head", () => {
+    // SAK-473. The reach is the hit area and the packing box, so the drawing
+    // has to stay inside it, and the nose is a curve whose control points
+    // stand well outside the shape: the only honest way to ask is to walk
+    // the curve. Sixteen numbers, in the order the outline is written: the
+    // corner at the head, the control and the end of the near side, the two
+    // controls and the end of the nose, then the control and the end of the
+    // far side back at the head.
+    const n = cometTail(0, 0, 1).match(/-?\d+(\.\d+)?/g)!.map(Number);
+    assert.equal(n.length, 16, `sixteen numbers: ${cometTail(0, 0, 1)}`);
+    const p = (i: number) => [n[i * 2], n[i * 2 + 1]] as const;
+    const mix = (a: readonly number[], b: readonly number[], t: number) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+    const quad = (a: readonly number[], c: readonly number[], b: readonly number[], t: number) => mix(mix(a, c, t), mix(c, b, t), t);
+    const cubic = (a: readonly number[], c1: readonly number[], c2: readonly number[], b: readonly number[], t: number) =>
+      quad(mix(a, c1, t), mix(c1, c2, t), mix(c2, b, t), t);
+    const walk: number[][] = [];
+    for (let i = 0; i <= 200; i++) {
+      const t = i / 200;
+      walk.push(quad(p(0), p(1), p(2), t), cubic(p(2), p(3), p(4), p(5), t), quad(p(5), p(6), p(7), t));
+    }
+    const far = Math.max(...walk.map(([x, y]) => Math.hypot(x, y)));
+    assert.ok(far <= COMET.tail, `the farthest point drawn is ${far}, past the reach of ${COMET.tail}`);
+    assert.ok(far > COMET.tail - 0.5, `and it uses the reach it asks for: ${far}`);
+
+    // narrow where it leaves the head and wider at the nose, and the head is
+    // small enough that the tail is the shape you notice
+    const { a0, w0, a1, w1 } = COMET.plume;
+    assert.ok(w0 < w1, "the tail spreads away from the head");
+    assert.ok(w0 > COMET.head / 3 && w0 < COMET.head, "and it leaves the head narrower than the head");
+    const spread = (Math.atan2(w1 - w0, a1 - a0) * 180) / Math.PI * 2;
+    assert.ok(spread > 15 && spread < 25, `about 20 degrees all in, not ${spread}`);
+    assert.ok(a1 - a0 > (w1 + w0) * 2, "long against its width");
+
+    // the numbers scale and move with the sky's unit and the head's place
+    assert.equal(cometTail(0, 0, 2), cometTail(0, 0, 1).replace(/-?\d+(\.\d+)?/g, (m) => String(Math.round(Number(m) * 2 * 1e4) / 1e4)));
+    assert.notEqual(cometTail(10, 4, 1), cometTail(0, 0, 1));
+  });
+
+  it("turns the tail to the way the comet points, so one gradient serves them all", () => {
+    assert.equal(cometTurn([1, 0]), 0);
+    assert.equal(cometTurn([0, 1]), 90);
+    assert.equal(cometTurn([-1, 0]), 180);
+    assert.equal(cometTurn(cometAway("grammar:teiru", 0, 30)), 90);
+    // the halo lies along the comet and asks for no more room than the
+    // circle of the full reach it replaces, in any direction
+    const { along, rx, ry } = COMET.halo;
+    assert.ok(along + rx <= COMET.tail, "no further down the tail than the reach");
+    assert.ok(ry <= COMET.tail && rx - along <= COMET.tail, "and no wider or further back");
+    assert.ok(COMET.halo.rx > COMET.halo.ry, "an ellipse along the comet, not across it");
   });
 
   it("gives an asteroid the same lump every time, about the unit circle", () => {

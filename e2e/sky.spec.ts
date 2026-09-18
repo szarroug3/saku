@@ -1942,11 +1942,23 @@ test("a grammar pattern is a comet in the lesson sky, tail and all", async ({ pa
   await expect(comet).toHaveCount(1);
   await expect(sky.locator('[data-body="moon"]')).toHaveCount(0);
   await expect(sky.locator('[data-body="planet"]')).toHaveCount(0);
-  // the tail is one filled triangle out to a point, in starlight like the
-  // planet's ring, and the head is a dot in the standing's own color
+  // SAK-473: one tail, drawn along +x inside a group that turns it the way
+  // the comet points, and filled with the sky's one tail gradient, which
+  // fades it to nothing along its length. Two long sides and a round nose,
+  // so it ends soft: no straight edge anywhere. The head is a dot in the
+  // standing's own color, drawn last and brightest.
   const tail = comet.locator("path");
   await expect(tail).toHaveCount(1);
-  await expect(tail).toHaveAttribute("fill", "var(--sky-star)");
-  await expect(tail).toHaveAttribute("d", /^M .* L .* L .* Z$/);
+  await expect(tail).toHaveAttribute("d", /^M .* Q .* C .* Q .* Z$/);
+  await expect(tail.locator("xpath=..")).toHaveAttribute("transform", /^rotate\(/);
+  const fill = await tail.getAttribute("fill");
+  expect(fill).toMatch(/^url\(#sky-tail-[A-Za-z0-9]+\)$/);
+  // and the gradient it names is declared ONCE for the whole sky, however
+  // many comets are up there
+  const gradients = sky.locator("defs > linearGradient");
+  await expect(gradients).toHaveCount(1);
+  await expect(gradients).toHaveAttribute("id", fill!.slice(5, -1));
+  await expect(gradients).toHaveAttribute("gradientUnits", "objectBoundingBox");
+  await expect(gradients.locator("stop").last()).toHaveAttribute("stop-opacity", "0");
   await expect(comet.locator("circle").last()).toBeVisible();
 });
