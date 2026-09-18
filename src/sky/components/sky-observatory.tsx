@@ -52,6 +52,11 @@ export interface ObservatorySection {
    * moment they are all there. A pick that loses one of them is taken out
    * with it.
    *
+   * A SECTION waits the same way, under its own id: Sentences waits on 〜な,
+   * the grammar track's first lesson, and the whole row is off the page until
+   * that is learned or picked (SAK-468). One rule for the row and the rows in
+   * it.
+   *
    * Here rather than on the item, as the parts of a word are: a star's parts
    * are the same for every learner, and this is one learner's own place in
    * the order.
@@ -191,7 +196,7 @@ export function SkyObservatory({ data, cap = COMFORTABLE_PIECES, lessonHref, ini
     <SkyPageShell eyebrow="Observatory" title="What would you like to learn next?" aside={resume && <ContinueButton entry={resume.entry} href={resume.href} className="lg:w-[340px]" />} height={height}>
       <div className="grid min-h-0 flex-1 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
         <div className="min-h-0 min-w-0 self-stretch overflow-y-auto pb-6 pr-1">
-          {data.sections.filter((section) => !section.shut && !section.complete).map((section) => {
+          {data.sections.filter((section) => !section.shut && !section.complete && waited(section.id, picks)).map((section) => {
             const ids = offered(section);
             // nothing to take right now (everything left waits on something): not shown
             if (ids.length === 0) return null;

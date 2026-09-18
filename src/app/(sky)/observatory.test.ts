@@ -7,6 +7,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import { patternEntry } from "@/data/grammar";
+import { CURRICULUM_PATTERNS } from "@/lib/grammar-lesson";
 import { emptyHistory } from "@/lib/history-ops";
 import { knownFactsOf, libEntry, type LibEntry } from "@/lib/library/entries";
 import type { FactAggregate, HistoryFile } from "@/types/store";
@@ -79,18 +80,18 @@ describe("offerPicker", () => {
 
 // SAK-430. The "Sentences" section used to be the grammar track in its
 // own order, which put the nine case particles in one row and never offered a
-// sentence type at all. It is sentenceRuleOrder() now, cut at the next type,
-// so a learner is offered what that type needs and then the type itself.
+// sentence type at all. It is sentenceRuleOrder() now, cut at the type after
+// the next one, so a learner is offered one sentence type with everything
+// that type needs around it (SAK-468).
 describe("the sentence rules on offer", () => {
   const section = (history: HistoryFile) => {
     const o = offerings(history, NOW);
-    const s = o.sections.find((x) => x.id === "grammar")!;
+    const s = o.sections.find((x) => x.id === "sentences")!;
     return { o, s, items: s.items.map((id) => o.items.get(id)!) };
   };
 
-  it("offers what the next sentence type needs, then the type, and stops there", () => {
+  it("offers one sentence type with what it needs around it, and stops there", () => {
     const { s, items } = section(emptyHistory());
-    assert.equal(items.at(-1)!.kind, "sentence", "the section ends on a sentence type");
     assert.deepEqual(
       items.filter((it) => it.kind === "sentence").map((it) => it.id),
       ["writing-rule:sentence-rule-simple"],
@@ -108,7 +109,6 @@ describe("the sentence rules on offer", () => {
     const { items } = section(emptyHistory());
     const labels = Object.fromEntries(items.map((it) => [it.glyph, typeLabel(it)]));
     assert.deepEqual(labels, {
-      "〜な": "grammar pattern",
       "〜は": "particle",
       "〜が": "particle",
       "〜を": "particle",
@@ -119,10 +119,13 @@ describe("the sentence rules on offer", () => {
     });
   });
 
-  it("brings only the particles Simple's own sentences use", () => {
+  // SAK-468. Sam: "why isn't simple sentences not after topic/subject? why
+  // does it come after all these other particles". Simple needs は and が; を,
+  // に, で and だけ are what its example sentences turn on, so they follow it.
+  it("puts the type after what it requires and before what its sentences use", () => {
     const { items } = section(emptyHistory());
     const glyphs = items.map((it) => it.glyph);
-    assert.deepEqual(glyphs, ["〜な", "〜は", "〜が", "〜を", "〜に", "〜で", "〜だけ", "Simple"]);
+    assert.deepEqual(glyphs, ["〜は", "〜が", "Simple", "〜を", "〜に", "〜で", "〜だけ"]);
     // the three the old section offered in the same breath and Simple never uses
     for (const away of ["〜へ", "〜まで", "〜か"]) assert.ok(!glyphs.includes(away), `${away} is not offered yet`);
   });
@@ -134,6 +137,7 @@ describe("the sentence rules on offer", () => {
   // picked tonight.
   describe("a type the learner cannot start yet", () => {
     const simple = "writing-rule:sentence-rule-simple";
+    const NA = "grammar:prenominal-form";
     /** What the page does with the section: a thing is drawn when the cart
      * can take it and everything it waits on is learned or picked. */
     const open = (history: HistoryFile, picks: readonly string[]) => {
@@ -153,12 +157,14 @@ describe("the sentence rules on offer", () => {
     };
 
     it("says what it waits on, and says nothing about it in words", () => {
-      const { s, items } = section(emptyHistory());
-      const type = items.at(-1)!;
+      const { o, s, items } = section(emptyHistory());
+      const type = items.find((it) => it.kind === "sentence")!;
       assert.equal(type.id, simple);
-      assert.deepEqual(s.needs?.[simple], ["grammar:wa", "grammar:ga"]);
-      // and what it waits on is on the page to be picked
-      for (const id of s.needs![simple]) assert.ok(s.items.includes(id), `${id} is not offered`);
+      // its own two, and the one the whole row waits on (SAK-468)
+      assert.deepEqual(s.needs?.[simple], ["grammar:wa", "grammar:ga", "grammar:prenominal-form"]);
+      // and what it waits on is on the page to be picked, here or in Grammar
+      const offered = new Set(o.sections.flatMap((x) => x.items));
+      for (const id of s.needs![simple]) assert.ok(offered.has(id), `${id} is not offered`);
       // the star itself is the same star for everybody: nothing about one
       // learner's place in the order is hung on it
       assert.equal(type.components, undefined);
@@ -167,23 +173,27 @@ describe("the sentence rules on offer", () => {
       }
     });
 
+    // 〜な is picked along with them here, since the whole row waits on it
+    // too now (SAK-468); the row is what these picks are made in.
     it("is not offered to an empty sky, and is offered once は and が are picked", () => {
       assert.equal(open(emptyHistory(), []), false);
-      assert.equal(open(emptyHistory(), ["grammar:wa"]), false);
-      assert.equal(open(emptyHistory(), ["grammar:wa", "grammar:ga"]), true);
+      assert.equal(open(emptyHistory(), [NA, "grammar:wa"]), false);
+      assert.equal(open(emptyHistory(), [NA, "grammar:wa", "grammar:ga"]), true);
     });
 
     it("counts one learned and one picked the same way, and goes when the pick goes", () => {
-      assert.equal(open(knows("wa"), ["grammar:ga"]), true);
-      assert.equal(open(emptyHistory(), ["grammar:wa", "grammar:ga"]), true);
-      assert.equal(open(emptyHistory(), ["grammar:wa"]), false, "unpicking が takes it away again");
+      assert.equal(open(knows("wa"), [NA, "grammar:ga"]), true);
+      assert.equal(open(emptyHistory(), [NA, "grammar:wa", "grammar:ga"]), true);
+      assert.equal(open(emptyHistory(), [NA, "grammar:wa"]), false, "unpicking が takes it away again");
+      assert.equal(open(emptyHistory(), ["grammar:wa", "grammar:ga"]), false, "and so does unpicking 〜な");
     });
 
     it("opens for good once the app's own rule opens it", () => {
       // the sample learner has met te-iru, one of the sequential type's
-      // patterns, and the app's rule wants any one of them
+      // patterns, and the app's rule wants any one of them. They have met 〜な
+      // too, so the row itself waits on nothing either.
       const { s, items } = section(sampleHistory(NOW));
-      const type = items.at(-1)!;
+      const type = items.find((it) => it.kind === "sentence")!;
       assert.equal(type.id, "writing-rule:sentence-rule-sequential");
       assert.deepEqual(s.needs, {}, "nothing left to wait on");
     });
@@ -194,6 +204,56 @@ describe("the sentence rules on offer", () => {
     assert.ok(s.started, "a learner part way through the track has started it");
     assert.ok(!items.some((it) => o.learned.has(it.id)), "nothing already learned is offered again");
     assert.ok(s.items.every((id) => !!o.items.get(id)), "every offered id was built");
+  });
+});
+
+// SAK-468. 〜な led the Sentences row, and it is grammar rather than a
+// sentence rule. Sam, 2026-09-17: "if that's grammar but is required, it's the
+// first thing taught in grammar iirc. you can lock the sentence track behind
+// learning it in the grammar track."
+describe("the Grammar row, and the Sentences row behind it", () => {
+  const rows = (history: HistoryFile) => {
+    const o = offerings(history, NOW);
+    return {
+      o,
+      grammar: o.sections.find((x) => x.id === "grammar")!,
+      sentences: o.sections.find((x) => x.id === "sentences")!,
+    };
+  };
+  /** 〜な claimed, the way a learner's own sky says it. */
+  const claimed = (id: string): HistoryFile => {
+    const history = emptyHistory();
+    const entry = libEntry(patternEntry(id));
+    assert.ok(entry, `${id} is a pattern`);
+    for (const f of knownFactsOf(entry)) history.claims = { ...history.claims, [f]: NOW };
+    return history;
+  };
+
+  it("offers 〜な first in Grammar, which is where the track teaches it first", () => {
+    const { o, grammar } = rows(emptyHistory());
+    assert.equal(grammar.title, "Grammar");
+    assert.equal(o.items.get(grammar.items[0])!.glyph, "〜な");
+    assert.equal(CURRICULUM_PATTERNS[0].id, "prenominal-form", "the grammar track's own first lesson");
+  });
+
+  it("makes the whole Sentences row wait on it, under the row's own id", () => {
+    const { sentences } = rows(emptyHistory());
+    assert.deepEqual(sentences.needs?.[sentences.id], ["grammar:prenominal-form"]);
+    assert.ok(!sentences.items.includes("grammar:prenominal-form"), "and the row no longer holds it");
+  });
+
+  it("stops waiting once 〜な is claimed, and the row is offered as it was", () => {
+    const { grammar, sentences } = rows(claimed("prenominal-form"));
+    assert.equal(sentences.needs?.[sentences.id], undefined);
+    assert.ok(!grammar.items.includes("grammar:prenominal-form"), "what is met is not offered again");
+    assert.ok(grammar.started, "and the Grammar row is under way");
+  });
+
+  it("offers every pattern in one row or the other, and never in both", () => {
+    const { o } = rows(emptyHistory());
+    const both = o.sections.find((x) => x.id === "grammar")!.items
+      .filter((id) => o.sections.find((x) => x.id === "sentences")!.items.includes(id));
+    assert.deepEqual(both, [], "no pattern is on both rows");
   });
 });
 

@@ -1739,6 +1739,11 @@ test("a sentence type is off the page until what it needs is learned or picked (
   // it opens."
   await page.goto("/observatory");
   await claimAllKana(page);
+  // the whole row waits on 〜な now, the grammar track's first lesson, so it
+  // is picked in Grammar before there is a Sentences row to read (SAK-468)
+  const grammar = page.locator("section", { has: page.getByRole("heading", { name: "Grammar", exact: true }) });
+  await grammar.getByRole("button", { name: "Start grammar" }).click();
+  await grammar.locator("button[aria-pressed]").first().click();
   const row = page.locator("section", { has: page.getByRole("heading", { name: "Sentences", exact: true }) });
   await row.getByRole("button", { name: "Start sentences" }).click();
   const tile = (text: string) => row.getByRole("button").filter({ hasText: text });
@@ -1761,10 +1766,54 @@ test("a sentence type is off the page until what it needs is learned or picked (
 
   // and taking one of them out takes the type with it, pick and all
   await simple.click();
-  await expect(page.getByText(/^3 Picks · /)).toBeVisible();
+  await expect(page.getByText(/^4 Picks · /)).toBeVisible();
   await ga.click();
   await expect(simple).toHaveCount(0);
-  await expect(page.getByText(/^1 Pick · /)).toBeVisible();
+  await expect(page.getByText(/^2 Picks · /)).toBeVisible();
+});
+
+test("the Sentences row waits on 〜な, and opens with は first (SAK-468)", async ({ page }) => {
+  // Sam, 2026-09-17, on 〜な leading the row: "if that's grammar but is
+  // required, it's the first thing taught in grammar iirc. you can lock the
+  // sentence track behind learning it in the grammar track." And on Simple
+  // coming last: "why isn't simple sentences not after topic/subject? why
+  // does it come after all these other particles".
+  await page.goto("/observatory");
+  await claimAllKana(page);
+  const sentences = page.locator("section", { has: page.getByRole("heading", { name: "Sentences", exact: true }) });
+  const grammar = page.locator("section", { has: page.getByRole("heading", { name: "Grammar", exact: true }) });
+  // kana done and nothing else: there is no Sentences row at all, and the
+  // page says nothing about what would open it
+  await expect(grammar).toBeVisible();
+  await expect(sentences).toHaveCount(0);
+  await expect(page.locator("body")).not.toContainText("Opens once");
+
+  // 〜な is the first thing Grammar offers, and picking it opens the row
+  await grammar.getByRole("button", { name: "Start grammar" }).click();
+  const na = grammar.locator("button[aria-pressed]").first();
+  await expect(na).toContainText("describe a noun");
+  await na.click();
+  await expect(sentences).toBeVisible();
+  await sentences.getByRole("button", { name: "Start sentences" }).click();
+
+  // the row leads with は, and the type it leads to is not drawn yet
+  const tiles = sentences.locator("button[aria-pressed]");
+  await expect(tiles.first()).toContainText("marks the topic");
+  await expect(tiles.nth(1)).toContainText("marks the subject");
+  await expect(tiles.nth(2)).toContainText("marks the direct object");
+
+  // は and が bring Simple in as the third tile, before the particles its own
+  // example sentences turn on
+  await tiles.nth(0).click();
+  await tiles.filter({ hasText: "marks the subject" }).click();
+  await expect(tiles.nth(2)).toContainText("Simple");
+  await expect(tiles.nth(2)).toContainText("sentence type");
+  await expect(tiles.nth(3)).toContainText("marks the direct object");
+
+  // and taking 〜な back out takes the row with it, picks and all
+  await na.click();
+  await expect(sentences).toHaveCount(0);
+  await expect(page.getByText(/^\d+ Picks? · /)).toHaveCount(0);
 });
 
 test("the observatory takes every pick back out in one press", async ({ page }) => {

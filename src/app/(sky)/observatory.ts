@@ -11,8 +11,10 @@
 //               supply. Hiragana rows first, then katakana
 //   words       the curriculum's order, the next ones not yet met
 //   counting    the counters track in its own order (〜つ first)
-//   sentence    the ten sentence types, each preceded by the patterns it
-//   rules       needs, in one order (src/lib/sentence-rule-order.ts)
+//   grammar     the patterns no sentence type asks for, in the track's own
+//               order, 〜な first
+//   sentence    the ten sentence types, each with the patterns it needs
+//   rules       around it, in one order (src/lib/sentence-rule-order.ts)
 //   verb pairs  each attached to its plain verb as headword
 //   keigo       each set attached to its plain verb
 // Everything else in the sky rides along as parts, so costs are real.
@@ -37,6 +39,7 @@ import { VOCAB_SUBJECT } from "@/data/vocab";
 import { COUNTER_KIND, entryForGlyph, knownFactsOf, LIB_ENTRIES_BY_KIND, libEntry, NUMBER_CONSTRUCTION_KIND, SENTENCE_RULE_KIND, type LibEntry } from "@/lib/library/entries";
 import { PARTICLE_RECIPE_IDS } from "@/lib/library/grammar-shelf";
 import { SENTENCE_ORDERING_TIERS, sentenceTierShortLabel } from "@/data/assembly";
+import { CURRICULUM_PATTERNS } from "@/lib/grammar-lesson";
 import { sentenceTierBlock } from "@/lib/sentence-ordering-plan";
 import { sentenceRuleOrder } from "@/lib/sentence-rule-order";
 import { CURRICULUM_KEBS_ORDERED } from "@/lib/word-rank";
@@ -59,6 +62,29 @@ const isParticleEntry = (id: string) => PARTICLE_ENTRIES.has(id);
 /** The native numbers (ひとつ to とお) as one pick: the 〜つ rule. */
 export const TSU_RULE = "counter-rule:tsu";
 
+/** The Sentences section's id, which is also the key its own `needs` sit
+ * under: what the whole row waits on (SAK-468). */
+const SENTENCES = "sentences";
+
+/** The first pattern the grammar track teaches, read off the track rather
+ * than named here: 〜な, the form a describing word takes in front of a noun.
+ * The Sentences row waits on it. */
+const GRAMMAR_FIRST = CURRICULUM_PATTERNS[0].id;
+
+/** The grammar no sentence type ever asks for, in the track's own teaching
+ * order: the tail of `sentenceRuleOrder()`, after its last sentence type.
+ * This is the Grammar section, and the steps before that tail are the
+ * Sentences one, so between them every pattern is offered exactly once. */
+let tail: readonly string[] | undefined;
+function leftoverPatterns(): readonly string[] {
+  if (tail) return tail;
+  const steps = sentenceRuleOrder();
+  let last = -1;
+  steps.forEach((step, i) => { if (step.kind === "tier") last = i; });
+  tail = steps.slice(last + 1).map((step) => step.id);
+  return tail;
+}
+
 /** What each track is and when to start it. Short, in the learner's terms. */
 const COPY = {
   kana: {
@@ -74,8 +100,12 @@ const COPY = {
     when: "Start anytime after kana. You will want these the first time you order two of something.",
   },
   grammar: {
-    intro: "Sentences are not built the way English builds them. The order is different, and small words mark who did what. A pattern is learned once and reused on every word you know.",
+    intro: "A pattern is an ending you add to a word you already know: it changes what the word says without changing the word itself. Learn one and you can use it on every verb and every adjective you have.",
     when: "Start once single words feel limiting, when you want to say \"I ate\" or \"please eat\", not just \"eat\".",
+  },
+  sentences: {
+    intro: "Sentences are not built the way English builds them. The order is different, and small words mark who did what. A pattern is learned once and reused on every word you know.",
+    when: "Start once you can put two words together and want to say a whole thought.",
   },
   verbPairs: {
     intro: "Many verbs come in pairs: one for what happens on its own, one for someone doing it. The door opens; I open the door.",
@@ -336,17 +366,40 @@ export function offerings(history: HistoryFile, now = Date.now()): Offerings {
   const counting = allCounting.filter((e) => !standingFor(e, history, now).met);
   sections.push({ id: "counting", title: "Counting", ...COPY.counting, items: counting.slice(0, SHOW).map((e) => offer(e, "counter").id), shut: afterKana, started: counting.length < allCounting.length, complete: counting.length === 0 });
 
-  // sentence rules: the ten sentence types and, before each of them, the
+  // grammar: the rest of the track. The Sentences row below teaches the
+  // patterns that lead to the next sentence type; this one teaches the
+  // patterns no sentence type ever asks for, in the track's own order, which
+  // is the tail of the same list. Together the two cover every pattern once.
+  //
+  // 〜な heads it, because it is the first thing the grammar track teaches
+  // (CURRICULUM_PATTERNS in src/lib/grammar-lesson.ts starts with
+  // `prenominal-form`). It used to lead the Sentences row; Sam, 2026-09-17:
+  // "if that's grammar but is required, it's the first thing taught in
+  // grammar iirc. you can lock the sentence track behind learning it in the
+  // grammar track" (SAK-468).
+  const patterns: string[] = [];
+  let patternsMet = 0;
+  for (const id of leftoverPatterns()) {
+    const entry = libEntry(patternEntry(id));
+    if (!entry) continue;
+    if (standingFor(entry, history, now).met) { patternsMet++; continue; }
+    const item = offerPick(entry.id);
+    if (item) patterns.push(item.id);
+  }
+  sections.push({ id: "grammar", title: "Grammar", ...COPY.grammar, items: patterns.slice(0, SHOW), shut: afterKana, started: patternsMet > 0, complete: patterns.length === 0 });
+
+  // sentence rules: the ten sentence types and, around each of them, the
   // patterns that type needs, in one order (src/lib/sentence-rule-order.ts).
   // It used to be the grammar track alone, which offered all nine case
   // particles in one row and never a sentence type at all (Sam, 2026-09-08).
   //
-  // The section STOPS at the next sentence type, which is Sam's own rule for
-  // it: "teach just what's needed for the next sentence type". So a learner is
-  // offered the handful of particles that type turns on and then the type
-  // itself, and nothing beyond it, however long the track goes on. It is short
-  // by construction, so it lays out whole rather than at the usual nine (a
-  // section that ended one card short of the thing its cards are FOR would
+  // The section RUNS TO THE NEXT SENTENCE TYPE AND THAT TYPE'S OWN RUN, and
+  // stops where the type after it starts. That is Sam's rule for it, "teach
+  // just what's needed for the next sentence type": what the type requires
+  // (は and が for Simple), the type, and then the particles its own example
+  // sentences turn on (を, に, で, だけ), which are the type's too. It is
+  // short by construction, so it lays out whole rather than at the usual nine
+  // (a section that ended one card short of the thing its cards are FOR would
   // teach the opposite of the order it is built on).
   //
   // A type the learner cannot start yet is NOT on the page (SAK-464). It used
@@ -357,10 +410,18 @@ export function offerings(history: HistoryFile, now = Date.now()): Offerings {
   // they are. The other half of the app's rule, too few sentences of that
   // shape to build a lesson from, is nothing a pick can change, so such a type
   // is left out here and the section ends on the patterns before it.
+  //
+  // The WHOLE section waits on 〜な the same way, under the section's own id:
+  // one rule for the row and for the rows in it, read by the page in one
+  // place (SAK-468).
   const rules: string[] = [];
   const needs: Record<string, readonly string[]> = {};
   let rulesMet = 0;
+  let offeredType: string | undefined;
   for (const step of sentenceRuleOrder()) {
+    // every step says which type it belongs to, so the row ends where the
+    // type after the offered one starts rather than at the type itself
+    if (offeredType && (step.kind === "tier" ? step.id : step.tier) !== offeredType) break;
     const entry = libEntry(step.kind === "tier" ? markEntry(`sentence-rule-${step.id}`) : patternEntry(step.id));
     if (!entry) continue;
     if (standingFor(entry, history, now).met) { rulesMet++; continue; }
@@ -376,9 +437,18 @@ export function offerings(history: HistoryFile, now = Date.now()): Offerings {
     if (step.kind !== "tier") continue;
     const waits = waitingOn(entry.id, history, now);
     if (waits.length) needs[item.id] = waits;
-    break;
+    offeredType = step.id;
   }
-  sections.push({ id: "grammar", title: "Sentences", ...COPY.grammar, items: rules.slice(0, SHOW), show: Math.min(rules.length, SHOW), needs, shut: afterKana, started: rulesMet > 0, complete: rules.length === 0 });
+  const na = libEntry(patternEntry(GRAMMAR_FIRST));
+  if (na && !standingFor(na, history, now).met) {
+    // the row waits on it under the row's own id, and so does every row in
+    // it, so a pick taken here goes when 〜な goes (`settled` in
+    // sky-observatory.tsx does for a lost requirement what `withoutPick`
+    // does for a lost part)
+    needs[SENTENCES] = [na.id];
+    for (const id of rules) needs[id] = [...(needs[id] ?? []), na.id];
+  }
+  sections.push({ id: SENTENCES, title: "Sentences", ...COPY.sentences, items: rules.slice(0, SHOW), show: Math.min(rules.length, SHOW), needs, shut: afterKana, started: rulesMet > 0, complete: rules.length === 0 });
 
   // verb pairs: attached to the plain verb, with both members' kanji
   const pairs: string[] = [];
