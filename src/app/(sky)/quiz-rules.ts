@@ -203,7 +203,7 @@ function kanjiReadingRule(row: ReadingRow): QuizRule {
  * rule rather than remembered per word. */
 const NUMBERS: QuizRule = {
   title: "Japanese counts twice over",
-  prose: "ひとつ, ふたつ, みっつ are the native numbers. いち, に, さん are the ones borrowed from Chinese, and they are what almost every counter takes. Which set a counter uses belongs to the counter itself, so it is learned along with it rather than worked out.",
+  prose: "ひとつ, ふたつ, みっつ are the native numbers. いち, に, さん are the ones borrowed from Chinese, and they are what almost every counter takes. Which set a counter uses belongs to the counter itself. No rule tells you which, so you learn it with the counter.",
 };
 
 /** The rule a card exercises, or nothing when there is none to name.

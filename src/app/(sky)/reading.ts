@@ -28,8 +28,8 @@ export function howItWorksPage(): ReadingPage {
 }
 
 const SHARE_ALIKE = [
-  "CC BY-SA is share-alike. The dictionary files this app reads are adaptations of EDRDG's, so they have the same license. The app's own code reads that data rather than deriving from it, and is MIT. Tatoeba's sentences are attribution-only, with no share-alike.",
-  "KanjiVG's stroke data is CC BY-SA 3.0, a version behind the rest. That is compatible in the direction it needs to be: a 3.0 share-alike work may be used in a 4.0 one, so the diagrams can be used alongside the dictionary data without conflict.",
+  "CC BY-SA is share-alike. The dictionary files this app reads are adaptations of EDRDG's, so they have the same license. The app's own code reads that data without deriving from it, so the code itself is MIT. Tatoeba's sentences are attribution-only, with no share-alike.",
+  "KanjiVG's stroke data is CC BY-SA 3.0, a version behind the rest. A 3.0 share-alike work may be used in a 4.0 one, so the diagrams can be used alongside the dictionary data.",
   "CEJC's raw conversation-frequency files are not included. The app ships only the reduced reading order used for its own vocabulary, and identifies that educational analysis separately rather than relicensing NINJAL's work as CC BY-SA.",
   "Frequency comparisons never cross JMdict meanings. When every reading has the same sense coverage and CEJC provides at least 50 observations, a reading at or below 5% of usage moves to the Atlas's other dictionary readings rather than the teaching table.",
 ];

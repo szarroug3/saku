@@ -89,7 +89,7 @@ function leftoverPatterns(): readonly string[] {
 const COPY = {
   kana: {
     intro: "Kana are the Japanese alphabet: characters that stand for sounds, not meanings. Unlike English letters, most kana are a consonant and a vowel together in one character: か is \"ka\", not \"k\" and \"a\". There are two sets, hiragana and katakana, and they represent the same 46 sounds.",
-    when: "You learn these first because they unlock everything else.",
+    when: "You learn these first because everything else is written with them.",
   },
   words: {
     intro: "Words are the part you speak and read. A word comes with its kanji and the pieces they are built from, so you assemble it instead of memorizing it whole.",
@@ -101,7 +101,7 @@ const COPY = {
   },
   grammar: {
     intro: "A pattern is an ending you add to a word you already know: it changes what the word says without changing the word itself. Learn one and you can use it on every verb and every adjective you have.",
-    when: "Start once single words feel limiting, when you want to say \"I ate\" or \"please eat\", not just \"eat\".",
+    when: "Start once single words feel limiting and you want to say \"I ate\" or \"please eat\" instead of only \"eat\".",
   },
   sentences: {
     intro: "Sentences are not built the way English builds them. The order is different, and small words mark who did what. A pattern is learned once and reused on every word you know.",
@@ -112,7 +112,7 @@ const COPY = {
     when: "Start once you know a few verbs. Each pair is built on one of them.",
   },
   keigo: {
-    intro: "Japanese changes a verb by who you are speaking to. A polite verb replaces the plain one outright: a separate word, not an ending.",
+    intro: "Japanese changes a verb by who you are speaking to. The polite form is a separate word that replaces the plain verb outright, and no ending turns one into the other.",
     when: "Start once you know some plain verbs. Each polite verb replaces one of them.",
   },
 } as const;

@@ -288,7 +288,7 @@ export function teachFor(item: SkyItem, scope: TeachScope = {}): LessonTeach {
         ...(m.example ? { example: marked(m.example.jp, m.example.highlightSpan) } : {}),
       });
       t.forms = [
-        side(p.happens, "It happens on its own", "No one is named as making it happen; it just happens."),
+        side(p.happens, "It happens on its own", "No one is named as making it happen."),
         side(p.doIt, "Someone does it", "Someone makes it happen."),
       ];
     }
@@ -336,7 +336,7 @@ export function teachFor(item: SkyItem, scope: TeachScope = {}): LessonTeach {
     if (set) {
       t.meanings = [set.meaning];
       if (set.formulaic) {
-        t.notes = ["This one is different. It isn't the polite version of a verb you already know. It's a fixed phrase: the greeting shop and restaurant staff call out to welcome a customer in, roughly \"welcome, come in!\" You'll hear it, not say it, so learn it by ear."];
+        t.notes = ["This is not the polite version of a verb you already know. It's a fixed phrase: the greeting shop and restaurant staff call out to welcome a customer in, roughly \"welcome, come in!\" You will hear it far more often than you say it, so learn it by ear."];
         t.forms = set.words.map((w) => ({ role: "The phrase", word: w.word, reading: w.reading }));
       } else {
         // the plain verb, then each polite form by its register with when to

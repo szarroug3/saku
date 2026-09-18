@@ -230,7 +230,7 @@ export function SkyPractice({ collections, lookup, initial, saved, onSaved, onSt
             ) : (
               <SkyButton variant="outline" onClick={() => setSaving(true)} disabled={!!chosen}>{chosen ? `Saved as ${chosen.name}` : "Save this recipe"}</SkyButton>
             )}
-            {!saving && <SkyInfo className="ml-1.5" label="What a saved recipe keeps">A saved recipe keeps the recipe, not today&apos;s list, so it changes as you do.</SkyInfo>}
+            {!saving && <SkyInfo className="ml-1.5" label="What a saved recipe keeps">A saved recipe keeps the recipe itself instead of today&apos;s list, so it changes as you do.</SkyInfo>}
           </div>
         </SkyPanel>
 
@@ -294,7 +294,7 @@ export function SkyPractice({ collections, lookup, initial, saved, onSaved, onSt
                 </li>
               );
             })}
-            {unseen > 0 && <li className="px-2 py-1.5 text-[12.5px] text-sky-muted">and {unseen.toLocaleString()} more that match, not listed here</li>}
+            {unseen > 0 && <li className="px-2 py-1.5 text-[12.5px] text-sky-muted">and {unseen.toLocaleString()} more that match, left off this list</li>}
           </ul>
           <div className="mt-3 flex shrink-0 flex-wrap items-center gap-3">
             <SkyButton disabled={!!blocked} onClick={() => onStart(recipe)}>Start</SkyButton>
