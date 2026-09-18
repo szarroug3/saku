@@ -37,6 +37,7 @@
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
+import { SkyDefs } from "@/sky/components/constellation";
 import { hashUnit } from "@/sky/lib/constellation";
 
 interface SkyCanvasProps {
@@ -274,14 +275,18 @@ export function SkyCanvas({ width, height, interactive = false, dust = 90, seed 
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerUp}
       >
-        <g ref={groupRef} data-view transform={transform(shown)}>
-          <g data-dust>
-            {dustStars.map((d, i) => (
-              <circle key={i} cx={d.x} cy={d.y} r={d.r} fill="var(--sky-star)" opacity={d.o} className={d.twinkle ? "sky-twinkle" : undefined} style={d.twinkle ? { animationDelay: `${d.delay}s` } : undefined} />
-            ))}
+        {/* what the bodies are painted with, declared once for this whole
+            sky however many of them there are (see constellation.tsx) */}
+        <SkyDefs>
+          <g ref={groupRef} data-view transform={transform(shown)}>
+            <g data-dust>
+              {dustStars.map((d, i) => (
+                <circle key={i} cx={d.x} cy={d.y} r={d.r} fill="var(--sky-star)" opacity={d.o} className={d.twinkle ? "sky-twinkle" : undefined} style={d.twinkle ? { animationDelay: `${d.delay}s` } : undefined} />
+              ))}
+            </g>
+            {children}
           </g>
-          {children}
-        </g>
+        </SkyDefs>
       </svg>
       {interactive && (
         <div className="absolute bottom-3 right-3 flex items-center gap-1 rounded-full border border-sky-line bg-sky-card-strong p-1 font-sky-ui text-[12px] text-sky-ink">

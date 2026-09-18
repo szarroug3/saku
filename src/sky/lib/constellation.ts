@@ -115,11 +115,36 @@ export const PLANET = { r: 16, ring: 30, ringDepth: 9.5, tilt: -24 };
  * where the disc is 14 screen pixels across. Much smaller than a planet on
  * purpose: a particle is a small thing. */
 export const MOON = { r: 10, shadow: 0.18, tilt: -25 };
-/** The comet: a bright head, and a tail this long from the head's center,
- * tapering to a point away from the constellation's middle. The head is
- * smaller than a counter's rock and well under a planet's disc; only the
- * tail reaches far, and it reaches one way. */
-export const COMET = { head: 5.5, tail: 18 };
+/** The comet: a small bright head, and one tail behind it that leaves the
+ * head narrow, spreads gently as it goes, and fades to nothing along its
+ * length. `tail` is the reach: how far the comet may ever be drawn, and the
+ * hit area and the packing box SAK-465 set. The head is smaller than a
+ * counter's rock and well under a planet's disc; only the tail reaches far,
+ * and it reaches one way.
+ *
+ * `plume` is the tail's outline in star units: how far along the tail (a)
+ * and how far to the side of it (w), where it leaves the head (a0, w0), at
+ * the waist the edge bends through (ac, wc), and where the round nose closes
+ * it off (a1, w1). The spread is about 20 degrees all in. Six drawings were
+ * put side by side at every scale the sky uses and Sam picked this one
+ * (SAK-473): the ones that widened faster read as a megaphone, and the ones
+ * that ended at a point or a cut edge left a few solid pixels out in the
+ * dark that the eye took for a second small object.
+ *
+ * `halo` is the ellipse a comet wears instead of the circle every other body
+ * wears: how far along the tail its middle lies, and how far it reaches
+ * across and along at the smallest halo. A circle of the full reach was a
+ * big empty bubble with the comet in one corner of it. */
+export const COMET = {
+  head: 3.4,
+  tail: 18,
+  plume: { a0: 0.3, w0: 1.5, ac: 8, wc: 3, a1: 14, w1: 3.9 },
+  halo: { along: 6, rx: 11, ry: 6.5 },
+};
+
+/** How far past the nose's shoulders its control points stand, as a share of
+ * the plume's width: four thirds, which is what draws a half circle. */
+const NOSE = 1.33;
 /** The asteroid: a lumpy shape of this many corners about this radius. */
 export const ASTEROID = { r: 11, corners: 7 };
 /** The binary: two suns, offset from the center, far enough apart to read as two. */
@@ -134,6 +159,29 @@ export const BINARY = { a: { x: -8, y: -2.5, r: 7 }, b: { x: 8.5, y: 3.5, r: 5.2
 export function cometAway(id: string, dx: number, dy: number): readonly [number, number] {
   const angle = Math.hypot(dx, dy) < 1e-6 ? hashUnit(`${id}|tail`) * Math.PI * 2 : Math.atan2(dy, dx);
   return [round4(Math.cos(angle)), round4(Math.sin(angle))];
+}
+
+/** The turn the tail takes, in degrees: the direction `cometAway` gives, for
+ * the group the tail is drawn inside. Every tail is drawn along +x and then
+ * turned, which is what lets every comet in one sky share one gradient. */
+export function cometTurn(away: readonly [number, number]): number {
+  return round4((Math.atan2(away[1], away[0]) * 180) / Math.PI);
+}
+
+/** The tail's outline, from a head at (x, y) and running along +x, in the
+ * frame of the group `cometTurn` points. `u` is the sky's unit scale.
+ *
+ * The two quadratics are the tail's long sides, narrow at the head and wider
+ * at the nose. The cubic between them is the nose: it stands in for a half
+ * circle of the plume's own width, so the tail ends round rather than cut.
+ * That is why its control points stand `NOSE` widths out while the curve
+ * itself only reaches three quarters of that: the farthest point drawn is
+ * a1 + 0.75 * NOSE * w1, which is 17.89 of the reach of 18. */
+export function cometTail(x: number, y: number, u: number): string {
+  const { a0, w0, ac, wc, a1, w1 } = COMET.plume;
+  const k = w1 * NOSE;
+  const at = (a: number, s: number) => `${round4(x + a * u)} ${round4(y + s * u)}`;
+  return `M ${at(a0, w0)} Q ${at(ac, wc)} ${at(a1, w1)} C ${at(a1 + k, w1)} ${at(a1 + k, -w1)} ${at(a1, -w1)} Q ${at(ac, -wc)} ${at(a0, -w0)} Z`;
 }
 
 /** The corners of an asteroid, seeded by its id so it is the same lump on

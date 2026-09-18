@@ -23,15 +23,21 @@
 // positions from placeConstellation and paint from paintFor, so the drawing
 // can change without touching them.
 //
-// Every body is drawn the same way: flat shapes, no gradient anywhere, and
-// two tones only. One is the standing's own color, so the body says how it
-// is going, and the other is either the night behind it (--sky-ground-0,
-// for a shadow) or starlight (--sky-star, for the planet's ring and the
-// comet's tail). That is what keeps six bodies looking like one sky.
+// Every body is drawn from flat shapes and two tones only. One is the
+// standing's own color, so the body says how it is going, and the other is
+// either the night behind it (--sky-ground-0, for a shadow) or starlight
+// (--sky-star, for the planet's ring and the comet's tail). That is what
+// keeps six bodies looking like one sky.
+//
+// The comet's tail is the one thing with a gradient on it (SAK-473), and it
+// is a fill, not a filter: nothing is blurred and nothing is drawn off
+// screen. It is one `linearGradient` for a whole SVG, however many comets
+// are up there, because every tail is drawn along +x inside a group that
+// turns it. See `SkyDefs`.
 
-import { cloneElement, type ReactElement, type ReactNode } from "react";
+import { cloneElement, createContext, useContext, useId, type ReactElement, type ReactNode } from "react";
 
-import { ASTEROID, asteroidShape, BINARY, bodyRadius, COMET, cometAway, MOON, paintFor, placeConstellation, PLANET, STAR_RADIUS, TONIGHT_HALO, linePaintFor, type Body, type ConstellationLayout, type Paint, type StarLook, type StarRole } from "@/sky/lib/constellation";
+import { ASTEROID, asteroidShape, BINARY, bodyRadius, COMET, cometAway, cometTail, cometTurn, MOON, paintFor, placeConstellation, PLANET, STAR_RADIUS, TONIGHT_HALO, linePaintFor, type Body, type ConstellationLayout, type Paint, type StarLook, type StarRole } from "@/sky/lib/constellation";
 
 export type { Paint, StarLook };
 
@@ -72,6 +78,43 @@ interface BodyProps {
 /** How much a muted star is dimmed to. */
 const MUTED = 0.12;
 
+/** Which gradient a tail is filled with, told to the bodies inside one SVG
+ * by the `SkyDefs` that declared it. */
+const TailGradient = createContext("");
+
+/** The comet's tail fades out along its length instead of ending at an edge.
+ * Three stops: bright where it leaves the head, half that at the waist, and
+ * nothing at the nose, so there is no line anywhere for the eye to catch.
+ * `objectBoundingBox` and x1 to x2 along the local +x means it runs the
+ * length of whatever tail it is filling, at whatever scale, and the group
+ * that turns the tail turns the gradient with it. */
+const TAIL_STOPS = [
+  { offset: 0, opacity: 0.5 },
+  { offset: 0.45, opacity: 0.26 },
+  { offset: 1, opacity: 0 },
+];
+
+/** The defs one SVG of sky needs, and the children drawn against them. One
+ * per `<svg>`, not one per comet and not one per page: the id comes from
+ * `useId`, so two skies side by side declare two gradients and each fills
+ * its own comets. `useId` spells its ids with punctuation that has no
+ * business in a `url(#...)`, so only the letters and digits are kept. */
+export function SkyDefs({ children }: { children: ReactNode }) {
+  const id = `sky-tail-${useId().replace(/[^a-zA-Z0-9]/g, "")}`;
+  return (
+    <TailGradient.Provider value={id}>
+      <defs>
+        <linearGradient id={id} gradientUnits="objectBoundingBox" x1="0" y1="0" x2="1" y2="0">
+          {TAIL_STOPS.map((s) => (
+            <stop key={s.offset} offset={s.offset} stopColor="var(--sky-star)" stopOpacity={s.opacity} />
+          ))}
+        </linearGradient>
+      </defs>
+      {children}
+    </TailGradient.Provider>
+  );
+}
+
 /** Every element one body is drawn from, in order: the halo and glow under
  * it, the body itself, the ring over the top because it is a mark and has
  * to be seen.
@@ -85,8 +128,10 @@ const MUTED = 0.12;
  * lets the caller tell a star that is ONE element from one that is several
  * and skip the wrapper when there is nothing to wrap. Nothing about the
  * drawing changes: an SVG group with no attributes on it is a no-op. */
-function bodyParts({ id, x, y, body, role, paint, glowOpacity, u, away }: BodyProps): ReactElement[] {
+function bodyParts({ id, x, y, body, role, paint, glowOpacity, u, away, tailGradient }: BodyProps & { tailGradient: string }): ReactElement[] {
   const reach = bodyRadius(body, role) * u;
+  // which way the tail points, read by the tail and by the halo lying along it
+  const points = body === "comet" ? away ?? cometAway(id, 0, 0) : null;
   const glow = (r: number) => (paint.glow > 0 ? [<circle key="glow" cx={x} cy={y} r={r + paint.glow * u} fill={paint.fill} opacity={glowOpacity} />] : []);
   const figure = (): ReactElement[] => {
     switch (body) {
@@ -121,15 +166,18 @@ function bodyParts({ id, x, y, body, role, paint, glowOpacity, u, away }: BodyPr
         ];
       }
       case "comet": {
-        const head = COMET.head * u, tail = COMET.tail * u;
-        const [dx, dy] = away ?? cometAway(id, 0, 0);
-        // the head in its standing's color, and a tail tapering from the
-        // head's two sides to a point out in the dark, in starlight like
-        // the planet's ring. The tail is drawn first, so the head stays the
-        // brightest thing about it.
-        const side = { x: -dy * head, y: dx * head };
+        const head = COMET.head * u;
+        // A small bright head in its standing's color, and one tail behind
+        // it: narrow where it leaves the head, spreading gently, ending in a
+        // round nose, and fading to nothing along its length through the
+        // gradient. Nothing about it has a hard edge, which is the whole
+        // point: the old tail was a flat triangle in starlight and read as a
+        // wedge stuck on a disc (SAK-473). Drawn before the head, so the
+        // head stays the brightest thing about it.
         return [
-          <path key="tail" d={`M ${x + side.x} ${y + side.y} L ${x + dx * tail} ${y + dy * tail} L ${x - side.x} ${y - side.y} Z`} fill="var(--sky-star)" opacity={0.55} />,
+          <g key="tail" transform={`rotate(${cometTurn(points!)} ${x} ${y})`}>
+            <path d={cometTail(x, y, u)} fill={`url(#${tailGradient})`} />
+          </g>,
           ...glow(head),
           <circle key="head" cx={x} cy={y} r={head} fill={paint.fill} />,
         ];
@@ -159,9 +207,23 @@ function bodyParts({ id, x, y, body, role, paint, glowOpacity, u, away }: BodyPr
       }
     }
   };
+  // The halo is a circle of the body's own reach, except round a comet,
+  // where the reach is the tip of a long thin tail whose far half has faded
+  // away: that circle was a big empty bubble with the comet in one corner of
+  // it. A comet wears an ellipse lying along itself instead, which holds the
+  // light against the shape and still reads as light rather than as a shape
+  // of its own. The hit area is the circle either way (SAK-473).
+  const halo = (): ReactElement[] => {
+    if (!paint.halo) return [];
+    const { fill, opacity, grow } = paint.halo;
+    if (!points) return [<circle key="halo" cx={x} cy={y} r={reach + grow * u} fill={fill} opacity={opacity} />];
+    const [dx, dy] = points;
+    const mx = x + dx * COMET.halo.along * u, my = y + dy * COMET.halo.along * u;
+    return [<ellipse key="halo" cx={mx} cy={my} rx={(COMET.halo.rx + grow) * u} ry={(COMET.halo.ry + grow) * u} transform={`rotate(${cometTurn(points)} ${mx} ${my})`} fill={fill} opacity={opacity} />];
+  };
   const inner = figure();
   return [
-    ...(paint.halo ? [<circle key="halo" cx={x} cy={y} r={reach + paint.halo.grow * u} fill={paint.halo.fill} opacity={paint.halo.opacity} />] : []),
+    ...halo(),
     // the body's own opacity wraps the body and nothing else, so a halo
     // under it and a ring over it keep theirs
     ...(paint.opacity === 1 ? inner : [<g key="body" opacity={paint.opacity}>{inner}</g>]),
@@ -172,7 +234,8 @@ function bodyParts({ id, x, y, body, role, paint, glowOpacity, u, away }: BodyPr
 /** One body at a point: a star's dot, a planet's disc and ring, an
  * asteroid's lump, a binary's two suns. */
 function BodyFigure(props: BodyProps) {
-  return <>{bodyParts(props)}</>;
+  const tailGradient = useContext(TailGradient);
+  return <>{bodyParts({ ...props, tailGradient })}</>;
 }
 
 /** The room a glyph needs round its center: its body, plus the widest mark
@@ -189,9 +252,13 @@ function glyphReach(look: StarLook, paint: Paint): number {
 export function StarGlyph({ look, size = 22, className = "" }: { look: StarLook; size?: number; className?: string }) {
   const paint = paintFor(look);
   const reach = glyphReach(look, paint);
+  const body = look.body ?? "star";
+  const figure = <BodyFigure id={look.role} x={0} y={0} body={body} role={look.role} paint={paint} glowOpacity={0.16} u={1} />;
   return (
     <svg aria-hidden viewBox={`${-reach} ${-reach} ${reach * 2} ${reach * 2}`} width={size} height={size} className={`shrink-0 ${className}`}>
-      <BodyFigure id={look.role} x={0} y={0} body={look.body ?? "star"} role={look.role} paint={paint} glowOpacity={0.16} u={1} />
+      {/* the gradient only where something is filled with it: a legend is a
+          row of small glyphs and all but one of them are flat shapes */}
+      {body === "comet" ? <SkyDefs>{figure}</SkyDefs> : figure}
     </svg>
   );
 }
@@ -199,6 +266,7 @@ export function StarGlyph({ look, size = 22, className = "" }: { look: StarLook;
 /** The lines and stars of one constellation. Put it inside an <svg>. */
 export function ConstellationFigure({ layout, cx, cy, r, lookOf, unit = 1, dots = true, fog = false, children }: ConstellationProps) {
   const u = Math.max(0.7, Math.min(1.8, unit));
+  const tailGradient = useContext(TailGradient);
   const stars = placeConstellation(layout, cx, cy, r);
   const looks = new Map(stars.map((s) => [s.id, lookOf(s.id)] as const));
   const gone = (id: string) => looks.get(id)?.hidden === true;
@@ -233,7 +301,7 @@ export function ConstellationFigure({ layout, cx, cy, r, lookOf, unit = 1, dots 
             // a comet's tail points away from the middle of its own
             // constellation; nothing else reads this
             const away = body === "comet" ? cometAway(s.id, s.px - cx, s.py - cy) : undefined;
-            const parts = bodyParts({ id: s.id, x: s.px, y: s.py, body, role: look.role, paint, glowOpacity: look.emphasis ? 0.22 : 0.16, u, away });
+            const parts = bodyParts({ id: s.id, x: s.px, y: s.py, body, role: look.role, paint, glowOpacity: look.emphasis ? 0.22 : 0.16, u, away, tailGradient });
             const mark = { "data-star": s.id, "data-body": body };
             // A star that is one element says which star it is on that
             // element, rather than in a group around it. That is the whole
