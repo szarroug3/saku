@@ -198,7 +198,7 @@ const HANDAKUTEN = "゜";
  * katakana extension row, this is the sentence that becomes a page.
  */
 const SMALL_VOWEL_NOTE =
-  "ぁぃぅぇぉ (and ァィゥェォ) shrink the same way, but they fuse a VOWEL onto the kana in front of them, to write sounds Japanese does not natively have: ファ fa, ティ ti, ウェ we. You will see them almost only in katakana loanwords, so they are worth recognizing when they turn up rather than learning as a set.";
+  "ぁぃぅぇぉ (and ァィゥェォ) shrink the same way, but they fuse a VOWEL onto the kana in front of them, to write sounds Japanese does not natively have: ファ fa, ティ ti, ウェ we. You will see them almost only in katakana loanwords. Recognize them when they turn up; there is no need to learn them as a set.";
 
 /**
  * The nine marks, in the order the curriculum meets them.
@@ -225,7 +225,7 @@ const RAW_MARKS: readonly Mark[] = [
     id: "handakuten",
     name: "Handakuten",
     glyph: HANDAKUTEN,
-    summary: "A small circle that turns h into p, and goes on no other row.",
+    summary: "A small circle that turns h into p. It goes on no other row.",
     searchAlso: [HANDAKUTEN, "handakuten", "maru", "small circle", "p sounds"],
     intros: [DAKUTEN_H, DAKUTEN_K],
     rows: DAKUTEN_ROWS.filter((r) => r.mark === HANDAKUTEN),

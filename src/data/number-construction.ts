@@ -462,7 +462,7 @@ const COUNTER_SPECS: readonly CounterSpec[] = [
     sound: [
       {
         lead: "Three counts are their own words.",
-        text: "一人 is ひとり, 二人 is ふたり, and 四人 is よにん, never よんにん. Everything else is the plain number plus にん.",
+        text: "一人 is ひとり, 二人 is ふたり and 四人 is よにん. よにん is the reading even though 四 is usually よん. Everything else is the plain number plus にん.",
       },
     ],
   },
@@ -610,7 +610,7 @@ const COUNTER_SPECS: readonly CounterSpec[] = [
     sound: [
       {
         lead: "It hardens after 1, 6, 8 and 10, and VOICES after 3.",
-        text: "階 becomes a small っ plus かい there, so 一階 is いっかい and 八階 is はっかい, exactly like 回 (times). But 三階 is さんがい, not さんかい: after 3 it voices instead of just hardening. 回 has no such voicing (三回 stays さんかい), so 階 needs its own rule even though the two sound identical at every other count.",
+        text: "階 becomes a small っ plus かい there, so 一階 is いっかい and 八階 is はっかい, exactly like 回 (times). But 三階 is さんがい: after 3 it voices instead of hardening. 回 has no such voicing (三回 stays さんかい), so 階 needs its own rule even though the two sound identical at every other count.",
       },
     ],
   },
@@ -622,7 +622,7 @@ const COUNTER_SPECS: readonly CounterSpec[] = [
     sound: [
       {
         lead: "It never shifts.",
-        text: "円 begins with え, a vowel, so it stays えん after every number: 一円 is いちえん and 三円 is さんえん. Read every count as the plain number plus えん, the same rule at any scale, so 1000円 is せんえん.",
+        text: "円 begins with え, a vowel, so it stays えん after every number: 一円 is いちえん and 三円 is さんえん. Read every count as the plain number plus えん. The rule is the same at any scale, so 1000円 is せんえん.",
       },
     ],
     // 1000円 is the real vocab.json duplicate (COUNTER_VOCAB_DUPLICATE_KEBS)
@@ -650,7 +650,7 @@ const COUNTER_SPECS: readonly CounterSpec[] = [
     sound: [
       {
         lead: "4, 7 and 9 read differently.",
-        text: "四時 is よじ, its own irregular reading, not よん plus じ. 七時 is しちじ and 九時 is くじ, the same alternate reading of 7 and 9 that 〜月 uses. Every other count, including 十一時 and 十二時, is the plain number plus じ.",
+        text: "四時 has its own irregular reading, よじ, instead of よん plus じ. 七時 is しちじ and 九時 is くじ, the same alternate reading of 7 and 9 that 〜月 uses. Every other count, including 十一時 and 十二時, is the plain number plus じ.",
       },
     ],
   },

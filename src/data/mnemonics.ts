@@ -1357,7 +1357,7 @@ const AUTHORED_MNEMONICS: Record<MnemonicKey, Omit<Mnemonic, "image">> = {
       { text: "ji, clouds drifting all around it." },
     ],
     example: { word: "ふね", reading: "fune", gloss: "boat", hitIndex: 0 },
-    approximate: "Not a hard English “f”, but a soft breath between f and h.",
+    approximate: "Say it as a soft breath between f and h. An English “f” is too hard.",
   },
 
   フ: {
@@ -1378,7 +1378,7 @@ const AUTHORED_MNEMONICS: Record<MnemonicKey, Omit<Mnemonic, "image">> = {
       { text: "ji beneath a bar of clouds." },
     ],
     example: { word: "フルーツ", reading: "furuutsu", gloss: "fruit", hitIndex: 0 },
-    approximate: "Not a hard English “f”, but a soft breath between f and h.",
+    approximate: "Say it as a soft breath between f and h. An English “f” is too hard.",
   },
 
   へ: {

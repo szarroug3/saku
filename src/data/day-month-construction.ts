@@ -147,7 +147,7 @@ const DAY_IRREGULAR_GROUP: IntroCountGroup = {
 const DAY_BODY: IntroPara[] = [
   {
     lead: "The 1st through the 10th are their own words.",
-    text: "ついたち, ふつか, みっか, and so on through とおか are memorized outright, with no rule joining them to the number, the same way ひとつ through とお are for 〜つ.",
+    text: "ついたち, ふつか, みっか and so on through とおか are memorized outright. No rule joins them to the number. ひとつ through とお work the same way for 〜つ.",
   },
   {
     lead: "11th and up: put the number in front of にち.",

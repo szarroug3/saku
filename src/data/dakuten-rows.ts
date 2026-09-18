@@ -103,7 +103,7 @@ const SPECS: ConvSpec[] = [
     from: "s",
     to: "z",
     callout:
-      'The odd one stays odd. し is "shi", not "si", so its voiced twin じ is "ji", not "zi".',
+      'し already breaks the pattern by being "shi" instead of "si". Its voiced twin does the same: じ is "ji" where the pattern would give "zi".',
   },
   {
     conv: "d",
@@ -124,7 +124,7 @@ const SPECS: ConvSpec[] = [
     // No bare ゛ in this sentence on purpose: a lone mark inside a line of body
     // text is a speck, and this is the one call-out that must not be skimmed.
     aside:
-      "Same row you just marked with the two dashes. The h row is the only one that takes both. Two dashes make it b, a small circle makes it p, and no other row in the language takes the circle.",
+      "Same row you just marked with the two dashes. Two dashes make it b, and a small circle makes it p. The h row is the only row in the language that takes the circle.",
   },
 ];
 

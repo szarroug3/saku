@@ -970,7 +970,7 @@ export const PUNCTUATION: PhaseIntro = {
     },
   ],
   punctuation: [
-    { mark: "。", name: "kuten", english: "full stop", note: "Ends a sentence. A small hollow circle, not a dot." },
+    { mark: "。", name: "kuten", english: "full stop", note: "Ends a sentence. The mark is a small circle with a hollow middle." },
     { mark: "、", name: "touten", english: "comma", note: "Separates parts of a sentence." },
     { mark: "「 」", name: "kagi", english: "quotation marks", note: "Wrap speech and quotes." },
     { mark: "『 』", name: "double kagi", english: "quotation marks", note: "A quote inside a quote, and the titles of works." },
