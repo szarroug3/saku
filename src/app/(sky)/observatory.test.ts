@@ -134,10 +134,13 @@ describe("the sentence rules on offer", () => {
   // picked tonight.
   describe("a type the learner cannot start yet", () => {
     const simple = "writing-rule:sentence-rule-simple";
+    /** What the page does with the section: a thing is drawn when the cart
+     * can take it and everything it waits on is learned or picked. */
     const open = (history: HistoryFile, picks: readonly string[]) => {
-      const o = offerings(history, NOW);
+      const { o, s } = section(history);
       const graph = buildGraph([...o.items.values()]);
-      return pickState(graph, simple, o.learned, picks).available;
+      const waits = s.needs?.[simple] ?? [];
+      return waits.every((id) => o.learned.has(id) || picks.includes(id)) && pickState(graph, simple, o.learned, picks).available;
     };
     /** は met, which is how the learner's own sky says it: the same reading
      * the section uses to drop a pattern it no longer offers. */
@@ -153,7 +156,12 @@ describe("the sentence rules on offer", () => {
       const { s, items } = section(emptyHistory());
       const type = items.at(-1)!;
       assert.equal(type.id, simple);
-      assert.deepEqual(type.components, ["grammar:wa", "grammar:ga"]);
+      assert.deepEqual(s.needs?.[simple], ["grammar:wa", "grammar:ga"]);
+      // and what it waits on is on the page to be picked
+      for (const id of s.needs![simple]) assert.ok(s.items.includes(id), `${id} is not offered`);
+      // the star itself is the same star for everybody: nothing about one
+      // learner's place in the order is hung on it
+      assert.equal(type.components, undefined);
       for (const text of [...(s.intro ? [s.intro] : []), ...(s.when ? [s.when] : [])]) {
         assert.ok(!/opens once/i.test(text), "no line saying what opens it");
       }
@@ -174,10 +182,10 @@ describe("the sentence rules on offer", () => {
     it("opens for good once the app's own rule opens it", () => {
       // the sample learner has met te-iru, one of the sequential type's
       // patterns, and the app's rule wants any one of them
-      const { items } = section(sampleHistory(NOW));
+      const { s, items } = section(sampleHistory(NOW));
       const type = items.at(-1)!;
       assert.equal(type.id, "writing-rule:sentence-rule-sequential");
-      assert.equal(type.components, undefined, "nothing left to wait on");
+      assert.deepEqual(s.needs, {}, "nothing left to wait on");
     });
   });
 

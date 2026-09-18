@@ -123,17 +123,21 @@ function tierOf(entryId: string) {
  *
  * The app's unlock rule is `sentenceTierBlock`, which wants ANY ONE of the
  * type's patterns. So a type with one of them already met waits on nothing,
- * and a type with none of them waits on all of them. They become the type's
- * prerequisites, which is what makes the tile disappear until every one of
- * them is learned or picked tonight: Sam, 2026-09-17, "don't show simple
- * until either both are learned or both are selected". Asking for all of
- * them is only ever stricter than the planner, so nothing is offered here
- * that a lesson would then refuse to build.
+ * and a type with none of them waits on all of them, which is what Sam asked
+ * for on 2026-09-17: "don't show simple until either both are learned or both
+ * are selected". Asking for all of them is only ever stricter than the
+ * planner, so nothing is offered here that a lesson would then refuse to
+ * build.
+ *
+ * This is the SECTION's, not the item's. A star's parts are the same for
+ * every learner (the home's catalogue is one shape of the sky shipped to
+ * everybody, and its graph is built once), so what one learner is still
+ * waiting on cannot be hung on the star.
  *
  * The grammar half of the rule is read straight off the patterns rather than
  * through `sentenceTierBlock`, which walks the whole sentence corpus per
- * tier: this runs for every sentence type on the Atlas's shelf, and "has the
- * learner met this pattern" is the same question the section itself asks.
+ * tier, and "has the learner met this pattern" is the same question the
+ * section itself asks of every row.
  */
 function waitingOn(entryId: string, history: HistoryFile, now: number): string[] {
   const tier = tierOf(entryId);
@@ -164,7 +168,7 @@ export interface Offerings {
  * pick by id. Apart from the sections so a caller that wants a few items
  * built the Observatory's way (practice's preview, SAK-382) does not walk
  * the whole sky and every section first. */
-function picker(sky: Pick<SkyItems, "items" | "add">, history: HistoryFile, now: number) {
+function picker(sky: Pick<SkyItems, "items" | "add">) {
   const { items, add } = sky;
 
   /** An app entry on offer: added with its parts, given the sky kind it is picked as. */
@@ -212,14 +216,8 @@ function picker(sky: Pick<SkyItems, "items" | "add">, history: HistoryFile, now:
       // bare particle is a moon and everything else is a comet (SAK-465), and
       // it says "particle" on every label it gets (SAK-464)
       case GRAMMAR_SUBJECT: return offer(entry, "grammar", isParticleEntry(entry.id) ? { particle: true, label: "particle" } : {});
-      // a sentence rule has no glyph of its own: its short label stands in, as
-      // on the app's tiles. The patterns it is still waiting on are its parts,
-      // so it is takeable exactly when all of them are learned or picked
-      case SENTENCE_RULE_KIND: {
-        const name = sentenceTierShortLabel(entry.name ?? entry.meanings[0] ?? entry.id);
-        const needs = waitingOn(entry.id, history, now).map((id) => offerPick(id)?.id).filter((id): id is string => !!id);
-        return offer(entry, "sentence", { english: name, glyph: name, ...(needs.length ? { components: needs } : {}) });
-      }
+      // a sentence rule has no glyph of its own: its short label stands in, as on the app's tiles
+      case SENTENCE_RULE_KIND: { const name = sentenceTierShortLabel(entry.name ?? entry.meanings[0] ?? entry.id); return offer(entry, "sentence", { english: name, glyph: name }); }
       case TRANSITIVITY_SUBJECT: { const p = pairForEntry(entry.id); return p ? offerPair(p, entry) : undefined; }
       case KEIGO_SUBJECT: { const set = keigoSetForEntry(entry.id); return set ? offerKeigo(set, entry) : undefined; }
       // a kana, a piece or a kanji picked on its own (the Atlas does): its own kind
@@ -261,7 +259,7 @@ export function hasOffer(entry: LibEntry): boolean {
  * did when every caller built the whole thing (SAK-382). */
 export function offerPicker(history: HistoryFile, now = Date.now()): Pick<Offerings, "items" | "offerPick"> {
   const sky = skyAdder(history, now);
-  const { offerPick } = picker(sky, history, now);
+  const { offerPick } = picker(sky);
   let whole: Offerings | undefined;
   return {
     items: sky.items,
@@ -285,7 +283,7 @@ export function offerings(history: HistoryFile, now = Date.now()): Offerings {
   const { items, met, add } = sky;
   const learned = new Set(met);
   const sections: ObservatorySection[] = [];
-  const { offer, offerPair, offerKeigo, offerPick } = picker(sky, history, now);
+  const { offer, offerPair, offerKeigo, offerPick } = picker(sky);
   const wordEntry = (keb: string): LibEntry | undefined => { const id = entryForGlyph(VOCAB_SUBJECT, keb); return id ? libEntry(id) : undefined; };
 
   // kana: one item per row of either script, the row's kana under it
@@ -353,13 +351,14 @@ export function offerings(history: HistoryFile, now = Date.now()): Offerings {
   //
   // A type the learner cannot start yet is NOT on the page (SAK-464). It used
   // to keep its place with a dim tile reading "Opens once you know は or が";
-  // Sam, 2026-09-17: "just let it open when it opens". The patterns it waits
-  // on are its parts (`waitingOn`), so the page drops the tile until every one
-  // of them is learned or picked tonight and brings it back the moment they
-  // are. The other half of the app's rule, too few sentences of that shape to
-  // build a lesson from, is nothing a pick can change, so such a type is left
-  // out here and the section ends on the patterns before it.
+  // Sam, 2026-09-17: "just let it open when it opens". The section says what
+  // the type waits on (`waitingOn`), and the page drops the tile until every
+  // one of those is learned or picked tonight, bringing it back the moment
+  // they are. The other half of the app's rule, too few sentences of that
+  // shape to build a lesson from, is nothing a pick can change, so such a type
+  // is left out here and the section ends on the patterns before it.
   const rules: string[] = [];
+  const needs: Record<string, readonly string[]> = {};
   let rulesMet = 0;
   for (const step of sentenceRuleOrder()) {
     const entry = libEntry(step.kind === "tier" ? markEntry(`sentence-rule-${step.id}`) : patternEntry(step.id));
@@ -374,9 +373,12 @@ export function offerings(history: HistoryFile, now = Date.now()): Offerings {
     const item = offerPick(entry.id);
     if (!item) continue;
     rules.push(item.id);
-    if (step.kind === "tier") break;
+    if (step.kind !== "tier") continue;
+    const waits = waitingOn(entry.id, history, now);
+    if (waits.length) needs[item.id] = waits;
+    break;
   }
-  sections.push({ id: "grammar", title: "Sentences", ...COPY.grammar, items: rules.slice(0, SHOW), show: Math.min(rules.length, SHOW), shut: afterKana, started: rulesMet > 0, complete: rules.length === 0 });
+  sections.push({ id: "grammar", title: "Sentences", ...COPY.grammar, items: rules.slice(0, SHOW), show: Math.min(rules.length, SHOW), needs, shut: afterKana, started: rulesMet > 0, complete: rules.length === 0 });
 
   // verb pairs: attached to the plain verb, with both members' kanji
   const pairs: string[] = [];

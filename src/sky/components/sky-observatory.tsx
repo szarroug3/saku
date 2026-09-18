@@ -45,6 +45,18 @@ export interface ObservatorySection {
    * type its rows lead up to (SAK-430), so it shows whole: cutting it one card
    * early would drop the very thing the order exists to reach. */
   show?: number;
+  /**
+   * What a listed thing is still waiting on, by its id: ids in this same
+   * page that have to be learned already or picked tonight before it can be
+   * taken (SAK-464). Until then it is not drawn at all, and it appears the
+   * moment they are all there. A pick that loses one of them is taken out
+   * with it.
+   *
+   * Here rather than on the item, as the parts of a word are: a star's parts
+   * are the same for every learner, and this is one learner's own place in
+   * the order.
+   */
+  needs?: Readonly<Record<string, readonly string[]>>;
   /** The whole section is waiting on something (kana, which every other
    * track is read through): it is not shown at all, heading included, and
    * the page says nothing about what would open it (Sam's call, 2026-09-04,
@@ -111,11 +123,26 @@ export function SkyObservatory({ data, cap = COMFORTABLE_PIECES, lessonHref, ini
   const summary = cartSummary(graph, picks, learned, cap);
   const over = summary.over > 0;
 
+  // What each thing on offer is still waiting on, over every section at once,
+  // since the picks are one cart (SAK-464).
+  const needs = useMemo(() => Object.assign({}, ...data.sections.map((s) => s.needs ?? {})) as Record<string, readonly string[]>, [data.sections]);
+  const waited = (id: string, chosen: readonly string[]) => (needs[id] ?? []).every((n) => learned.has(n) || chosen.includes(n));
+  /** The picks with whatever has lost what it was waiting on taken out, and
+   * whatever was waiting on THAT, down to nothing left to drop. `withoutPick`
+   * does the same for a pick's parts; this is the other half of it. */
+  const settled = (chosen: readonly string[]): readonly string[] => {
+    for (;;) {
+      const kept = chosen.filter((id) => waited(id, chosen));
+      if (kept.length === chosen.length) return kept;
+      chosen = kept;
+    }
+  };
+
   const toggle = (id: string) => {
     if (picks.includes(id)) {
       setUndo({ removed: id, before: picks });
-      setPicks(withoutPick(graph, picks, id, learned));
-    } else if (pickState(graph, id, learned, picks).available) {
+      setPicks(settled(withoutPick(graph, picks, id, learned)));
+    } else if (pickState(graph, id, learned, picks).available && waited(id, picks)) {
       setUndo(null);
       setPicks([...picks, id]);
     }
@@ -132,7 +159,7 @@ export function SkyObservatory({ data, cap = COMFORTABLE_PIECES, lessonHref, ini
   /** What a section lays out: what can be taken now, and nothing else. What
    * is waiting on something is not drawn at all, and comes back by itself
    * the moment the picks open it (SAK-464). */
-  const offered = (section: ObservatorySection) => section.items.filter((id) => graph.has(id) && !learned.has(id) && pickState(graph, id, learned, picks).available).slice(0, section.show ?? SHOWN);
+  const offered = (section: ObservatorySection) => section.items.filter((id) => graph.has(id) && !learned.has(id) && waited(id, picks) && pickState(graph, id, learned, picks).available).slice(0, section.show ?? SHOWN);
   /** A click on a card: shift picks everything from the last click to this
    * one within the section (a range, like files in a list); otherwise toggle. */
   const clickCard = (section: ObservatorySection, id: string, shift: boolean) => {
@@ -141,7 +168,7 @@ export function SkyObservatory({ data, cap = COMFORTABLE_PIECES, lessonHref, ini
     if (shift && from >= 0 && to >= 0 && from !== to) {
       const range = ids.slice(Math.min(from, to), Math.max(from, to) + 1);
       const next = [...picks];
-      for (const r of range) if (!next.includes(r) && pickState(graph, r, learned, next).available) next.push(r);
+      for (const r of range) if (!next.includes(r) && waited(r, next) && pickState(graph, r, learned, next).available) next.push(r);
       setUndo(null);
       setPicks(next);
     } else {
