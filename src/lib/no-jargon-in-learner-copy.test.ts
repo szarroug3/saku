@@ -86,10 +86,14 @@ const BANNED: ReadonlyArray<{ readonly word: RegExp; readonly say: string }> = [
   // "'land' is also jargon. maybe say 'be blunt or childish'" (Sam)
   { word: /\blands? as\b/i, say: 'say "is" or "sounds"' },
   // "Asked once you have met such a word." (SAK-452), in Practice
-  { word: /\b(meet it|have met|you will meet)\b/i, say: 'say "see", "seen" or "learn"' },
+  // and the wider net (Sam, 2026-09-17: "you meet this in a newspaper"): a
+  // learner never meets a word; strokes can still meet, and 会 still means to meet
+  { word: /\b(you|you'll|you will|learners?|beginners?|readers?) (meet|meets|met)\b|\b(meet|meets|met) (it|this|these|them|those|a word|the word|such)\b|\bhave met\b/i, say: 'say "see", "seen", "come across" or "learn"' },
   // "It comes in two registers" (SAK-452), on the keigo term page
   { word: /\bregisters?\b/i, say: 'say "levels", "kinds" or "forms"' },
   { word: /\bdistractors?\b/i, say: 'say "the other choices"' },
+  // "'reaches for' and 'reach for' are another one of those jargon phrases" (Sam, SAK-470's draft)
+  { word: /\breach(es|ed|ing)? for\b/i, say: 'say what happens: "uses", "starts with"' },
 ];
 
 /** `file:text` for the few places a banned word is right. Nothing here is
