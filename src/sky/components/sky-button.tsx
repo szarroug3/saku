@@ -63,19 +63,31 @@ export function SkyButton({ variant = "solid", href, onClick, disabled = false, 
   return <button type="button" onClick={onClick} disabled={disabled} title={title} className={cls}>{children}</button>;
 }
 
+/** Coral for the one that takes something away (Delete); accent for the one
+ * that opens somewhere else, which is what every other link in the Sky's prose
+ * is colored (the Particle page's rows, SAK-466). */
+type SkyTextTone = "ink" | "coral" | "accent";
+
+const TEXT_TONE: Record<SkyTextTone, string> = {
+  ink: "underline hover:text-sky-ink",
+  coral: "underline hover:text-sky-coral",
+  accent: "text-sky-accent underline hover:text-sky-ink",
+};
+
 interface SkyTextButtonProps {
   onClick: () => void;
-  /** Coral for the one that takes something away: Delete. */
-  tone?: "ink" | "coral";
+  tone?: SkyTextTone;
+  /** What the press does, for a button whose words alone do not say: the
+   * particle は, which opens は's page. */
+  title?: string;
   className?: string;
   children: ReactNode;
 }
 
 /** An underlined word inside a line of text: Clear, Undo, Rename, Delete.
  * Not a button in a row of buttons, which is `SkyButton`. */
-export function SkyTextButton({ onClick, tone = "ink", className = "", children }: SkyTextButtonProps) {
-  const cls = tone === "coral" ? "underline hover:text-sky-coral" : "underline hover:text-sky-ink";
-  return <button type="button" onClick={onClick} className={`${cls}${className ? ` ${className}` : ""}`}>{children}</button>;
+export function SkyTextButton({ onClick, tone = "ink", title, className = "", children }: SkyTextButtonProps) {
+  return <button type="button" onClick={onClick} title={title} className={`${TEXT_TONE[tone]}${className ? ` ${className}` : ""}`}>{children}</button>;
 }
 
 interface RoundButtonProps {

@@ -9,6 +9,7 @@
 
 import { KANA_SUBJECT } from "@/data/characters";
 import { GRAMMAR_SUBJECT } from "@/data/grammar";
+import { PARTICLE_ROWS } from "@/data/grammar/particles";
 import { KANJI_SUBJECT, kanjiRow } from "@/data/kanji";
 import { builtPieces } from "@/data/kanji-etymology";
 import { KEIGO_SUBJECT } from "@/data/keigo";
@@ -37,7 +38,7 @@ import type { EntryId } from "@/types/facts";
 import type { HistoryFile } from "@/types/store";
 
 import { standingFor } from "./learner";
-import { conceptTwin, teachFor } from "./teach";
+import { conceptTwin, PARTICLE_TERM, teachFor } from "./teach";
 import { hasOffer, offerings, offerPicker, pickFacts, TSU_RULE, type Offerings } from "./observatory";
 
 /** The shelves, in the order the app teaches the subjects. Every cut of
@@ -270,6 +271,11 @@ export function atlasEntryFromHistory(history: HistoryFile, id: string, now = Da
     // the registers, explained once, as the app's keigo page links out to
     group("Read about it", [readAbout("keigo-registers")]);
   }
+  if (item.kind === "grammar" && PARTICLE_ROWS.some((p) => p.entry === item.id)) {
+    // a particle's page reaches the page that lists them all, the same way a
+    // keigo set reaches the registers (SAK-466)
+    group("Read about it", [termEntry(PARTICLE_TERM)]);
+  }
   if (item.kind === "term") {
     // a term that carries a concept links where the concept did
     const twin = TERMS.find((x) => termEntry(x.id) === item.id);
@@ -281,10 +287,15 @@ export function atlasEntryFromHistory(history: HistoryFile, id: string, now = Da
     if (concept?.related?.length) group("Read about it", concept.related.map(readAbout));
   }
 
-  // a word's kind chip opens the page that explains its group, so that page
-  // travels with the entry: the panel picks by id out of what it has been
-  // given, and an id it has never seen selects nothing
+  // a word's kind chip opens the page that explains its group, and a row of a
+  // table that opens one opens it the same way (the Particle page's particles),
+  // so those pages travel with the entry: the panel picks by id out of what it
+  // has been given, and an id it has never seen selects nothing
   const teach = teachFor(item);
-  const alsoSent = teach?.wordKind ? [o.offerPick(teach.wordKind.readAbout)?.id].filter((x): x is string => !!x) : [];
+  const reachable = [
+    ...(teach?.wordKind ? [teach.wordKind.readAbout] : []),
+    ...(teach?.pages ?? []).flatMap((p) => p.tables ?? []).flatMap((t) => t.opens ?? []).filter((x): x is string => !!x),
+  ];
+  const alsoSent = reachable.map((id) => o.offerPick(id)?.id).filter((x): x is string => !!x);
   return { id: item.id, items: closure(o, [item.id, ...alsoSent, ...related.flatMap((g) => g.items.map((x) => x.id))]), teach, related };
 }

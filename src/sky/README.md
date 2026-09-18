@@ -6148,3 +6148,25 @@ The 〜は card read 〜は, then "marks the topic", then the heading "〜は: M
 ## A page's eyebrow does not repeat the glyph the card leads with (2026-09-17, SAK-464)
 
 With the heading gone, the 〜は page still opened with a small "〜は" over nothing, a third copy of the character the card already leads with in the biggest type it has. A page named after the thing itself drops its own eyebrow, which the card did already for a lone page named after the meaning. The pager pill above keeps the name, so a card with several pages still says which one is showing.
+
+## The Particle page is every particle Saku teaches (2026-09-17, SAK-466)
+
+The Library's Particle term was two sentences about what a particle is, a few inches from a Grammar shelf that already teaches seventeen of them one page at a time. The app knew the set and never said it. The definition stays where it was, and the page now ends with the whole list: the particle, what the recipe says it does, the sentence that particle's own page shows, and the English of it, with the particle picked out in the accent inside the sentence. Each row's particle is the link to its page.
+
+**The list is the recipes, not a list of them.** `src/data/grammar/particles.ts` names which recipe ids are particles, in the order the page reads them, and reads everything else off the recipe: the pattern, the meaning line, the primary recipe of the written pattern (which is the one page that pattern has, so から's row opens the page holding both "because" and "from"), and the sentence, through `sentenceExampleFor` in `auto-page.ts`, which is the same lookup the particle's own page makes. Nothing on the page is retyped, so nothing can drift.
+
+**Why a named list.** "A recipe whose pattern is 〜 and one kana attached to a noun unchanged" sounds like it finds the particles and does not: it also finds 〜だ and 〜です, which are the copula, and it misses 〜ね and 〜よ, which keep the だ in front of a noun (学生だね). No test of shape separates a particle from a copula, because the difference is what the word is and not how it attaches. So membership is named once and the copulas are named beside it with their reason.
+
+**One list, two readers.** `src/lib/grammar/questions.ts` needed the same answer for the opposite purpose: a particle CHOICE is the one question the app must never ask (see that file's header on は/が). It held its own copy of the ids. It imports these now, so the page and the selection gate cannot disagree about what a particle is, and its `PARTICLE_IDS` is the particles plus the copulas exactly as before.
+
+**A table row can open a page.** `TeachTable` gained `opens`, one entry id per row. The first cell of such a row is the link, drawn by `SkyTextButton` in a new accent tone, and `Table` takes the `onOpen` that opens it. The Atlas passes its own `onRead`, which is how the word-kind chip already opens the page explaining a verb's group; the lesson and the quiz's reveal pass none and those rows are the same text with nothing clickable in them. `atlasEntryFromHistory` sends every page a row opens along with the term, the same way it already sent the word-kind page, so the click has something to select.
+
+**Reaching it.** No kind label is a link anywhere in the Sky: `KIND_LABEL` is drawn as an `Eyebrow` on the Atlas card, the tooltip, the Observatory tile and the lesson rail, and none of the four is a button. So no label was made one here. The link that does exist is the "Read about it" group on an entry, which a keigo set already uses to reach the registers, and a particle's own page now uses to reach this one.
+
+**The reading note.** は said "wa" and へ said "e" are `PARTICLE_RULE`'s own three paragraphs, the card a learner meets on the h-h row, under the heading "How they are read". Its fourth paragraph is about when the lesson teaches the rule, which a reference page opened on purpose does not need.
+
+**Four columns in a panel that opens narrower than that.** The table scrolls sideways there, which is what `Table` already does with a wide table, and the widen control shows the whole of it. Putting the sentence and its English in one cell instead was tried and measured and is worse: the column still does not fit, and every row then wraps to three or four lines.
+
+**Two things worth knowing about the rows.** まで and までに show the same sentence, because that is the sentence each of their own pages shows. から, と, しか〜ない and って carry the recipe's own X placeholder in their meaning line ("from X"), which is the wording the rest of the app uses for them.
+
+**The gates.** `npx tsc --noEmit` and `npx eslint src e2e scripts` clean. 4,144 unit tests, 4,143 pass and 1 skipped, with eleven new ones: six on the list itself and five on the page. 67 e2e pass, one of them new. `scripts/unreachable.mjs --list` at zero, `scripts/unused-exports.mjs` at zero on both lists, and `scripts/button-centering.mjs` at zero over 1px across 7 pages, plus the seventeen row links measured at 0.12px off their own center.

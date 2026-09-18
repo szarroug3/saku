@@ -151,6 +151,15 @@ export interface Term {
  * match for `particle` and is not one: it teaches how は, へ and を are READ when
  * they do that job, which is a fact about three kana, and it never says what a
  * particle is.
+ *
+ * PARTICLE IS STILL CARDLESS AND IS NO LONGER ONLY ITS DEFINITION (SAK-466).
+ * The Grammar shelf already teaches seventeen particles one page at a time, so
+ * the app could say which they are and did not. Its page now ends with all of
+ * them: the particle, what the recipe says it does, the sentence that
+ * particle's own page shows, and a link to that page, built from the recipes in
+ * src/data/grammar/particles.ts and drawn in src/app/(sky)/teach.ts. It is not
+ * a card, because nothing teaches this list; it is the app reading its own
+ * tables back.
  */
 export const TERMS: readonly Term[] = [
   {

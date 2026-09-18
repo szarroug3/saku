@@ -4,7 +4,7 @@
 // Atlas shows the same pages as reference. One renderer, so the two can
 // never drift.
 
-import { SkyChip } from "@/sky/components/sky-button";
+import { SkyChip, SkyTextButton } from "@/sky/components/sky-button";
 import { Eyebrow } from "@/sky/components/sky-card";
 import { Mixed } from "@/sky/components/mixed-text";
 import { SkyBox } from "@/sky/components/sky-panel";
@@ -97,8 +97,13 @@ function Formula({ formula }: { formula: TeachFormula }) {
   );
 }
 
-/** One table of the teaching, with its heading, instruction and formula. */
-export function Table({ table }: { table: TeachTable }) {
+/** One table of the teaching, with its heading, instruction and formula.
+ *
+ * `onOpen` is what a row's own page is opened with, for a table whose rows each
+ * have one (`opens`). A surface that has nowhere to send a click passes none,
+ * and the rows are then the same text with nothing clickable in them, which is
+ * the same rule the word-kind chip follows. */
+export function Table({ table, onOpen }: { table: TeachTable; onOpen?: (id: string) => void }) {
   const formulas = table.formula ? (Array.isArray(table.formula) ? table.formula : [table.formula]) as readonly TeachFormula[] : [];
   return (
     <SkyBox>
@@ -111,16 +116,26 @@ export function Table({ table }: { table: TeachTable }) {
             <tr>{table.heads.map((h, i) => <th key={i} className="border-b border-sky-line pb-1 pr-3 text-left text-[10.5px] font-semibold uppercase tracking-[0.08em] text-sky-muted">{h}</th>)}</tr>
           </thead>
           <tbody>
-            {table.rows.map((row, r) => (
+            {table.rows.map((row, r) => {
+              const opens = table.opens?.[r];
+              return (
               <tr key={r}>
                 {row.map((cell, c) => {
                   const plain = cell.map((x) => x.text).join("");
                   // short cells hold their line and the table scrolls sideways in
                   // a narrow panel; a long note wraps at a readable measure
-                  return <td key={c} className={`py-1 pr-3 align-top ${plain.length > 18 ? "min-w-[18ch]" : "whitespace-nowrap"}`}><Sound line={cell} /></td>;
+                  const line = <Sound line={cell} />;
+                  return (
+                    <td key={c} className={`py-1 pr-3 align-top ${plain.length > 18 ? "min-w-[18ch]" : "whitespace-nowrap"}`}>
+                      {c === 0 && opens && onOpen
+                        ? <SkyTextButton tone="accent" title={`Read about ${plain}`} onClick={() => onOpen(opens)} className="inline-flex items-center">{line}</SkyTextButton>
+                        : line}
+                    </td>
+                  );
                 })}
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -132,7 +147,7 @@ export function Table({ table }: { table: TeachTable }) {
 
 /** One page of a star taught over several: the eyebrow, the title, the hook
  * to keep in mind, the prose, the formula and tables, the worked examples. */
-export function TeachPageView({ page, alone = false }: { page: TeachPage; alone?: boolean }) {
+export function TeachPageView({ page, alone = false, onOpen }: { page: TeachPage; alone?: boolean; onOpen?: (id: string) => void }) {
   return (
     <div className={alone ? "" : "mt-4 border-t border-sky-line pt-4"}>
       {page.eyebrow && <Eyebrow>{page.eyebrow}</Eyebrow>}
@@ -145,7 +160,7 @@ export function TeachPageView({ page, alone = false }: { page: TeachPage; alone?
       {page.formula && <div className="mt-3"><Formula formula={page.formula} /></div>}
       {page.tables && page.tables.length > 0 && (
         <div className="mt-4 flex flex-col gap-3">
-          {page.tables.map((t, i) => <Table key={i} table={t} />)}
+          {page.tables.map((t, i) => <Table key={i} table={t} onOpen={onOpen} />)}
         </div>
       )}
       {page.after && page.after.length > 0 && (

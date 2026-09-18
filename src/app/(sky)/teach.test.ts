@@ -12,6 +12,8 @@ import { describe, it } from "node:test";
 
 import { grammarConceptEntry } from "@/data/grammar-concepts";
 import { CURRICULUM_LESSONS } from "@/data/grammar/lessons";
+import { PARTICLE_ROWS } from "@/data/grammar/particles";
+import { termEntry } from "@/data/terms";
 import { emptyHistory } from "@/lib/history-ops";
 import { libEntry } from "@/lib/library/entries";
 import type { EntryId } from "@/types/facts";
@@ -300,5 +302,55 @@ describe("a rule's table heads its column of words with the kind of word it hold
       assert.ok(t.heads.includes("Noun"), `${where} does not name its nouns`);
       assert.ok(!t.heads.includes("Verb"), `${where} calls its nouns verbs`);
     }
+  });
+});
+
+// ===========================================================================
+// SAK-466: the Particle page is the whole list of them.
+//
+// The list is built from the recipes, so what is worth testing is not what it
+// says but that it stays the recipes: a row per particle, in their own words,
+// each row opening a page that exists and that was sent along with the term so
+// the click has somewhere to go.
+// ===========================================================================
+
+describe("the Particle page lists every particle Saku teaches", () => {
+  const PARTICLE = termEntry("particle");
+  const entry = () => atlasEntryFromHistory(emptyHistory(), PARTICLE, NOW);
+  const table = () => (entry()?.teach?.pages ?? []).flatMap((p) => p.tables ?? [])[0];
+  const cell = (line: ReadonlyArray<{ text: string }>) => line.map((run) => run.text).join("");
+
+  it("has a row per particle, once each, in the recipes' own words", () => {
+    const t = table();
+    assert.ok(t, "the Particle page has no table");
+    assert.deepEqual(t.rows.map((row) => cell(row[0])), PARTICLE_ROWS.map((p) => p.particle));
+    assert.deepEqual(t.rows.map((row) => cell(row[1])), PARTICLE_ROWS.map((p) => p.does));
+  });
+
+  it("opens a page that exists on every row", () => {
+    const t = table();
+    assert.ok(t?.opens, "no row opens anything");
+    assert.equal(t.opens.length, t.rows.length, "some rows open nothing");
+    for (const id of t.opens) assert.ok(id && libEntry(id as EntryId), `a row opens '${id}', which is not an entry`);
+  });
+
+  it("sends every page a row opens along with the term", () => {
+    const sent = new Set((entry()?.items ?? []).map((x) => x.id));
+    for (const id of table()?.opens ?? []) {
+      assert.ok(sent.has(id!), `${id} did not travel with the Particle page, so its row would open nothing`);
+    }
+  });
+
+  it("says how は and へ are read when they do the job", () => {
+    const prose = pageProse(PARTICLE);
+    assert.match(prose, /は is normally .ha., but when it marks the topic of a sentence it is read .wa./);
+    assert.match(prose, /へ is normally .he., but when it points somewhere it is read .e./);
+  });
+
+  it("is reached from a particle's own page", () => {
+    const wa = atlasEntryFromHistory(emptyHistory(), "grammar:wa", NOW);
+    const read = (wa?.related ?? []).find((g) => g.title === "Read about it");
+    assert.ok(read, "は's page has no way back to the Particle page");
+    assert.ok(read.items.some((x) => x.id === PARTICLE), "は's page points somewhere else");
   });
 });

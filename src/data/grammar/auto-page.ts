@@ -33,8 +33,12 @@ import type { BuildHeads, IntroBuildRule, IntroDeriveRow, PhaseIntro, SentenceEx
  * them て-form + いる. Any candidate whose sentence still contains the pattern's
  * own written form literally (てください, ている, …) reads as the SAME thing
  * the build panel just taught; one that doesn't is technically correct but
- * confusing, so it is only a fallback when nothing cleaner is tagged. */
-function sentenceExampleFor(r: Recipe): SentenceExample | undefined {
+ * confusing, so it is only a fallback when nothing cleaner is tagged.
+ *
+ * Exported for the Particle page (src/data/grammar/particles.ts), which shows
+ * one sentence per particle and has to show the one that particle's own page
+ * shows. Asking here is how it gets the same answer rather than a second one. */
+export function sentenceExampleFor(r: Recipe): SentenceExample | undefined {
   const candidates = examplesFor(r.id).filter((ex) => ex.sp[r.id]);
   if (!candidates.length) return undefined;
   const written = r.pattern.replace(/^〜/, "");

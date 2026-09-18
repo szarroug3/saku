@@ -23,8 +23,9 @@ import { patternEntry } from "@/data/grammar";
 import { autoPatternPage } from "@/data/grammar/auto-page";
 import { cluster as clusterById, membersOf } from "@/data/grammar/clusters";
 import { formLibraryPages } from "@/data/grammar/lessons";
+import { PARTICLE_ROWS } from "@/data/grammar/particles";
 import { RECIPES, type Recipe } from "@/data/grammar/recipes";
-import type { BuildHeads, CountBuildPiece, IntroBuildRule, IntroCountGroup, IntroDeriveRow, IntroPara, PhaseIntro } from "@/data/phase-intros";
+import { PARTICLE_RULE, type BuildHeads, type CountBuildPiece, type IntroBuildRule, type IntroCountGroup, type IntroDeriveRow, type IntroPara, type PhaseIntro } from "@/data/phase-intros";
 import { buildRow } from "@/lib/grammar/build";
 import { CHUNK_ROLE_LABELS, SENTENCE_ORDERING_GUIDES, type SentenceOrderingTierId } from "@/data/sentence-ordering-guides";
 import { contextPronunciation } from "@/data/kana-context";
@@ -278,6 +279,9 @@ export function teachFor(item: SkyItem, scope: TeachScope = {}): LessonTeach {
       if (mark) t.pages = markPages(mark);
       else if (concept?.cards.length) t.pages = concept.cards.map((c) => pageFromIntro(c));
       else if (term.cards?.length) t.pages = term.cards.map((c) => pageFromIntro(c, term.cardMark));
+      // Particle is the one term the app can answer in full from its own
+      // tables, so it does (SAK-466): every particle it teaches, listed.
+      else if (term.id === PARTICLE_TERM) t.pages = [particleListPage()];
       // the definition, unless a fuller page says the same thing
       if (!mark && !concept) t.notes = [...term.body];
     }
@@ -393,6 +397,56 @@ function withoutRepeatedTitle(pages: TeachPage[], pattern: string, meaning: stri
     const rest = bareWords(page.title.slice(at + 2)), said = bareWords(meaning);
     return rest && said && (rest.includes(said) || said.includes(rest)) ? { ...page, title: "" } : page;
   });
+}
+
+/** The term whose page is the whole list of what it names (SAK-466). Shared
+ * with the Atlas, which links a particle's own page back to it. */
+export const PARTICLE_TERM = "particle";
+
+/** A sentence with one written form picked out: the particle itself, found in
+ * the sentence the pattern's own page shows. The first occurrence, and none at
+ * all when the sentence writes the particle some other way (しか〜ない is two
+ * pieces with a word between them), which leaves the line plain rather than
+ * marking the wrong part of it. */
+function withParticleMarked(jp: string, particle: string): SkySoundLine {
+  const at = jp.indexOf(particle);
+  if (at < 0) return [{ text: jp }];
+  return [{ text: jp.slice(0, at) }, { text: particle, accent: true }, { text: jp.slice(at + particle.length) }].filter((r) => r.text);
+}
+
+/**
+ * The Particle page: every particle the app teaches, in one table.
+ *
+ * Nothing here is written twice. The rows come from the recipes
+ * (src/data/grammar/particles.ts): the particle, the recipe's own meaning line,
+ * and the sentence that particle's own page shows. Each row opens that page.
+ * The closing note is the kana cards' own words about は and へ
+ * (PARTICLE_RULE), which is where a learner first meets them; the fourth
+ * paragraph of that card is about WHEN the lesson teaches the rule, which a
+ * reference page opened on purpose does not need.
+ */
+function particleListPage(): TeachPage {
+  return {
+    eyebrow: "Every particle",
+    title: "The particles Saku teaches",
+    paragraphs: [{ text: "What each one does, and a sentence it is used in. Open a particle to read its own page." }],
+    tables: [{
+      // four columns, which is wider than the panel opens: the table scrolls
+      // sideways there (the rule `Table` already follows), and the widen
+      // control shows the whole of it. Putting the sentence and its English in
+      // one cell instead was measured and is worse: the column still does not
+      // fit, and every row then wraps to three or four lines.
+      heads: ["Particle", "What it does", "In a sentence", "In English"],
+      rows: PARTICLE_ROWS.map((p) => [
+        [{ text: p.particle }],
+        [{ text: p.does }],
+        p.example ? withParticleMarked(p.example.jp, p.particle) : [],
+        [{ text: p.example?.en ?? "" }],
+      ]),
+      opens: PARTICLE_ROWS.map((p) => p.entry),
+    }],
+    after: PARTICLE_RULE.body.slice(0, 3).map((para, i) => ({ ...(i === 0 ? { heading: "How they are read" } : {}), text: para.text })),
+  };
 }
 
 /** A grammar pattern's pages: the app's own teaching (a form's authored

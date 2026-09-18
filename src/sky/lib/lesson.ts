@@ -148,6 +148,12 @@ export interface TeachTable {
   formula?: TeachFormula | readonly TeachFormula[];
   heads: readonly string[];
   rows: ReadonlyArray<ReadonlyArray<SoundLine>>;
+  /** For a table whose rows each stand for something with a page of its own
+   * (the Particle page's rows, one per particle): the thing each row opens, in
+   * the rows' order. The first cell of such a row is the button that opens it,
+   * on a surface that can open a page; where nothing can (the lesson, the
+   * quiz's reveal), the row is the same text and nothing is clickable. */
+  opens?: ReadonlyArray<string | undefined>;
   /** A closing line: the chain the rows build toward, and its meaning. */
   footer?: string;
   /** A note under the table: how a family's members differ. */

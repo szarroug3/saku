@@ -54,6 +54,7 @@
 
 import { RECIPES, isProducible, recipe, type Recipe } from "../../data/grammar/recipes.ts";
 import { examplesFor, type Example } from "../../data/grammar/corpus.ts";
+import { COPULA_RECIPE_IDS, PARTICLE_RECIPE_IDS } from "../../data/grammar/particles.ts";
 import { apply } from "./apply.ts";
 import { pickVehicle, type Rng } from "./vehicles.ts";
 import type { WordClass } from "../conjugate/index.ts";
@@ -174,35 +175,21 @@ const PARTICLE_ALLOWLIST: ReadonlySet<string> = new Set(["wo", "e", "made", "mad
 /** Recipe ids that are particles at all (allowed or not). は/が/に/で are here so
  * the allowlist gate rejects them in BOTH roles: they now exist as MEANING recipes
  * (see recipes.ts), but a particle CHOICE is exactly what selection must never
- * pose, and being particles-not-on-the-allowlist is what guarantees that. */
-const PARTICLE_IDS: ReadonlySet<string> = new Set([
-  "wa",
-  "ga",
-  "ni",
-  "de",
-  "wo",
-  "e",
-  "made",
-  "made-ni",
-  "dake",
-  "kara-source",
-  "shika-nai",
-  "ka",
-  // SAK-174's bare copula/sentence-final/particle rows. Same reasoning as
-  // ka above: だ/です are register choices (both grammatical, so a cloze
-  // between them is often unanswerable without more context, は/が-shaped),
-  // ね/よ are the sentence-final-feel pair this file's own header already
-  // names, and と(-and)/も have no evidence a cloze choice among them is
-  // ever safely unambiguous either. Absent from PARTICLE_ALLOWLIST too, so
-  // all default to recognition-only, never a selection distractor or answer.
-  "da",
-  "desu",
-  "to-and",
-  "mo",
-  "ne",
-  "yo",
-  "tte",
-]);
+ * pose, and being particles-not-on-the-allowlist is what guarantees that.
+ *
+ * The ids come from src/data/grammar/particles.ts, which the Library's Particle
+ * page is also built from (SAK-466). This file held its own copy until then,
+ * and two lists of what counts as a particle is one more than the app can keep
+ * true; a new particle recipe is now declared once and both surfaces see it.
+ *
+ * The copulas ride along for the same reason they always did, which is not that
+ * they are particles: だ/です are register choices, both grammatical, so a cloze
+ * between them is often unanswerable without more context, は/が-shaped. ね/よ
+ * are the sentence-final-feel pair this file's own header already names, and
+ * と(-and)/も have no evidence a cloze choice among them is ever safely
+ * unambiguous either. None are on PARTICLE_ALLOWLIST, so all default to
+ * recognition-only, never a selection distractor or answer. */
+const PARTICLE_IDS: ReadonlySet<string> = new Set([...PARTICLE_RECIPE_IDS, ...COPULA_RECIPE_IDS]);
 
 /**
  * Particle ids eligible for the "tap the marked word" drill (see

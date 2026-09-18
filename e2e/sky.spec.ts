@@ -706,6 +706,23 @@ test("a word's page says what kind of word it is, and the chip opens the page th
   await expect(page.getByText("Godan/ichidan")).toBeVisible();
 });
 
+test("the Particle page lists the particles, and a row opens that particle's page", async ({ page }) => {
+  // SAK-466. The Particle term was two sentences about what a particle is,
+  // next to a shelf that teaches seventeen of them one page at a time.
+  await page.goto(`/atlas?sample&entry=${encodeURIComponent("term:particle")}`);
+  await expect(page.getByRole("heading", { name: "What would you like to know?" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "The particles Saku teaches" })).toBeVisible();
+  // every row is the particle, what it does, and a sentence
+  await expect(page.getByText("marks the direct object")).toBeVisible();
+  const wa = page.getByRole("button", { name: "は", exact: true }).first();
+  await expect(wa).toBeVisible();
+  await wa.click();
+  // は's own page, which traveled with the term
+  await expect(page.getByRole("heading", { name: "〜は: Marks the topic." })).toBeVisible();
+  // and it points back
+  await expect(page.getByRole("button", { name: /Open Read about it/ })).toBeVisible();
+});
+
 test("a page shows its own heading while its body is still coming", async ({ page }) => {
   // SAK-356. Signed out, every page drew the loading line alone on an empty
   // wash, so when the data landed the eyebrow, title and panels all appeared

@@ -263,7 +263,7 @@ export function LessonCard({ item, teach, madeOf, partOf, onSelect, onRead, writ
               own: the name is right above it, as the card's meaning or its
               glyph, and where there are several pages the pill above already
               says which one this is (SAK-464) */}
-          <TeachPageView page={namesItself(pages[at], item, pages.length) ? { ...pages[at], eyebrow: undefined } : pages[at]} />
+          <TeachPageView page={namesItself(pages[at], item, pages.length) ? { ...pages[at], eyebrow: undefined } : pages[at]} onOpen={onRead} />
         </>
       )}
 
@@ -404,7 +404,7 @@ export function LessonCard({ item, teach, madeOf, partOf, onSelect, onRead, writ
         )}
         {teach?.tables?.map((table) => (
           <Fold key={table.title ?? "table"} title={table.title ?? "Table"}>
-            <Table table={{ ...table, title: undefined }} />
+            <Table table={{ ...table, title: undefined }} onOpen={onRead} />
           </Fold>
         ))}
         {/* the related groups last, closed (Sam's order, 2026-09-05): what it
