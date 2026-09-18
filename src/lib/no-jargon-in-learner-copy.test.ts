@@ -145,9 +145,6 @@ const TELLS_ALLOWED = new Set([
   // Sam read and approved this paragraph word for word (src/sky/README.md,
   // "The Observatory's own words"), so it is hers, not the sweep's
   "src/app/(sky)/observatory.ts:Kana are the Japanese alphabet: characters that stand for sounds, not meanings.",
-  // the は/が cluster note, which SAK-470 is rewriting under the same rules.
-  // When its rewrite is in, this entry goes stale and the test below says so
-  "src/data/grammar/clusters.ts:exposure, not from a lesson.",
 ]);
 
 /** The one covered file that is not prose: it generates the sky's stylesheet,
