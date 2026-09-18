@@ -23,6 +23,7 @@ import { patternEntry } from "@/data/grammar";
 import { autoPatternPage } from "@/data/grammar/auto-page";
 import { cluster as clusterById, membersOf } from "@/data/grammar/clusters";
 import { formLibraryPages } from "@/data/grammar/lessons";
+import { PARTICLE_NOTES, type ParticleNotePara } from "@/data/grammar/particle-notes";
 import { PARTICLE_ROWS } from "@/data/grammar/particles";
 import { RECIPES, type Recipe } from "@/data/grammar/recipes";
 import { PARTICLE_RULE, type BuildHeads, type CountBuildPiece, type IntroBuildRule, type IntroCountGroup, type IntroDeriveRow, type IntroPara, type PhaseIntro } from "@/data/phase-intros";
@@ -486,6 +487,54 @@ function particleListPage(): TeachPage {
   };
 }
 
+/** A written particle marked wherever it appears, for the sentence under a
+ * paragraph of the particle's own page. Every occurrence, not the first, so the
+ * two は of 夏は暑いですが、冬は寒いです are both picked out, which is the whole
+ * point of the sentence being there. */
+function withEveryMark(jp: string, mark: string): SkySoundLine {
+  return jp
+    .split(mark)
+    .flatMap((piece, i) => (i === 0 ? [{ text: piece }] : [{ text: mark, accent: true }, { text: piece }]))
+    .filter((r) => r.text);
+}
+
+/** One paragraph of a particle's page, with its sentences. */
+function notePara(para: ParticleNotePara): TeachParagraph {
+  return {
+    ...(para.heading ? { heading: para.heading } : {}),
+    text: para.text,
+    ...(para.examples
+      ? { examples: para.examples.map((ex) => ({ jp: withEveryMark(ex.jp, ex.mark), en: ex.en })) }
+      : {}),
+  };
+}
+
+/**
+ * A particle's page of prose (SAK-470), or nothing for a particle that has none
+ * written yet.
+ *
+ * It goes between the build page and Family: the build page says how to attach
+ * the particle, this says what it means, and Family puts it beside the ones it
+ * is confused with. は and が end with the same shared section, whose first
+ * paragraph takes the section's heading, and each page names the article it
+ * drew on once, which is why the wa-ga cluster no longer links it again on the
+ * Family page right after.
+ */
+function particleNotePage(recipeId: string): TeachPage | undefined {
+  const note = PARTICLE_NOTES.find((n) => n.recipe === recipeId);
+  if (!note) return undefined;
+  const shared = note.shared;
+  return {
+    eyebrow: note.eyebrow,
+    title: note.title,
+    paragraphs: [
+      ...note.body.map(notePara),
+      ...(shared ? shared.body.map((para, i) => notePara(i === 0 ? { ...para, heading: shared.heading } : para)) : []),
+    ],
+    link: { href: note.link.url, label: note.link.label },
+  };
+}
+
 /** A grammar pattern's pages: the app's own teaching (a form's authored
  * Library pages, or the generated pattern page: the meaning, the build
  * formula, the conjugation or derivation tables, the sentence), then its
@@ -494,6 +543,8 @@ function particleListPage(): TeachPage {
 function grammarPages(recipe: Recipe): TeachPage[] {
   const intros = formLibraryPages(recipe.id);
   const pages = (intros.length ? intros : [autoPatternPage(recipe)]).map((intro) => pageFromIntro(intro));
+  const note = particleNotePage(recipe.id);
+  if (note) pages.push(note);
   const family = recipe.cluster ? clusterById(recipe.cluster) : undefined;
   const members = family ? membersOf(family) : [];
   if (family && members.length > 1) {

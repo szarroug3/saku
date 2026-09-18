@@ -133,8 +133,21 @@ export interface TeachPage {
 }
 
 /** `runs` replaces `text` for a line with several parts to color (a hook
- * whose letters are the point). */
-export interface TeachParagraph { heading?: string; lead?: string; text: string; accent?: string; runs?: SoundLine }
+ * whose letters are the point).
+ *
+ * `examples` is the two-line sentence a paragraph of teaching prose is shown
+ * with (SAK-470): the Japanese with the piece being taught in the accent, the
+ * English under it. It is a list because one idea is sometimes the difference
+ * between two sentences (猫は好きです beside 猫が好きです), and a page that had to
+ * spend an empty paragraph on the second one would read as a gap. */
+export interface TeachParagraph {
+  heading?: string;
+  lead?: string;
+  text: string;
+  accent?: string;
+  runs?: SoundLine;
+  examples?: ReadonlyArray<{ jp: SoundLine; en: string }>;
+}
 
 /** A build formula: the form in a box, what is trimmed off it, what is
  * added. `label` names the case when a pattern branches ("Godan"). */

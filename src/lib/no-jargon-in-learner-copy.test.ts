@@ -55,6 +55,7 @@ const COVERED = [
   "src/data/grammar/clusters.ts",
   "src/data/grammar/form-intros.ts",
   "src/data/grammar/lessons.ts",
+  "src/data/grammar/particle-notes.ts",
   "src/data/how-it-works.ts",
   "src/data/kana-context.ts",
   "src/data/keigo.ts",

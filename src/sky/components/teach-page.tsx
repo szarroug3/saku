@@ -81,6 +81,15 @@ function Paragraph({ para }: { para: TeachParagraph }) {
     <div>
       {para.heading && <Eyebrow size="md" className="mt-1">{para.heading}</Eyebrow>}
       <p>{para.lead && <span className="font-semibold">{para.lead} </span>}<span className="text-sky-ink/90">{text}</span></p>
+      {para.examples?.map((ex, i) => (
+        // the sentence under the idea it shows: Japanese, then English. Set in
+        // from the prose by a rule down the left, so a reader's eye can find
+        // where the paragraph starts again underneath it.
+        <div key={i} className="mt-2 border-l-2 border-sky-line pl-3">
+          <p className={`font-sky-display text-[16px] leading-snug text-sky-ink ${japaneseFont(ex.jp.map((r) => r.text).join(""))}`}><Sound line={ex.jp} /></p>
+          <p className="text-[13.5px] leading-relaxed text-sky-muted">{ex.en}</p>
+        </div>
+      ))}
     </div>
   );
 }

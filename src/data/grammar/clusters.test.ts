@@ -113,7 +113,12 @@ describe("は/が and に/で: quizzable MEANING, never a choice", () => {
     // members and its standalone map page retired — the comparison rides on each
     // member's entry page. Gaining members is exactly the intended change now.
     assert.deepEqual([...c.members], ["wa", "ga"]);
-    assert.ok(c.link, "は/が still links out to the fuller comparison");
+    // SAK-470: the fuller comparison is now a page of Saku's own, one turn back
+    // in the same pager, and that page is where the Tofugu article is linked.
+    // Linking it here too would put two links to one article on pages a learner
+    // turns between, so this slot is empty on purpose and says why.
+    assert.equal(c.link, null, "は/が links the article a second time");
+    assert.ok(c.noLinkReason, "は/が has no link and no reason");
   });
 
   test("に/で now carries its two particle members", () => {

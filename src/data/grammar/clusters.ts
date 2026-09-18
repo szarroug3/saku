@@ -285,17 +285,21 @@ export const CLUSTERS: readonly Cluster[] = [
     title: "は vs が",
     gloss: "は marks the topic, が marks the subject",
     members: ["wa", "ga"],
+    // SAK-470: this said there was no rule for choosing between them, which
+    // stopped being true the moment each particle grew a page of its own
+    // saying what it does. The page is one turn back in the same pager, so the
+    // note points at it instead of standing in for it.
     feel:
-      "は marks what the sentence is about; が marks who or what is doing the " +
-      "verb. There is no rule for choosing between them: plenty of sentences " +
-      "take either one, the difference often does not show up in English, and " +
-      "which one fits a given sentence is something that comes with time and " +
-      "exposure, not from a lesson.",
-    link: {
-      url: "https://www.tofugu.com/japanese/wa-and-ga/",
-      label: "Tofugu: は vs が",
-      lastVerified: "2026-07-17",
-    },
+      "は marks what the sentence is about. が marks who or what is doing the " +
+      "verb. The page before this one goes through both and shows what changes " +
+      "when you swap them.",
+    // The article is linked from that page, under its own title, so linking it
+    // again here would put two links to one article on pages a learner turns
+    // between.
+    link: null,
+    noLinkReason:
+      "The は or が? page links the Tofugu article under its own title, so the " +
+      "cluster does not link it a second time.",
   },
   {
     id: "ni-de",
