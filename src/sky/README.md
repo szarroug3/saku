@@ -6356,6 +6356,22 @@ and the button are not offered there at all. With the sky put away there is no
 gap for the two of them either, and the page body clips what hangs over its
 top, so they move down onto the card's own top edge, over its padding.
 
+**The band moves with the sky it shows.** The lesson's sky is a window onto a
+world 400 units tall, anchored to the world's top left, so the first drag
+cropped tonight's constellation out of sight: the window kept the view it had
+while its box shrank around it, and a 155px band was empty purple. The lesson
+passes `openOn` now, the constellation the lesson is standing in, which is the
+prop the home uses to open on the rarest body a learner has reached. The canvas
+holds that point in the middle of the window whatever shape the window is, and
+it re-reads it on every render, so the drag, the button and a lesson opened at a
+remembered height all draw a band with the constellation in it. Nothing here
+fights a view of the learner's own: the lesson's sky is not interactive, so it
+is never panned or zoomed, and on the home, where it is, the same code only
+applies before the first gesture. A star that is not a step, a reference under
+tonight's items, is drawn inside the same constellation, so the step's own root
+is the right answer for it too. Measured at 1440 by 900 with the five stars of
+電車: all five inside the band at 310px, at 232px and at 155px.
+
 **The height holds.** One key in this browser, `sky:lesson:sky`, read in
 `lesson-client.tsx` and written at the end of each drag rather than on every
 move. This browser's and not this account's, deliberately: it is how a learner
@@ -6377,8 +6393,9 @@ the Atlas do the same is a separate card and was left alone here.
 unit tests, 4,204 pass and 1 skipped, with nineteen new ones on the split and
 the nine on the old view gone with it. 73 e2e pass on port 3501, one of them the
 rewritten SAK-471 test: it drags the handle up 150px and measures the card, the
-sky and the right column's two boxes; reloads for the height; presses for the
-whole column and presses back; steps the handle with the arrow keys; and checks
-that neither control is offered at 760. `scripts/unreachable.mjs --list` at
+sky and the right column's two boxes; checks that every star is inside the
+shortened band; reloads for the height; presses for the whole column and
+presses back; steps the handle with the arrow keys; and checks that neither
+control is offered at 760. `scripts/unreachable.mjs --list` at
 zero, `scripts/unused-exports.mjs` at zero on both lists, and
 `scripts/button-centering.mjs` at zero over 1px across 7 pages.

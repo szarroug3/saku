@@ -280,6 +280,23 @@ export function SkyLesson({ data, drillHref, observatoryHref, written, hear, pit
   const tonight = useMemo(() => new Set(steps.map((s) => s.id).concat(data.picks)), [steps, data.picks]);
   // only what is being taught is drawn: a pick with nothing left to teach stays off the sky
   const taught = useMemo(() => data.picks.filter((p) => steps.some((s) => s.pick === p)), [data.picks, steps]);
+  // WHICH CONSTELLATION THE BAND IS ON (SAK-471). The sky is a window onto a
+  // world that is taller than the band, anchored to the world's top left, so
+  // dragging the card up used to crop tonight's constellation out of sight:
+  // the band kept the view it had while its box shrank around it. The sky is
+  // told to open on the constellation the lesson is standing in instead, and
+  // the canvas holds that point in the middle of the window whatever shape the
+  // window is, so the drag, the press and a lesson opened at a remembered
+  // height all draw a band with the constellation in it. Nothing here fights a
+  // view of the learner's own: this sky is not interactive, so it is never
+  // panned or zoomed and the canvas re-reads the opening point on every render.
+  // A star that is not a step (a reference under tonight's items) is drawn
+  // inside the same constellation, so the step's own root is the right answer
+  // for it too.
+  const openOn = useMemo(() => {
+    const rootOf = (id: string | null) => (id ? steps.find((s) => s.id === id)?.pick : undefined);
+    return rootOf(selected) ?? rootOf(stepAt) ?? taught[0];
+  }, [steps, selected, stepAt, taught]);
   const itemsOf = (ids: readonly string[]) => ids.map((id) => graph.itemOf(id)).filter((x): x is SkyItem => !!x && !x.group);
   // Next and Back walk a star's pages before they move between stars, so a
   // rule taught over five pages is read through; Back into such a star
@@ -397,6 +414,7 @@ export function SkyLesson({ data, drillHref, observatoryHref, written, hear, pit
           <SkyField
             items={data.items}
             roots={taught}
+            openOn={openOn}
             graph={graph}
             width={1120}
             height={400}

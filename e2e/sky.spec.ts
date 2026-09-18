@@ -552,6 +552,19 @@ test("the lesson's details card is dragged taller and nothing else moves (SAK-47
   const dragged = await cell("card");
   expect(Math.abs(dragged.height - (wasCard.height + 150))).toBeLessThanOrEqual(1);
   expect(Math.abs((await cell("sky")).height - (sky.height - 150))).toBeLessThanOrEqual(1);
+  // the band is shorter and the sky has moved with it: every star of tonight's
+  // constellation, the one the card is showing among them, is inside the band
+  // rather than cropped below it
+  const band = await cell("sky");
+  const stars = page.locator('[data-lesson-cell="sky"] circle[data-hit]');
+  const many = await stars.count();
+  expect(many).toBeGreaterThan(0);
+  for (let i = 0; i < many; i++) {
+    const star = await stars.nth(i).boundingBox();
+    if (!star) throw new Error("no star");
+    expect(star.y).toBeGreaterThanOrEqual(band.y - 1);
+    expect(star.y + star.height).toBeLessThanOrEqual(band.y + band.height + 1);
+  }
   // and the right column has not moved by a pixel, which is the whole point
   expect(await cell("references")).toEqual(wasReferences);
   expect(await cell("order")).toEqual(wasOrder);
