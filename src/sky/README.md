@@ -6144,3 +6144,7 @@ The "Sentence rules" row ended on a dim "Simple" tile reading "Opens once you kn
 ## A pattern's page no longer says again what the card says above it (2026-09-17, SAK-464)
 
 The 〜は card read 〜は, then "marks the topic", then the heading "〜は: Marks the topic." The generated pattern page's heading is built as the pattern plus its meaning, and on a card those are the glyph it leads with and the line right under it, so the heading carries nothing. `withoutRepeatedTitle` in src/app/(sky)/teach.ts drops a heading that is exactly that, comparing letters only, so case and the heading's own full stop are not counted as a difference. An authored page's heading is its own ("The て/で-form", "Ways to say this") and stays, as does a heading that says more than the meaning line. The page keeps everything else: the build line, the tables and the sentence.
+
+## A page's eyebrow does not repeat the glyph the card leads with (2026-09-17, SAK-464)
+
+With the heading gone, the 〜は page still opened with a small "〜は" over nothing, a third copy of the character the card already leads with in the biggest type it has. A page named after the thing itself drops its own eyebrow, which the card did already for a lone page named after the meaning. The pager pill above keeps the name, so a card with several pages still says which one is showing.

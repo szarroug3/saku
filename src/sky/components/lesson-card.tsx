@@ -23,7 +23,7 @@ import { Eyebrow } from "@/sky/components/sky-card";
 import { StandingChip } from "@/sky/components/standing-legend";
 import { Pager, Parted, Sound, Table, TeachPageView } from "@/sky/components/teach-page";
 import { japaneseFont } from "@/sky/lib/japanese";
-import type { LessonTeach } from "@/sky/lib/lesson";
+import type { LessonTeach, TeachPage } from "@/sky/lib/lesson";
 import { typeLabel } from "@/sky/lib/tokens";
 import type { SkyItem } from "@/sky/lib/types";
 
@@ -122,6 +122,15 @@ function Fold({ title, open: from = false, children }: { title: string; open?: b
       {open && <div id={id} className="mt-2.5">{children}</div>}
     </div>
   );
+}
+
+/** A page whose eyebrow only says what the card already says at the top: a
+ * lone page named after the thing's meaning, or any page named after its
+ * glyph, which the card leads with in the biggest type it has. */
+function namesItself(page: TeachPage, item: SkyItem, count: number): boolean {
+  const eyebrow = page.eyebrow?.toLowerCase();
+  if (!eyebrow) return false;
+  return eyebrow === item.glyph.toLowerCase() || (count === 1 && eyebrow === item.english.toLowerCase());
 }
 
 export function LessonCard({ item, teach, madeOf, partOf, onSelect, onRead, written, hear: Hear, pitch: Pitch, page = 0, onPage, standing = false, related = [], footer, toolbar, scroll = false, className = "" }: LessonCardProps) {
@@ -250,9 +259,11 @@ export function LessonCard({ item, teach, madeOf, partOf, onSelect, onRead, writ
       {pages.length > 0 && (
         <>
           {pages.length > 1 && <Pager pages={pages} page={at} onPage={turnTo} />}
-          {/* a lone page named after the thing itself carries no eyebrow: the
-              name is right above it */}
-          <TeachPageView page={pages.length === 1 && pages[at].eyebrow?.toLowerCase() === item.english.toLowerCase() ? { ...pages[at], eyebrow: undefined } : pages[at]} />
+          {/* a page named after the thing itself carries no eyebrow of its
+              own: the name is right above it, as the card's meaning or its
+              glyph, and where there are several pages the pill above already
+              says which one this is (SAK-464) */}
+          <TeachPageView page={namesItself(pages[at], item, pages.length) ? { ...pages[at], eyebrow: undefined } : pages[at]} />
         </>
       )}
 

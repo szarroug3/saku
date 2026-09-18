@@ -14,18 +14,27 @@ import { test, expect, type Page } from "./helpers/app";
 async function claimAllKana(page: Page) {
   const kana = page.locator("section", { has: page.getByRole("heading", { name: "Kana", exact: true }) });
   await expect(kana).toBeVisible();
-  for (let round = 0; round < 8; round++) {
+  const tiles = kana.locator("button[aria-pressed]");
+  // a round claims what the section lays out, at most nine, and a row opens
+  // the ones built on it, so the two scripts take about eight rounds
+  for (let round = 0; round < 16; round++) {
     if (!(await kana.count())) return;
     const start = kana.getByRole("button", { name: "Start kana" });
     if (await start.count()) await start.click();
-    const tiles = kana.locator("button[aria-pressed]");
-    const n = await tiles.count();
-    if (!n) return;
-    for (let i = 0; i < n; i++) await tiles.nth(i).click();
+    await expect(tiles.first()).toBeVisible();
+    const before = await tiles.allInnerTexts();
+    for (let i = 0; i < before.length; i++) await tiles.nth(i).click();
     await page.getByRole("button", { name: "I already know these" }).click();
-    await expect(page.getByText("Nothing yet")).toBeVisible();
+    // the claim is a server action and a redraw, so the rows just claimed are
+    // still on screen for a moment; wait for the ones behind them, or for the
+    // section to go when there are none
+    await expect(async () => {
+      const gone = (await kana.count()) === 0;
+      const now = await tiles.allInnerTexts();
+      expect(gone || (now.length > 0 && now.join() !== before.join())).toBe(true);
+    }).toPass({ timeout: 20_000 });
   }
-  throw new Error("kana is still on offer after eight rounds of claiming it");
+  throw new Error("kana is still on offer after sixteen rounds of claiming it");
 }
 
 test("practice builds a deck from a collection and starts it", async ({ page }) => {
