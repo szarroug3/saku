@@ -40,7 +40,6 @@ import { SENTENCE_ORDERING_TIERS, sentenceTierShortLabel } from "@/data/assembly
 import { sentenceTierBlock } from "@/lib/sentence-ordering-plan";
 import { sentenceRuleOrder } from "@/lib/sentence-rule-order";
 import { CURRICULUM_KEBS_ORDERED } from "@/lib/word-rank";
-import type { ItemGate } from "@/sky/components/item-card";
 import type { ObservatorySection, SkyObservatoryData } from "@/sky/components/sky-observatory";
 import type { SkyItem, SkyKind } from "@/sky/lib/types";
 import type { FactId } from "@/types/facts";
@@ -113,23 +112,35 @@ function pairName(happens: readonly string[], doIt: readonly string[]): string |
   return happens[0] ?? doIt[0];
 }
 
-/** What a sentence type is still waiting on, in the learner's own words, or
- * nothing when it is open. The app's unlock rule is `sentenceTierBlock`, read
- * here rather than restated, so the picker can never offer a type the lesson
- * planner would refuse. The grammar half of that rule wants ANY one of the
- * listed patterns, which is why the line reads "or". */
-function tierBlock(tierId: string, history: HistoryFile): ItemGate | undefined {
-  const tier = SENTENCE_ORDERING_TIERS.find((t) => t.id === tierId);
-  const shut = tier ? sentenceTierBlock(tier, history) : null;
-  if (!shut) return undefined;
-  if (shut.kind === "sentences") {
-    return { requirement: `Opens once ${shut.need} sentences of this shape are ready`, progress: { have: shut.have, need: shut.need, unit: "sentences" } };
-  }
-  // named by the pattern's own glyph without the host mark, so the line reads
-  // "は or が" rather than "〜は or 〜が"
-  const names = shut.patterns.map((id) => libEntry(patternEntry(id))?.glyph.replace(/^〜/, "") || id);
-  const list = names.length > 1 ? `${names.slice(0, -1).join(", ")} or ${names[names.length - 1]}` : names[0];
-  return { requirement: `Opens once you know ${list}` };
+/** The sentence type an entry is, or nothing. */
+function tierOf(entryId: string) {
+  return SENTENCE_ORDERING_TIERS.find((t) => markEntry(`sentence-rule-${t.id}`) === entryId);
+}
+
+/**
+ * The patterns a sentence type is still waiting on, as entry ids, or nothing
+ * when it is open (SAK-464).
+ *
+ * The app's unlock rule is `sentenceTierBlock`, which wants ANY ONE of the
+ * type's patterns. So a type with one of them already met waits on nothing,
+ * and a type with none of them waits on all of them. They become the type's
+ * prerequisites, which is what makes the tile disappear until every one of
+ * them is learned or picked tonight: Sam, 2026-09-17, "don't show simple
+ * until either both are learned or both are selected". Asking for all of
+ * them is only ever stricter than the planner, so nothing is offered here
+ * that a lesson would then refuse to build.
+ *
+ * The grammar half of the rule is read straight off the patterns rather than
+ * through `sentenceTierBlock`, which walks the whole sentence corpus per
+ * tier: this runs for every sentence type on the Atlas's shelf, and "has the
+ * learner met this pattern" is the same question the section itself asks.
+ */
+function waitingOn(entryId: string, history: HistoryFile, now: number): string[] {
+  const tier = tierOf(entryId);
+  if (!tier) return [];
+  const entries = tier.grammarPrereqs.map((id) => libEntry(patternEntry(id))).filter((e): e is LibEntry => !!e);
+  if (entries.some((e) => standingFor(e, history, now).met)) return [];
+  return entries.map((e) => e.id);
 }
 
 export function observatoryFromHistory(history: HistoryFile, now = Date.now()): SkyObservatoryData {
@@ -153,7 +164,7 @@ export interface Offerings {
  * pick by id. Apart from the sections so a caller that wants a few items
  * built the Observatory's way (practice's preview, SAK-382) does not walk
  * the whole sky and every section first. */
-function picker(sky: Pick<SkyItems, "items" | "add">) {
+function picker(sky: Pick<SkyItems, "items" | "add">, history: HistoryFile, now: number) {
   const { items, add } = sky;
 
   /** An app entry on offer: added with its parts, given the sky kind it is picked as. */
@@ -200,8 +211,14 @@ function picker(sky: Pick<SkyItems, "items" | "add">) {
       // a grammar pattern, with the one thing the sky needs to draw it: a
       // bare particle is a moon and everything else is a comet (SAK-465)
       case GRAMMAR_SUBJECT: return offer(entry, "grammar", isParticleEntry(entry.id) ? { particle: true } : {});
-      // a sentence rule has no glyph of its own: its short label stands in, as on the app's tiles
-      case SENTENCE_RULE_KIND: { const name = sentenceTierShortLabel(entry.name ?? entry.meanings[0] ?? entry.id); return offer(entry, "sentence", { english: name, glyph: name }); }
+      // a sentence rule has no glyph of its own: its short label stands in, as
+      // on the app's tiles. The patterns it is still waiting on are its parts,
+      // so it is takeable exactly when all of them are learned or picked
+      case SENTENCE_RULE_KIND: {
+        const name = sentenceTierShortLabel(entry.name ?? entry.meanings[0] ?? entry.id);
+        const needs = waitingOn(entry.id, history, now).map((id) => offerPick(id)?.id).filter((id): id is string => !!id);
+        return offer(entry, "sentence", { english: name, glyph: name, ...(needs.length ? { components: needs } : {}) });
+      }
       case TRANSITIVITY_SUBJECT: { const p = pairForEntry(entry.id); return p ? offerPair(p, entry) : undefined; }
       case KEIGO_SUBJECT: { const set = keigoSetForEntry(entry.id); return set ? offerKeigo(set, entry) : undefined; }
       // a kana, a piece or a kanji picked on its own (the Atlas does): its own kind
@@ -243,7 +260,7 @@ export function hasOffer(entry: LibEntry): boolean {
  * did when every caller built the whole thing (SAK-382). */
 export function offerPicker(history: HistoryFile, now = Date.now()): Pick<Offerings, "items" | "offerPick"> {
   const sky = skyAdder(history, now);
-  const { offerPick } = picker(sky);
+  const { offerPick } = picker(sky, history, now);
   let whole: Offerings | undefined;
   return {
     items: sky.items,
@@ -267,7 +284,7 @@ export function offerings(history: HistoryFile, now = Date.now()): Offerings {
   const { items, met, add } = sky;
   const learned = new Set(met);
   const sections: ObservatorySection[] = [];
-  const { offer, offerPair, offerKeigo, offerPick } = picker(sky);
+  const { offer, offerPair, offerKeigo, offerPick } = picker(sky, history, now);
   const wordEntry = (keb: string): LibEntry | undefined => { const id = entryForGlyph(VOCAB_SUBJECT, keb); return id ? libEntry(id) : undefined; };
 
   // kana: one item per row of either script, the row's kana under it
@@ -302,13 +319,14 @@ export function offerings(history: HistoryFile, now = Date.now()): Offerings {
     }
   }
   sections.push({ id: "kana", title: "Kana", ...COPY.kana, items: rows, started: kanaMet > 0, complete: rows.length === 0 });
-  const kanaDone = kanaMet >= kanaTotal;
-  const afterKana = kanaDone ? undefined : { requirement: "Opens once kana is done. Everything else is read through it.", progress: { have: kanaMet, need: kanaTotal, unit: "kana" } };
+  // kana is the gate on everything else, and a section behind it is not drawn
+  // at all: no heading, and nothing saying what would open it (SAK-464)
+  const afterKana = kanaMet < kanaTotal;
 
   // words: the curriculum's order, next ones first
   const allWords = CURRICULUM_KEBS_ORDERED.map(wordEntry).filter((e): e is LibEntry => !!e);
   const words = allWords.filter((e) => !standingFor(e, history, now).met);
-  sections.push({ id: "words", title: "Words", ...COPY.words, items: words.slice(0, SHOW).map((e) => offer(e, "word").id), gate: afterKana, started: words.length < allWords.length, complete: words.length === 0 });
+  sections.push({ id: "words", title: "Words", ...COPY.words, items: words.slice(0, SHOW).map((e) => offer(e, "word").id), shut: afterKana, started: words.length < allWords.length, complete: words.length === 0 });
 
   // counting: the track's own order. The native numbers are one rule, not
   // ten picks (Sam, 2026-09-05): a pick with the ten forms under it
@@ -317,7 +335,7 @@ export function offerings(history: HistoryFile, now = Date.now()): Offerings {
   for (const e of tsu) offer(e, "counter");
   items.set(TSU_RULE, { id: TSU_RULE, kind: "counter", glyph: "〜つ", english: "Native numbers", standing: tsu.every((e) => met.has(e.id)) ? "claimed" : "not-seen", components: tsu.map((e) => e.id), listsParts: true });
   const counting = allCounting.filter((e) => !standingFor(e, history, now).met);
-  sections.push({ id: "counting", title: "Counting", ...COPY.counting, items: counting.slice(0, SHOW).map((e) => offer(e, "counter").id), gate: afterKana, started: counting.length < allCounting.length, complete: counting.length === 0 });
+  sections.push({ id: "counting", title: "Counting", ...COPY.counting, items: counting.slice(0, SHOW).map((e) => offer(e, "counter").id), shut: afterKana, started: counting.length < allCounting.length, complete: counting.length === 0 });
 
   // sentence rules: the ten sentence types and, before each of them, the
   // patterns that type needs, in one order (src/lib/sentence-rule-order.ts).
@@ -330,26 +348,34 @@ export function offerings(history: HistoryFile, now = Date.now()): Offerings {
   // itself, and nothing beyond it, however long the track goes on. It is short
   // by construction, so it lays out whole rather than at the usual nine (a
   // section that ended one card short of the thing its cards are FOR would
-  // teach the opposite of the order it is built on). A type the learner cannot
-  // start yet keeps its place with a line saying what opens it.
+  // teach the opposite of the order it is built on).
+  //
+  // A type the learner cannot start yet is NOT on the page (SAK-464). It used
+  // to keep its place with a dim tile reading "Opens once you know は or が";
+  // Sam, 2026-09-17: "just let it open when it opens". The patterns it waits
+  // on are its parts (`waitingOn`), so the page drops the tile until every one
+  // of them is learned or picked tonight and brings it back the moment they
+  // are. The other half of the app's rule, too few sentences of that shape to
+  // build a lesson from, is nothing a pick can change, so such a type is left
+  // out here and the section ends on the patterns before it.
   const rules: string[] = [];
-  const gates: Record<string, ItemGate> = {};
   let rulesMet = 0;
   for (const step of sentenceRuleOrder()) {
     const entry = libEntry(step.kind === "tier" ? markEntry(`sentence-rule-${step.id}`) : patternEntry(step.id));
     if (!entry) continue;
     if (standingFor(entry, history, now).met) { rulesMet++; continue; }
+    if (step.kind === "tier") {
+      const tier = tierOf(entry.id);
+      if (tier && sentenceTierBlock(tier, history)?.kind === "sentences") break;
+    }
     // offerPick names each of the two the way every other sky does: a pattern
     // by its meaning, a sentence type by its short label
     const item = offerPick(entry.id);
     if (!item) continue;
     rules.push(item.id);
-    if (step.kind !== "tier") continue;
-    const shut = tierBlock(step.id, history);
-    if (shut) gates[item.id] = shut;
-    break;
+    if (step.kind === "tier") break;
   }
-  sections.push({ id: "grammar", title: "Sentence rules", ...COPY.grammar, items: rules.slice(0, SHOW), show: Math.min(rules.length, SHOW), gates, gate: afterKana, started: rulesMet > 0, complete: rules.length === 0 });
+  sections.push({ id: "grammar", title: "Sentence rules", ...COPY.grammar, items: rules.slice(0, SHOW), show: Math.min(rules.length, SHOW), shut: afterKana, started: rulesMet > 0, complete: rules.length === 0 });
 
   // verb pairs: attached to the plain verb, with both members' kanji
   const pairs: string[] = [];
@@ -360,7 +386,7 @@ export function offerings(history: HistoryFile, now = Date.now()): Offerings {
     if (standingFor(entry, history, now).met) { pairsMet++; continue; }
     pairs.push(offerPair(p, entry).id);
   }
-  sections.push({ id: "verb-pairs", title: "Verb pairs", ...COPY.verbPairs, items: pairs.slice(0, SHOW), gate: afterKana, started: pairsMet > 0, complete: pairs.length === 0 });
+  sections.push({ id: "verb-pairs", title: "Verb pairs", ...COPY.verbPairs, items: pairs.slice(0, SHOW), shut: afterKana, started: pairsMet > 0, complete: pairs.length === 0 });
 
   // keigo: attached to the plain verb, with the polite words' kanji
   const keigo: string[] = [];
@@ -371,7 +397,7 @@ export function offerings(history: HistoryFile, now = Date.now()): Offerings {
     if (standingFor(entry, history, now).met) { keigoMet++; continue; }
     keigo.push(offerKeigo(set, entry).id);
   }
-  sections.push({ id: "keigo", title: "Keigo", ...COPY.keigo, items: keigo, gate: afterKana, started: keigoMet > 0, complete: keigo.length === 0 });
+  sections.push({ id: "keigo", title: "Keigo", ...COPY.keigo, items: keigo, shut: afterKana, started: keigoMet > 0, complete: keigo.length === 0 });
 
   return { items, learned, sections, offerPick };
 }

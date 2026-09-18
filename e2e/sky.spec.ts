@@ -5,6 +5,29 @@
 
 import { test, expect, type Page } from "./helpers/app";
 
+/**
+ * Kana is the gate: every other track on the Observatory is behind it, so a
+ * signed-out test that wants one of them claims kana first. The page's own
+ * way of saying "I have this already": pick everything the Kana section lays
+ * out, press "I already know these", and go again until the section is gone.
+ */
+async function claimAllKana(page: Page) {
+  const kana = page.locator("section", { has: page.getByRole("heading", { name: "Kana", exact: true }) });
+  await expect(kana).toBeVisible();
+  for (let round = 0; round < 8; round++) {
+    if (!(await kana.count())) return;
+    const start = kana.getByRole("button", { name: "Start kana" });
+    if (await start.count()) await start.click();
+    const tiles = kana.locator("button[aria-pressed]");
+    const n = await tiles.count();
+    if (!n) return;
+    for (let i = 0; i < n; i++) await tiles.nth(i).click();
+    await page.getByRole("button", { name: "I already know these" }).click();
+    await expect(page.getByText("Nothing yet")).toBeVisible();
+  }
+  throw new Error("kana is still on offer after eight rounds of claiming it");
+}
+
 test("practice builds a deck from a collection and starts it", async ({ page }) => {
   await page.goto("/practice?sample");
   await expect(page.getByRole("heading", { name: "What would you like to practice?" })).toBeVisible();
@@ -1619,6 +1642,40 @@ test("sentence rules end on the sentence type they lead to, and it opens a lesso
   await expect(page.getByText(/^Step \d+ of \d+$/)).toBeVisible();
   // and the type's own walk is what it teaches: the guide's intro and its steps
   await expect(page.getByRole("navigation", { name: "Pages" }).getByRole("button", { name: "Intro" })).toBeVisible();
+});
+
+test("a sentence type is off the page until what it needs is learned or picked (SAK-464)", async ({ page }) => {
+  // Sam, 2026-09-17, on a dim "Simple" tile reading "Opens once you know は or
+  // が": "let's not show things that aren't unlocked ... just let it open when
+  // it opens."
+  await page.goto("/observatory");
+  await claimAllKana(page);
+  const row = page.locator("section", { has: page.getByRole("heading", { name: "Sentence rules", exact: true }) });
+  await row.getByRole("button", { name: "Start sentence rules" }).click();
+  const tile = (text: string) => row.getByRole("button").filter({ hasText: text });
+  const wa = tile("marks the topic"), ga = tile("marks the subject"), simple = tile("Simple");
+
+  // the row is the particles it leads with, and nothing that cannot be taken
+  await expect(wa).toBeVisible();
+  await expect(simple).toHaveCount(0);
+  // and nothing anywhere on the page says a thing is shut
+  const body = page.locator("body");
+  await expect(body).not.toContainText("Opens once");
+  await expect(body).not.toContainText(/\blocked\b/i);
+
+  // one of the two is not enough; both bring it back
+  await wa.click();
+  await expect(simple).toHaveCount(0);
+  await ga.click();
+  await expect(simple).toHaveCount(1);
+  await expect(simple).toContainText("sentence type");
+
+  // and taking one of them out takes the type with it, pick and all
+  await simple.click();
+  await expect(page.getByText(/^3 Picks · /)).toBeVisible();
+  await ga.click();
+  await expect(simple).toHaveCount(0);
+  await expect(page.getByText(/^1 Pick · /)).toBeVisible();
 });
 
 test("the observatory takes every pick back out in one press", async ({ page }) => {

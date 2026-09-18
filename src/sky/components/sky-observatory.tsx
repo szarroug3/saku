@@ -14,7 +14,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 
-import { ItemCard, type ItemGate } from "@/sky/components/item-card";
+import { ItemCard } from "@/sky/components/item-card";
 import { ItemSection } from "@/sky/components/item-section";
 import { PieceMeter } from "@/sky/components/piece-meter";
 import { ContinueButton } from "@/sky/components/quiz-resume";
@@ -45,15 +45,11 @@ export interface ObservatorySection {
    * type its rows lead up to (SAK-430), so it shows whole: cutting it one card
    * early would drop the very thing the order exists to reach. */
   show?: number;
-  /** What the whole section is waiting on, when it is: such a section is
-   * not shown at all (Sam's call, 2026-09-04), but the reason is kept so a
-   * page can say what is coming. */
-  gate?: ItemGate;
-  /** What a single listed item is waiting on, by its id, for the few items
-   * that keep their place in the order while they are shut (a sentence type
-   * whose grammar the learner has not met, SAK-430). Everything else that
-   * cannot be taken is simply left out; see `ItemCard`'s own note. */
-  gates?: Readonly<Record<string, ItemGate>>;
+  /** The whole section is waiting on something (kana, which every other
+   * track is read through): it is not shown at all, heading included, and
+   * the page says nothing about what would open it (Sam's call, 2026-09-04,
+   * held again in SAK-464). */
+  shut?: boolean;
   /** The learner has already started this kind of thing, so its things are
    * laid out straight away; otherwise the section shows what it is and a
    * Start button, and the things appear once that is pressed. */
@@ -144,15 +140,14 @@ export function SkyObservatory({ data, cap = COMFORTABLE_PIECES, lessonHref, ini
     setAnchor(NOTHING.anchor);
     setUndo(null);
   };
-  /** What a section lays out: what can be taken now and, in its place, what
-   * the section says is shut for a reason. */
+  /** What a section lays out: what can be taken now, and nothing else. What
+   * is waiting on something is not drawn at all, and comes back by itself
+   * the moment the picks open it (SAK-464). */
   const offered = (section: ObservatorySection) => section.items.filter((id) => graph.has(id) && !learned.has(id) && pickState(graph, id, learned, picks).available).slice(0, section.show ?? SHOWN);
   /** A click on a card: shift picks everything from the last click to this
-   * one within the section (a range, like files in a list); otherwise toggle.
-   * A gated card is not in the range: it cannot be clicked itself, and a
-   * range drawn across it must not pick it either. */
+   * one within the section (a range, like files in a list); otherwise toggle. */
   const clickCard = (section: ObservatorySection, id: string, shift: boolean) => {
-    const ids = offered(section).filter((x) => !section.gates?.[x]);
+    const ids = offered(section);
     const from = anchor ? ids.indexOf(anchor) : -1, to = ids.indexOf(id);
     if (shift && from >= 0 && to >= 0 && from !== to) {
       const range = ids.slice(Math.min(from, to), Math.max(from, to) + 1);
@@ -180,7 +175,7 @@ export function SkyObservatory({ data, cap = COMFORTABLE_PIECES, lessonHref, ini
     <SkyPageShell eyebrow="Observatory" title="What would you like to learn next?" aside={resume && <ContinueButton entry={resume.entry} href={resume.href} />} height={height}>
       <div className="grid min-h-0 flex-1 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
         <div className="min-h-0 min-w-0 self-stretch overflow-y-auto pb-6 pr-1">
-          {data.sections.filter((section) => !section.gate && !section.complete).map((section) => {
+          {data.sections.filter((section) => !section.shut && !section.complete).map((section) => {
             const ids = offered(section);
             // nothing to take right now (everything left waits on something): not shown
             if (ids.length === 0) return null;
@@ -197,10 +192,7 @@ export function SkyObservatory({ data, cap = COMFORTABLE_PIECES, lessonHref, ini
                   <div className="grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-2">
                     {ids.map((id) => {
                       const item = graph.itemOf(id)!;
-                      const shut = section.gates?.[id];
-                      // a gated card keeps its place and says what opens it;
-                      // with no onClick it is a plain tile, not a button
-                      return <ItemCard key={id} item={item} selected={picks.includes(id)} label={kindLabel(item)} gate={shut} onClick={shut ? undefined : (e) => clickCard(section, id, e.shiftKey)} />;
+                      return <ItemCard key={id} item={item} selected={picks.includes(id)} label={kindLabel(item)} onClick={(e) => clickCard(section, id, e.shiftKey)} />;
                     })}
                   </div>
                 )}

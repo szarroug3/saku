@@ -6,6 +6,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
+import { patternEntry } from "@/data/grammar";
 import { emptyHistory } from "@/lib/history-ops";
 import { knownFactsOf, libEntry, type LibEntry } from "@/lib/library/entries";
 import type { FactAggregate, HistoryFile } from "@/types/store";
@@ -106,19 +107,58 @@ describe("the sentence rules on offer", () => {
     for (const away of ["〜へ", "〜まで", "〜か"]) assert.ok(!glyphs.includes(away), `${away} is not offered yet`);
   });
 
-  it("keeps a type it cannot start in its place, and says what opens it", () => {
-    const { s, items } = section(emptyHistory());
-    const type = items.at(-1)!;
-    assert.deepEqual(s.gates?.[type.id], { requirement: "Opens once you know は or が" });
-  });
+  // SAK-464. The type used to keep its place as a dim tile reading "Opens
+  // once you know は or が". Sam, 2026-09-17: "just let it open when it
+  // opens." It waits on its patterns, and a thing waiting on something is
+  // not drawn, so the row holds no tile for it until they are learned or
+  // picked tonight.
+  describe("a type the learner cannot start yet", () => {
+    const simple = "writing-rule:sentence-rule-simple";
+    const open = (history: HistoryFile, picks: readonly string[]) => {
+      const o = offerings(history, NOW);
+      const graph = buildGraph([...o.items.values()]);
+      return pickState(graph, simple, o.learned, picks).available;
+    };
+    /** は met, which is how the learner's own sky says it: the same reading
+     * the section uses to drop a pattern it no longer offers. */
+    const knows = (id: string): HistoryFile => {
+      const history = emptyHistory();
+      const entry = libEntry(patternEntry(id));
+      assert.ok(entry, `${id} is a pattern`);
+      for (const f of knownFactsOf(entry)) history.claims = { ...history.claims, [f]: NOW };
+      return history;
+    };
 
-  it("opens the type once one of its patterns is known", () => {
-    // the sample learner has met te-iru, one of the sequential type's prereqs,
-    // so that type is offered rather than shut
-    const { s, items } = section(sampleHistory(NOW));
-    const type = items.at(-1)!;
-    assert.equal(type.id, "writing-rule:sentence-rule-sequential");
-    assert.equal(s.gates?.[type.id], undefined);
+    it("says what it waits on, and says nothing about it in words", () => {
+      const { s, items } = section(emptyHistory());
+      const type = items.at(-1)!;
+      assert.equal(type.id, simple);
+      assert.deepEqual(type.components, ["grammar:wa", "grammar:ga"]);
+      for (const text of [...(s.intro ? [s.intro] : []), ...(s.when ? [s.when] : [])]) {
+        assert.ok(!/opens once/i.test(text), "no line saying what opens it");
+      }
+    });
+
+    it("is not offered to an empty sky, and is offered once は and が are picked", () => {
+      assert.equal(open(emptyHistory(), []), false);
+      assert.equal(open(emptyHistory(), ["grammar:wa"]), false);
+      assert.equal(open(emptyHistory(), ["grammar:wa", "grammar:ga"]), true);
+    });
+
+    it("counts one learned and one picked the same way, and goes when the pick goes", () => {
+      assert.equal(open(knows("wa"), ["grammar:ga"]), true);
+      assert.equal(open(emptyHistory(), ["grammar:wa", "grammar:ga"]), true);
+      assert.equal(open(emptyHistory(), ["grammar:wa"]), false, "unpicking が takes it away again");
+    });
+
+    it("opens for good once the app's own rule opens it", () => {
+      // the sample learner has met te-iru, one of the sequential type's
+      // patterns, and the app's rule wants any one of them
+      const { items } = section(sampleHistory(NOW));
+      const type = items.at(-1)!;
+      assert.equal(type.id, "writing-rule:sentence-rule-sequential");
+      assert.equal(type.components, undefined, "nothing left to wait on");
+    });
   });
 
   it("drops what is already met, and every id it offers is an item", () => {
