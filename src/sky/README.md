@@ -6236,3 +6236,71 @@ The app taught は in five words: take a noun, add は. That is the build, and n
 **The voice.** The first two drafts read like a machine wrote them, and Sam named the tells: "reaches for" (now banned by the jargon test), and comma tails like "It follows a whole clause, never a lone noun". Draft three went through line by line: no comma-tail contrasts, no "rather than" for effect, no softeners, no sentence explaining what the sentence before it did, no run of tidy parallel sentences, and the mistake lists are full sentences of different shapes instead of gerund fragments.
 
 **The gates.** `npx tsc --noEmit` and `npx eslint src e2e scripts` clean. 4,192 unit tests, 4,191 pass and 1 skipped, six of them new: that each particle in scope has its page with a Read more link naming the article, that it comes after the build and before Family, that は and が end with the same shared words, that the reading rule is near the top in the kana cards' wording, that every sentence marks its particle everywhere it appears, and that the Family page links nothing and says why. One existing cluster test flipped with it: は/が used to be pinned as still linking out. 73 e2e pass. `scripts/unreachable.mjs --list` at zero, `scripts/unused-exports.mjs` at zero on both lists, and `scripts/button-centering.mjs` at zero over 1px across 7 pages.
+
+## Every line a learner reads sounds like a person wrote it (2026-09-17, SAK-472)
+
+Sam: "i want the app to sound authentic, not AI-generated", and on a draft the
+same day, "also phrases like 'x, and y' or 'x, never y'". SAK-452 took the
+jargon out of this set of files. This round took the rhythm out of it.
+
+**The tells.** A contrast or an afterthought hung on the end of a sentence with
+a comma ("On the way, not there yet"). "Not X but Y" and "X rather than Y" used
+for effect. A group of three for cadence. Two tidy parallel sentences in the
+same shape. A fragment for effect, and "just", "simply" or "quietly" as a
+softener. A sentence that explains what the sentence before it just did. To
+those the lane added the ones that come with machine prose: a colon sentence
+used for a punchline, throat-clearing ("note that", "the point is", "at its
+core"), a brochure word, a question the text then answers, and a paragraph that
+ends with a one-line moral restating it. A teacher writes some of these once in
+a while. The tell is one of them in every paragraph.
+
+**Read, do not grep.** 126 lines changed across 22 files, each one at the
+sentence level so the other lanes editing the same files still merge. A grep
+finds the comma tails and the softeners and nothing else. Reading is what found
+"Same kanji, different tail, different sound", a group of three that restated
+the two sentences before it and is now gone; "Expect to mix them up, and expect
+that to sort itself out with time", which is now one sentence; "When it's
+confident, it stays quiet and leaves you alone. When it's unsure, it asks
+again", a pair in one shape, now "What it is confident about, it leaves alone";
+and "One character, one meaning, several pronunciations", a moral under three
+worked examples that already said it.
+
+**What was left alone.** The pronunciation corrections, where naming the wrong
+answer is the whole sentence: "This is said "shi", not "si"", "う shifts to わ,
+not あ", "四月 is しがつ, not よんがつ", "The っ in って is a small っ, not a
+full-size つ". The minimal pairs a card teaches by, きゃ against きや. The
+sentence-ordering guides, whose eleven pages share one shape on purpose and are
+read one at a time. The Observatory's kana paragraph, which Sam read and
+approved word for word. The は and が pages and the wa-ga cluster note, which
+SAK-470 owns. "Same character, and the word it is in decides", which closes both
+the kun'yomi and the on'yomi prose in quiz-rules.ts: it is a clipped line a
+teacher would say, only one of the two paragraphs is ever on screen, and three
+tests find an element by it.
+
+**The gate bans what a regular expression can see, and no more.**
+`no-jargon-in-learner-copy.test.ts` gained a second suite over the same walk,
+one sentence at a time with the line breaks squeezed out, because a sentence is
+often split across several string literals. Four rules: a sentence ending
+", not x" or ", never x" in lowercase English; throat-clearing at the start of a
+sentence; "not only X but also Y"; and a brochure word (seamless, robust, delve,
+dive into, leverage, unleash, effortless, game-changing, journey, "welcome to").
+"Unlock" is deliberately NOT banned, because unlocking is what the app does to a
+lesson that was waiting on a kanji. "Powerful" is not banned either: a mnemonic
+has a karate kick in it. Exclamation marks are not banned, for the same reason.
+Two allowlist entries, the kana paragraph and the wa-ga note, and the third test
+fails when an allowlisted sentence is no longer in the copy, so SAK-470's
+rewrite will take the second one out. `sky-wash-file.ts` is skipped: it
+generates the sky's stylesheet, and the engineering header in its template
+literal is read by nobody.
+
+**The gates.** `npx tsc --noEmit` and `npx eslint src e2e scripts` clean. 4,189
+unit tests, 4,188 pass and 1 skipped, three of them new on the tells (the sweep
+itself, four written sentences the rules must catch against six teaching
+sentences they must not, and the staleness check). Three assertions in
+`src/data/how-it-works.test.ts` follow reworded copy, and the katakana yōon card
+kept the word yōon because `yoon-label.test.ts` asks the copy to use it. 73 e2e
+pass with no change to the suite. `scripts/unreachable.mjs --list` at zero,
+`scripts/unused-exports.mjs` at zero on both lists, and
+`scripts/button-centering.mjs` at zero over 1px across 7 pages.
+`npm run build:library-index` was rerun, because the kana term's summary
+changed.
