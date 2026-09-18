@@ -93,3 +93,34 @@ describe("what the learner really has is still a reference", () => {
     assert.ok(knownStars(data).includes(all[0]), "a claimed star is in the sky already");
   });
 });
+
+// SAK-467. The walk used to drop a page whose track the learner had already
+// met, so the three kana terms behind the vowels were gone from References two
+// rows later and never came back. What tonight rests on does not change with
+// what the learner has read.
+describe("every reference is listed every time", () => {
+  const fresh = emptyHistory();
+  const pages = (data: ReturnType<typeof lessonFromPicks>) => references(data).filter((id) => id.startsWith("page:"));
+  const sRow = (history: HistoryFile) => lessonFromPicks(history, ["kana-row:h-s"], NOW);
+
+  it("lists the kana terms behind the first row of hiragana", () => {
+    assert.ok(pages(lesson(fresh)).length > 0, "a fresh learner meets the terms behind kana");
+  });
+
+  it("lists them again for a row taught after another row was walked", () => {
+    // what walking the k-row does: its kana are marked seen, and none of them
+    // is under the s-row, so the hiragana track reads as met
+    let seen = fresh;
+    for (const id of steps(lessonFromPicks(fresh, ["kana-row:h-k"], NOW))) seen = applySeen(seen, pickFacts([id]), NOW);
+    assert.ok(pages(sRow(fresh)).length > 0, "the fixture has pages to keep");
+    assert.deepEqual(pages(sRow(seen)), pages(sRow(fresh)));
+  });
+
+  it("lists them again for a learner who says she knows a whole row already", () => {
+    // a claim is the strongest "this track is behind me" the app has: the row
+    // is in her sky, so nothing about it is taught, and the terms behind the
+    // s-row still belong beside it
+    const claimed = applyClaims(fresh, pickFacts(["kana-row:h-k"]), NOW);
+    assert.deepEqual(pages(sRow(claimed)), pages(sRow(fresh)));
+  });
+});

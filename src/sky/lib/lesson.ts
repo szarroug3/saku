@@ -266,6 +266,25 @@ export function lessonReferences(graph: PrerequisiteGraph, picks: readonly strin
   return [...known, ...read];
 }
 
+/** The reference PAGES this lesson has never shown the learner, in the order
+ * the References panel lists them (SAK-467).
+ *
+ * A lesson opens on the first of these rather than on step one, and Next walks
+ * the rest of them before the order starts. A star already in the sky is not
+ * one of these: it is in the list as a reminder of what the learner has, not
+ * as something to read. `seen` is what the route's store answers; nothing here
+ * knows where that is kept.
+ */
+export function unseenPages(references: readonly LessonReference[], seen: ReadonlySet<string>): string[] {
+  return references.filter((r) => r.page && !seen.has(r.id)).map((r) => r.id);
+}
+
+/** Every reference PAGE of a lesson, listed or not opened: what counts as
+ * shown the moment the lesson opens. */
+export function referencePages(references: readonly LessonReference[]): string[] {
+  return references.filter((r) => r.page).map((r) => r.id);
+}
+
 type StarState = "locked" | "open" | "lit" | "selected";
 
 /** The state of one star tonight, given which have been opened and which is

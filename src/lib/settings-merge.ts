@@ -7,7 +7,7 @@ import type { SettingsFile } from "@/types/store";
 
 /** The keys a SettingsFile carries, spelled once so normalize/merge/empty stay
  * in step as fields are added. */
-const SETTINGS_KEYS = ["cfg", "practice"] as const;
+const SETTINGS_KEYS = ["cfg", "practice", "pagesSeen"] as const;
 
 /** A plain JSON object — not null, not an array. */
 function isPlainObject(v: unknown): v is Record<string, unknown> {

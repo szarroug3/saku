@@ -7,7 +7,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import { buildGraph } from "@/sky/lib/graph";
-import { isUnlocked, lessonReferences, lessonSteps, starState, type LessonPage } from "@/sky/lib/lesson";
+import { isUnlocked, lessonReferences, lessonSteps, referencePages, starState, unseenPages, type LessonPage } from "@/sky/lib/lesson";
 import type { SkyItem } from "@/sky/lib/types";
 
 const item = (id: string, kind: SkyItem["kind"], extra: Partial<SkyItem> = {}): SkyItem => ({ id, kind, glyph: id, english: id, standing: "not-seen", ...extra });
@@ -102,5 +102,33 @@ describe("the lesson's references", () => {
   it("a page is listed once, however many stars put it in play", () => {
     const refs = lessonReferences(graph, ["電車"], sky, [KANJI, KANJI]);
     assert.deepEqual(refs.filter((r) => r.page).length, 1);
+  });
+});
+
+// SAK-467. A lesson opens on the first reference page it has never shown,
+// and a page counts as shown once it has been in a lesson at all.
+describe("the pages a lesson opens on", () => {
+  const sky = new Set(["雨", "田", "車"]);
+  const refs = lessonReferences(graph, ["電車"], sky, [KANJI, BUILT]);
+
+  it("is every page of the lesson, in the order they are listed, for a learner who has read none", () => {
+    assert.deepEqual(unseenPages(refs, new Set()), ["page:term:kanji", "page:page:built-from"]);
+  });
+
+  it("skips a page that has been shown before and keeps the rest", () => {
+    assert.deepEqual(unseenPages(refs, new Set(["page:term:kanji"])), ["page:page:built-from"]);
+  });
+
+  it("is nothing at all once every page has been shown, so the lesson opens on step one", () => {
+    assert.deepEqual(unseenPages(refs, new Set(["page:term:kanji", "page:page:built-from"])), []);
+  });
+
+  it("never holds a star already in the sky: those are there to look at, not to read", () => {
+    assert.ok(refs.some((r) => r.why === "known"), "the fixture has known stars to leave out");
+    assert.deepEqual(unseenPages(refs, new Set()).filter((id) => !id.startsWith("page:")), []);
+  });
+
+  it("marks every page of the lesson, listed or opened or not", () => {
+    assert.deepEqual(referencePages(refs), ["page:term:kanji", "page:page:built-from"]);
   });
 });

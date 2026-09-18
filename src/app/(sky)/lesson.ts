@@ -140,8 +140,17 @@ function taughtReading(facts: readonly string[]): string | undefined {
  * that puts it in play, and each the thing it is about, shown with the same
  * card a star gets (Sam, 2026-09-05): a term is its Atlas entry, the 〜つ
  * intro is the 〜つ rule, a sound shift is the mark's page kept to that one
- * row. The walk reads history, so an intro already shown is not shown
- * again. `readings` collects which reading of a word the walk teaches.
+ * row. `readings` collects which reading of a word the walk teaches.
+ *
+ * EVERY PAGE THAT APPLIES, EVERY TIME (SAK-467). The walk used to drop a page
+ * whose track the learner had already met, so the three kana terms behind the
+ * vowels were gone from the References panel two rows later and never came
+ * back. References is not a lecture, it is the list of what tonight rests on,
+ * and what tonight rests on does not change with what the learner has read.
+ * So the walk is asked for every card it owes (`everyCard`), and whether a page
+ * has been read before is answered on the other side: it decides which page the
+ * lesson OPENS on, not which pages are listed. History is still handed in, so
+ * where each page goes in the order is worked out exactly as before.
  *
  * This is where the references come from (SAK-416). The walk already knows
  * which term or intro a star puts in play, so the list under the order is
@@ -160,7 +169,7 @@ function walkFor(starIds: readonly string[], history: HistoryFile, offer: Offeri
   // app's next item: a piece with no facts of its own (艹) is a star here
   // but never an item there, and a page must not land after it
   let cursor = 0;
-  for (const step of appLessonSteps(facts, history)) {
+  for (const step of appLessonSteps(facts, history, undefined, true)) {
     if (step.type === "item") {
       const reading = taughtReading(step.item.facts);
       if (reading) readings.set(step.item.entry, reading);

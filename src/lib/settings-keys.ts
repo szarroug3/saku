@@ -27,3 +27,9 @@ export const CFG_KEY = "saku-cfg";
 // practice's own count of what had been missed; practice records now (SAK-441),
 // so the history answers that and the key is swept (lib/storage-sweep.ts).
 export const PRACTICE_SAVED_KEY = "sky:practice:recipes";
+
+// The reference pages a lesson has already shown this learner (SAK-467). The
+// Sky's lesson reads and writes this key directly
+// (src/app/(sky)/pages-seen.ts) and pushes it up as the `pagesSeen` field of
+// the settings blob, exactly the way Practice's recipes go up.
+export const PAGES_SEEN_KEY = "sky:lesson:pages-seen";

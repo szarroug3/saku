@@ -3,6 +3,7 @@ import { test } from "node:test";
 
 import {
   CFG_KEY,
+  PAGES_SEEN_KEY,
   PRACTICE_SAVED_KEY,
 } from "./settings-keys";
 import {
@@ -79,4 +80,21 @@ test("practice (SAK-342): the saved recipes ride the blob both ways", () => {
   assert.equal(store.data[PRACTICE_SAVED_KEY], JSON.stringify(practice.saved));
   // an empty browser has no practice field to send up
   assert.equal(readLocalSettings(fakeStore()).practice, undefined);
+});
+
+// SAK-467: the reference pages a lesson has shown, in the same blob and by the
+// same rules as Practice's recipes.
+test("pages seen (SAK-467): the shown reference pages ride the blob both ways", () => {
+  const store = fakeStore();
+  const pagesSeen = ["page:term:kana", "page:term:hiragana"];
+  applyServerSettings(store, { pagesSeen });
+  assert.equal(store.data[PAGES_SEEN_KEY], JSON.stringify(pagesSeen));
+  assert.deepEqual(readLocalSettings(store).pagesSeen, pagesSeen);
+  // a blob without the field leaves the key alone
+  applyServerSettings(store, { cfg: { mode: "drill" } as never });
+  assert.equal(store.data[PAGES_SEEN_KEY], JSON.stringify(pagesSeen));
+  // an empty browser has nothing to send up, and anything that is not a list
+  // of names reads as nothing rather than throwing
+  assert.equal(readLocalSettings(fakeStore()).pagesSeen, undefined);
+  assert.deepEqual(readLocalSettings(fakeStore({ [PAGES_SEEN_KEY]: JSON.stringify(["a", 3, null]) })).pagesSeen, ["a"]);
 });

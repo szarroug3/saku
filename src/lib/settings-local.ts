@@ -17,12 +17,13 @@
 //                                       whose saved recipes live there and
 //                                       nowhere else) see the source of truth.
 //
-// Two fields, since the old app's screens went (SAK-374): the config the Settings
-// page writes, and Practice's keepsakes. The keys come from settings-keys.ts.
+// Three fields: the config the Settings page writes, Practice's keepsakes, and
+// the reference pages a lesson has shown (SAK-467). The keys come from
+// settings-keys.ts.
 // Nothing here imports the React providers, which is what keeps it out of the
 // use-settings → provider → here cycle.
 
-import { CFG_KEY, PRACTICE_SAVED_KEY } from "@/lib/settings-keys";
+import { CFG_KEY, PAGES_SEEN_KEY, PRACTICE_SAVED_KEY } from "@/lib/settings-keys";
 import type { QuizConfig } from "@/types/sky";
 import type { SettingsFile } from "@/types/store";
 
@@ -64,6 +65,10 @@ export function readLocalSettings(store: SettingsStore | null | undefined): Sett
     // practice's keepsakes (SAK-342): the saved recipes, when there are any
     const saved = parse(store.getItem(PRACTICE_SAVED_KEY));
     if (Array.isArray(saved)) out.practice = { saved: saved as { name: string; recipe: unknown }[] };
+
+    // the reference pages a lesson has shown (SAK-467)
+    const pages = parse(store.getItem(PAGES_SEEN_KEY));
+    if (Array.isArray(pages)) out.pagesSeen = pages.filter((id): id is string => typeof id === "string");
   } catch {
     // a throwing store — return what we have (the safe, partial answer)
   }
@@ -97,4 +102,6 @@ export function applyServerSettings(
   if (settings.cfg !== undefined) set(store, CFG_KEY, JSON.stringify(settings.cfg));
 
   if (settings.practice?.saved !== undefined) set(store, PRACTICE_SAVED_KEY, JSON.stringify(settings.practice.saved));
+
+  if (settings.pagesSeen !== undefined) set(store, PAGES_SEEN_KEY, JSON.stringify(settings.pagesSeen));
 }

@@ -386,6 +386,9 @@ export interface HistoryFile {
 // stored beside them (theme, appearance, accents, the claim hint, the two lesson
 // folds and the shown intros) went with its screens (SAK-374); a row written
 // before then keeps them until its next save, when the normalizer drops them.
+// The shown intros have a successor here now, `pagesSeen` (SAK-467), for the
+// same question in the Sky's words: which reference pages a lesson has already
+// put in front of this learner.
 export interface SettingsFile {
   /** Quiz configuration — the whole QuizConfig, same shape the client holds. */
   cfg?: QuizConfig;
@@ -397,6 +400,18 @@ export interface SettingsFile {
    * ordering. Practice records now (SAK-441), so the history answers that
    * question and the half is gone. */
   practice?: PracticeFile;
+  /** The reference pages a lesson has shown this learner, by the id the Sky's
+   * References panel opens them under (SAK-467).
+   *
+   * A page counts from the moment a lesson holding it opens, clicked or not,
+   * because the panel is there to be read and a lesson that opened on it has
+   * done its part. It is what a lesson asks before it decides which page to
+   * open on, never which pages to list.
+   *
+   * Not history. History is what the learner LEARNED, and a page read is not
+   * something learned or drilled; it is the same distinction the old shown
+   * intros made, and this is the same store they were kept in. */
+  pagesSeen?: readonly string[];
 }
 
 export interface PracticeFile {

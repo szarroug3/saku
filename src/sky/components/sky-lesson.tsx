@@ -19,6 +19,15 @@
 // lesson on, because it is not one of the steps. Which of the two a star is
 // in is settled when the lesson is built and does not change while it is
 // open: see `beforeTonight` in src/app/(sky)/lesson.ts.
+//
+// A REFERENCE PAGE NOBODY HAS READ IS READ FIRST (SAK-467). The pages are
+// what the order rests on, so a lesson holding pages this learner has never
+// been shown opens on the first of them and Next walks the rest before step
+// one. `openPages` is that list, worked out by the route from what it has
+// shown before; the lesson itself only walks it. The counter does not move
+// while a page is showing, the same as for any other reference opened: the
+// lesson stands on step one the whole way through the lead, and the pages
+// are never steps.
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
@@ -69,6 +78,12 @@ interface SkyLessonProps {
    * time, which is in the sky now and so is not taught again -- opens the
    * lesson where it would have opened anyway, on the first step. */
   startAt?: string;
+  /** The reference pages this lesson has never shown the learner, in the
+   * order References lists them (SAK-467). The lesson opens on the first of
+   * them and Next walks the rest before step one, so a page nobody has read
+   * is read before the stars that rest on it. Empty for a lesson picked up
+   * through Continue, which opens where it was left instead. */
+  openPages?: readonly string[];
   /** Where the lesson stands: the step, how many steps the order holds, and
    * which star that step is. Said the moment the lesson opens and after every
    * step, because a lesson opened and left is a lesson to come back to (Sam,
@@ -124,7 +139,7 @@ function RailRow({ current, locked = false, lit, glyph, label, eyebrow, onClick 
   );
 }
 
-export function SkyLesson({ data, drillHref, observatoryHref, written, hear, pitch, onOpen, startAt, onPlace, height }: SkyLessonProps) {
+export function SkyLesson({ data, drillHref, observatoryHref, written, hear, pitch, onOpen, startAt, openPages, onPlace, height }: SkyLessonProps) {
   const graph = useMemo(() => buildGraph(data.items), [data.items]);
   const learned = useMemo(() => new Set(data.learned), [data.learned]);
   const steps = useMemo(() => lessonSteps(graph, data.picks, learned), [graph, data.picks, learned]);
@@ -135,8 +150,13 @@ export function SkyLesson({ data, drillHref, observatoryHref, written, hear, pit
   // since a step unlocks the one after it and a lesson resumed on step four
   // with three locked steps behind it could not be walked back through.
   const from = Math.max(0, startAt ? steps.findIndex((s) => s.id === startAt) : 0);
-  const [opened, setOpened] = useState<ReadonlySet<string>>(() => new Set(steps.slice(0, from + 1).map((s) => s.id)));
-  const [selected, setSelected] = useState<string | null>(steps[from]?.id ?? null);
+  // The pages to read before the order (SAK-467), kept to the ones this
+  // lesson actually lists, so a stale id cannot strand the lesson on nothing.
+  // A lesson picked up through Continue is handed none: it opens where it was
+  // left (SAK-444), and its pages were shown the night it started.
+  const lead = useMemo(() => (startAt ? [] : (openPages ?? []).filter((id) => referenceOf.get(id)?.page)), [openPages, referenceOf, startAt]);
+  const [opened, setOpened] = useState<ReadonlySet<string>>(() => new Set([...steps.slice(0, from + 1).map((s) => s.id), ...lead.slice(0, 1)]));
+  const [selected, setSelected] = useState<string | null>(lead[0] ?? steps[from]?.id ?? null);
   // where the lesson stands. Apart from `selected` because a reference is
   // shown without being stepped to: reading one used to reset "Step n of N"
   // to the first step, since the count was read off whatever was showing.
@@ -210,18 +230,36 @@ export function SkyLesson({ data, drillHref, observatoryHref, written, hear, pit
   // lands on its last page. The lesson ends on the last page of the last star.
   const pageCount = selected ? pagesOf(selected) : 1;
   const lastPage = page >= pageCount - 1;
+  // Where in the lead the lesson is, or -1 once it is past it. Read off what
+  // is showing rather than kept beside it: opening a lead page from
+  // References puts the lesson back on the lead there and Next carries on
+  // from it, and opening anything else leaves the lead for good.
+  const leadAt = selected ? lead.indexOf(selected) : -1;
   // Nothing to teach is a state of its own, not step zero of zero (SAK-351).
   // Every pick was already in the sky, so there is no first step to be on and
   // no next one to walk to: `next` used to index past the end of an empty list
   // and throw, because `last` was false when there was no last.
   const nothing = steps.length === 0;
-  const last = nothing || (stepIndex === steps.length - 1 && lastPage);
-  const back = () => (page > 0 ? setPage(page - 1) : open(steps[stepIndex - 1].id, pagesOf(steps[stepIndex - 1].id) - 1));
-  const next = () => (lastPage ? open(steps[stepIndex + 1].id) : setPage(page + 1));
+  // a lesson still in its lead is never on its last page, however short the
+  // order is: the pages come first and the order still has to be walked
+  const last = nothing || (leadAt < 0 && stepIndex === steps.length - 1 && lastPage);
+  const back = () => {
+    if (page > 0) return setPage(page - 1);
+    const to = leadAt > 0 ? lead[leadAt - 1] : steps[stepIndex - 1].id;
+    return open(to, pagesOf(to) - 1);
+  };
+  const next = () => {
+    if (!lastPage) return setPage(page + 1);
+    if (leadAt >= 0 && leadAt + 1 < lead.length) return open(lead[leadAt + 1]);
+    // out of the lead and into the order, at the step the lesson is standing
+    // on: step one for a lesson that opened on a page, which is what "Step 1
+    // of N" has read the whole way through the lead
+    return open(steps[leadAt >= 0 ? stepIndex : stepIndex + 1].id);
+  };
 
   // the arrow keys page too: left is Back, right is Next (Sam's ask), unless
   // the keys are typing into something
-  const canBack = !nothing && !(stepIndex === 0 && page === 0);
+  const canBack = !nothing && (page > 0 || leadAt > 0 || (leadAt < 0 && stepIndex > 0));
   // ONE subscription, for the life of the lesson. This effect had no
   // dependency list, so it re-ran on every render: each page turn, each star
   // opened, each keystroke tore the window listener off and put a new one

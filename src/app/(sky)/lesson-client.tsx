@@ -25,15 +25,26 @@
 // was left, and the star the learner was on is opened again by id. If it is
 // ever not in the order, the lesson opens where it would have anyway.
 
-import { useCallback } from "react";
+// AND A REFERENCE PAGE NOBODY HAS READ OPENS FIRST (SAK-467). References
+// lists every page tonight's order rests on, every time; which of them this
+// learner has already been shown is kept in the settings blob (pages-seen.ts),
+// and a lesson opened fresh opens on the first page it has never shown, then
+// walks the rest before step one. Every page in the lesson is marked shown the
+// moment it opens, clicked or not, so the next lesson listing it opens on step
+// one. A lesson picked up through Continue keeps SAK-444's place instead: it
+// is handed no pages, and where it was left wins.
+
+import { useCallback, useEffect, useMemo, useRef } from "react";
 
 import { HearButton } from "./hear-button";
 import { SkyLesson, type SkyLessonData } from "@/sky/components/sky-lesson";
+import { referencePages, unseenPages } from "@/sky/lib/lesson";
 import { hasPlace, lessonAt, lessonFor, NO_PLACE, type SavedPlace } from "@/sky/lib/place";
 
 import { loadLesson } from "./actions";
 import { skyHref } from "./hrefs";
 import { useSkyData } from "./local";
+import { seePages, usePagesSeenAtOpen } from "./pages-seen";
 import { PitchMark } from "./pitch-reading";
 import { keepLesson, usePlaceAtOpen } from "./quiz-run-store";
 import { WrittenBlock } from "./written-block";
@@ -59,12 +70,35 @@ export function LessonClient({ sample, showcase, signedIn, initial, picks, accou
     },
     [sample, showcase, picks, signedIn],
   );
+  // Which reference pages this learner has already been shown, read once for
+  // the reason the place is read once: the lesson marks its own pages the
+  // moment it opens, and a live read would take its opening page out from
+  // under it. The pretend learner and the showcase are handed none and keep
+  // none, the way they record nothing: those two screens are a look at the
+  // whole lesson, so they open on step one every time.
+  const shown = usePagesSeenAtOpen();
+  const references = data?.references;
+  const pages = useMemo(() => referencePages(references ?? []), [references]);
+  const openPages = useMemo(
+    () => (sample || showcase || kept || !shown ? [] : unseenPages(references ?? [], shown)),
+    [sample, showcase, kept, shown, references],
+  );
+  // Every page in tonight's lesson counts as shown from the moment the lesson
+  // opens, clicked or not: the panel is beside the sky the whole time, and a
+  // lesson that opened on it has done its part. Once per page load, and the
+  // store writes nothing when it already holds all of them.
+  const marked = useRef(false);
+  useEffect(() => {
+    if (sample || showcase || marked.current || !shown || !pages.length) return;
+    marked.current = true;
+    seePages(pages);
+  }, [sample, showcase, shown, pages]);
   // The browser has not been asked yet, so which step this lesson opens on is
   // not known. The heading is, and it is drawn while the rest catches up
   // (SAK-356), rather than opening on the first step and jumping. It is the
   // same trade the quiz makes for the same reason, and it costs a signed-in
   // learner the server-rendered lesson they used to get.
-  if (local === undefined || !data) return loading;
+  if (local === undefined || shown === undefined || !data) return loading;
   // the real stroke order for every character on the card, as a slot
   const written = Object.fromEntries(
     Object.keys(data.teach)
@@ -83,6 +117,7 @@ export function LessonClient({ sample, showcase, signedIn, initial, picks, accou
       pitch={PitchMark}
       onOpen={sample || showcase ? undefined : seeId}
       startAt={startAt}
+      openPages={openPages}
       onPlace={sample || showcase ? undefined : onPlace}
     />
   );

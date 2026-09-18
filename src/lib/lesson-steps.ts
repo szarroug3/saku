@@ -270,6 +270,15 @@ export function lessonSteps(
   // twice costs ten seconds, a card never seen costs the learner the word. No
   // caller passes one now (SAK-374): the Sky shows the cards every time.
   shownIntros: ReadonlySet<string> = new Set(),
+  // Every card the walk owes, whether or not this learner has already met the
+  // track it opens. The Sky's lesson asks for this (SAK-467): its References
+  // panel is a list of what tonight RESTS ON, so it has to hold every page
+  // that applies to tonight's order and not only the ones a learner has never
+  // been shown. History is still read for everything else, so where a card
+  // goes is unchanged; only "you have met this track already, skip it" is set
+  // aside. Off by default, which is the walk the drill has always taken: there
+  // a card already read is ten seconds nobody wants twice.
+  everyCard = false,
 ): LessonStep[] {
   // GRAMMAR takes a different walk: its pages are AUTHORED, not derived from the
   // teach set the way a kana lesson's steps are. A grammar sitting is one form
@@ -342,7 +351,10 @@ export function lessonSteps(
   // read (a test naming a teach set, and nothing else today) gets exactly the
   // walk this function produced before track intros existed.
   const teachSet = new Set(facts);
-  const started = history ? startedTracks(history, teachSet) : null;
+  // `everyCard` asks for the card whatever the learner has done, so no track
+  // counts as started: an empty set, not null, since null means "no history to
+  // read, so no track cards at all".
+  const started = everyCard ? new Set<TrackId>() : history ? startedTracks(history, teachSet) : null;
   // Fired at most once each, so a lesson that opens a track and then teaches
   // twenty of its items shows the card once, at the top.
   const trackCardDone = new Set<TrackId>();
@@ -400,12 +412,10 @@ export function lessonSteps(
   const opensOnCombo = items.length ? sectionOf(items[0]) : null;
   let markedComboH =
     opensOnCombo === "h-kya" ||
-    !history ||
-    yoonScriptMet("hiragana", teachSet, history);
+    (!everyCard && (!history || yoonScriptMet("hiragana", teachSet, history)));
   let markedComboK =
     opensOnCombo === "k-kya" ||
-    !history ||
-    yoonScriptMet("katakana", teachSet, history);
+    (!everyCard && (!history || yoonScriptMet("katakana", teachSet, history)));
   // The iteration mark rides the first word whose spelling uses 々, and only the
   // first one, so a teach set full of 々 words teaches it once.
   let markedIteration = false;

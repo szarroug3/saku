@@ -345,7 +345,9 @@ test("what tonight teaches is settled when the lesson starts, and holds", async 
   // "Tonight, in order" into References and "Step 1 of 5" became "Step 1 of
   // 4". Signed out, because that is where the write and the rebuild both
   // happen: the sample learner's lesson never writes anything.
-  await page.goto("/lesson?picks=kana-row:h-vowels");
+  // Straight to the first star: a fresh lesson opens on the reference pages
+  // nobody has read (SAK-467), and this test is about the order.
+  await lessonOnStepOne(page, "/lesson?picks=kana-row:h-vowels");
   const order = page.getByRole("list").first();
   const references = page.getByRole("list").nth(1);
   await expect(page.getByText("Step 1 of 5")).toBeVisible();
@@ -383,6 +385,49 @@ test("what tonight teaches is settled when the lesson starts, and holds", async 
   await expect(order.getByRole("listitem")).toHaveCount(5);
   await expect(references.getByRole("listitem")).toHaveCount(rested);
   await expect(references.getByText("In your sky")).toHaveCount(0);
+});
+
+test("a reference page nobody has read opens the lesson, and is listed ever after", async ({ page }) => {
+  // SAK-467. Sam: "when an unseen before reference page is in a lesson, when
+  // the lesson opens, it should show the first reference page." And a page
+  // counts as read once it has been in a lesson at all, clicked or not, so
+  // the next lesson listing it opens on step one. Signed out, because the
+  // mark and the lesson that reads it both live in this browser.
+  const order = page.getByRole("list").first();
+  const references = page.getByRole("list").nth(1);
+  const step = page.getByText(/^Step \d+ of \d+$/);
+  const current = page.locator('[aria-current="true"]');
+
+  await page.goto("/lesson?picks=kana-row:h-vowels");
+  await expect(step).toHaveText("Step 1 of 5");
+  // the first page of the list is what is showing, and it is a page of the
+  // list and not a sixth step: the counter has not moved
+  const pages = await references.getByRole("listitem").allInnerTexts();
+  expect(pages.length).toBeGreaterThan(0);
+  await expect(current).toHaveCount(1);
+  await expect(references.getByRole("button").first()).toHaveAttribute("aria-current", "true");
+  await expect(page.locator('[data-lesson-cell="card"]')).toContainText("Kana");
+
+  // Next walks the rest of the pages, still on step one, and then opens the
+  // first star
+  for (let i = 1; i < pages.length; i++) {
+    await page.getByRole("button", { name: "Next", exact: true }).click();
+    await expect(step).toHaveText("Step 1 of 5");
+    await expect(references.getByRole("button").nth(i)).toHaveAttribute("aria-current", "true");
+  }
+  await page.getByRole("button", { name: "Next", exact: true }).click();
+  await expect(step).toHaveText("Step 1 of 5");
+  await expect(references.locator('[aria-current="true"]')).toHaveCount(0);
+  await expect(order.getByRole("button").first()).toHaveAttribute("aria-current", "step");
+
+  // the next lesson lists every one of them again, and opens on step one with
+  // nothing picked out under References
+  await page.goto("/lesson?picks=kana-row:h-k");
+  await expect(step).toHaveText(/^Step 1 of \d+$/);
+  await expect(references.getByRole("listitem")).toHaveCount(pages.length);
+  expect(await references.getByRole("listitem").allInnerTexts()).toEqual(pages);
+  await expect(references.locator('[aria-current="true"]')).toHaveCount(0);
+  await expect(order.getByRole("button").first()).toHaveAttribute("aria-current", "step");
 });
 
 test("the lesson is a two by two, and each row's two panels are one height", async ({ page }) => {
@@ -975,6 +1020,19 @@ test("a visitor's finished quiz says it is saving, and opens the way back once i
   await expect(page.getByRole("heading", { name: "What would you like to learn next?" })).toBeVisible();
 });
 
+/** Open a lesson and go straight to its first star.
+ *
+ * A lesson opened fresh shows the reference pages nobody has read before the
+ * order starts (SAK-467), so a test about the stars would otherwise begin on a
+ * term page. Clicking the top row of "Tonight, in order" is what a learner who
+ * wants to get on with it does, and it lands on step one whether or not there
+ * were pages to read. */
+async function lessonOnStepOne(page: Page, url: string) {
+  await page.goto(url);
+  await expect(page.getByText(/^Step \d+ of \d+$/)).toBeVisible();
+  await page.getByRole("list").first().getByRole("button").first().click();
+}
+
 /** Miss `n` cards on whatever quiz is open, moving on after each. */
 async function missCards(page: Page, n: number) {
   for (let i = 0; i < n; i++) {
@@ -1136,8 +1194,10 @@ test("an unfinished quiz does not get in the way of a lesson (SAK-444)", async (
   // the lesson at all.
   const quizRow = await unfinishedQuiz(page);
 
-  // a lesson, walked two steps in and left
-  await page.goto("/lesson?picks=kana-row:h-w");
+  // a lesson, walked two steps in and left. Straight to the first star,
+  // because this is about the place a lesson keeps and not about the pages it
+  // opens on (SAK-467).
+  await lessonOnStepOne(page, "/lesson?picks=kana-row:h-w");
   const step = page.getByText(/^Step \d+ of \d+$/);
   await expect(step).toHaveText(/^Step 1 of \d+$/);
   for (let i = 0; i < 2; i++) await page.getByRole("button", { name: "Next", exact: true }).click();
@@ -1394,8 +1454,9 @@ test("a lesson card's readings line up in three columns", async ({ page }) => {
   // SAK-413. The reading came first, so か and にち pushed the hear button and
   // the word list to a different x on every row.
   // 日 is the lesson's one step: the terms it rests on are references now
-  // and not steps to walk past (SAK-416).
-  await page.goto(`/lesson?picks=${encodeURIComponent("kanji:日")}`);
+  // and not steps to walk past (SAK-416), and a fresh lesson opens on the
+  // first of them (SAK-467), so this goes straight to the star.
+  await lessonOnStepOne(page, `/lesson?picks=${encodeURIComponent("kanji:日")}`);
   await page.getByRole("button", { name: "Open Readings" }).first().click();
   const panel = page.locator(`[id="${await page.getByRole("button", { name: "Close Readings" }).first().getAttribute("aria-controls")}"]`);
   await expect(panel).toBeVisible();
