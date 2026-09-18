@@ -12,6 +12,14 @@
 // the start for reference, and a star opened stays lit. Order and locking
 // come from src/sky/lib/lesson.ts over the graph.
 //
+// THE BOTTOM HALF CAN TAKE THE WHOLE WINDOW (SAK-471). The round control in
+// the heading, the one the Atlas panel has for widening, puts the sky and
+// References away and gives the card and the order everything under the
+// heading; a second press brings the two by two back. Which view the lesson
+// opens in is this browser's own choice, read once at the start and written
+// on every press by the route (lesson-client.tsx). What the choice means for
+// the grid is in src/sky/lib/lesson-view.ts.
+//
 // The order is what tonight TEACHES. What it rests on is the references
 // (SAK-416): the stars already in the sky under tonight's items, and the
 // terms and intros that apply to what is in the order. A reference opens
@@ -34,13 +42,14 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { StarLook } from "@/sky/components/constellation";
 import { LessonCard, type HearComponent, type PitchComponent } from "@/sky/components/lesson-card";
 import { SkyField } from "@/sky/components/sky-field";
-import { SkyButton } from "@/sky/components/sky-button";
+import { RoundButton, SkyButton } from "@/sky/components/sky-button";
 import { Eyebrow } from "@/sky/components/sky-card";
 import { SkyPageShell } from "@/sky/components/sky-page-shell";
 import { SkyPanel } from "@/sky/components/sky-panel";
 import { buildGraph } from "@/sky/lib/graph";
 import { japaneseFont } from "@/sky/lib/japanese";
 import { isUnlocked, lessonSteps, orderNote, starState, type LessonReference, type LessonTeach } from "@/sky/lib/lesson";
+import { lessonRows, otherView, skyShown, viewLabel, type LessonView } from "@/sky/lib/lesson-view";
 import { KIND_LABEL } from "@/sky/lib/tokens";
 import type { SkyItem } from "@/sky/lib/types";
 
@@ -90,6 +99,12 @@ interface SkyLessonProps {
    * 2026-09-17). Nothing here ever ends the lesson: the sitting runs on into
    * the drill's rounds, and the drill is what keeps it from there. */
   onPlace?: (place: { at: number; steps: number; star: string }) => void;
+  /** The view this browser was last left in (SAK-471), read once when the
+   * lesson opens: the two by two, or its bottom half with the whole window.
+   * The press after that is the lesson's own to hold. */
+  startView?: LessonView;
+  /** A view chosen here, for whoever keeps it between visits. */
+  onView?: (view: LessonView) => void;
   height?: string;
 }
 
@@ -139,7 +154,7 @@ function RailRow({ current, locked = false, lit, glyph, label, eyebrow, onClick 
   );
 }
 
-export function SkyLesson({ data, drillHref, observatoryHref, written, hear, pitch, onOpen, startAt, openPages, onPlace, height }: SkyLessonProps) {
+export function SkyLesson({ data, drillHref, observatoryHref, written, hear, pitch, onOpen, startAt, openPages, onPlace, startView = "split", onView, height }: SkyLessonProps) {
   const graph = useMemo(() => buildGraph(data.items), [data.items]);
   const learned = useMemo(() => new Set(data.learned), [data.learned]);
   const steps = useMemo(() => lessonSteps(graph, data.picks, learned), [graph, data.picks, learned]);
@@ -164,6 +179,14 @@ export function SkyLesson({ data, drillHref, observatoryHref, written, hear, pit
   const [stepAt, setStepAt] = useState<string | null>(steps[from]?.id ?? null);
   // which page of the selected star is showing, for a star taught over several
   const [page, setPage] = useState(0);
+  // Which way the four cells are drawn (SAK-471), and the one press that
+  // turns the two by two into the details and the order with the whole
+  // window. The choice opens on what the browser was holding and is handed
+  // back to it on every press, so a lesson opened tomorrow opens the way this
+  // one was left.
+  const [view, setView] = useState<LessonView>(startView);
+  const rows = lessonRows(view);
+  const flipView = () => { const next = otherView(view); setView(next); onView?.(next); };
   const stepIndex = Math.max(0, steps.findIndex((s) => s.id === stepAt));
   const stepOf = (id: string) => steps.findIndex((s) => s.id === id);
   const pagesOf = (id: string) => (referenceOf.get(id)?.page?.teach ?? data.teach[id])?.pages?.length ?? 1;
@@ -284,22 +307,29 @@ export function SkyLesson({ data, drillHref, observatoryHref, written, hear, pit
     return () => window.removeEventListener("keydown", key);
   }, []);
 
-  const nav = nothing ? (
+  // Everything beside the title, which is where the lesson is walked from and
+  // now where it is resized from too. The heading stays put and never
+  // scrolls, so "Step n of N", Back, Next and the one round control are all
+  // in reach in either view without scrolling anything (SAK-471).
+  const nav = (
     <div className="flex items-center gap-2 font-sky-ui text-[13px] text-sky-muted">
-      {observatoryHref && <SkyButton href={observatoryHref}>Pick something to learn</SkyButton>}
-    </div>
-  ) : (
-    <div className="flex items-center gap-2 font-sky-ui text-[13px] text-sky-muted">
-      <span className="tabular-nums">Step {Math.min(stepIndex + 1, steps.length)} of {steps.length}</span>
-      <SkyButton variant="outline" disabled={!canBack} onClick={back}>Back</SkyButton>
-      {last && drillHref ? (
-        // The drill is the next part of the same sitting, not the end of it
-        // (SAK-444). Opening it used to throw the lesson away, which is what
-        // left a learner mid-round with nothing to come back to; the drill
-        // keeps the sitting from here.
-        <SkyButton href={drillHref}>Drill</SkyButton>
+      <RoundButton label={viewLabel(view)} expanded={view === "filled"} onClick={flipView}>⌃</RoundButton>
+      {nothing ? (
+        observatoryHref && <SkyButton href={observatoryHref}>Pick something to learn</SkyButton>
       ) : (
-        <SkyButton disabled={last} onClick={next}>Next</SkyButton>
+        <>
+          <span className="tabular-nums">Step {Math.min(stepIndex + 1, steps.length)} of {steps.length}</span>
+          <SkyButton variant="outline" disabled={!canBack} onClick={back}>Back</SkyButton>
+          {last && drillHref ? (
+            // The drill is the next part of the same sitting, not the end of
+            // it (SAK-444). Opening it used to throw the lesson away, which is
+            // what left a learner mid-round with nothing to come back to; the
+            // drill keeps the sitting from here.
+            <SkyButton href={drillHref}>Drill</SkyButton>
+          ) : (
+            <SkyButton disabled={last} onClick={next}>Next</SkyButton>
+          )}
+        </>
       )}
     </div>
   );
@@ -314,31 +344,38 @@ export function SkyLesson({ data, drillHref, observatoryHref, written, hear, pit
           sky, details, Tonight, References. Below lg the grid is off, the
           four are that stack, and the body scrolls (it used to clip, so on a
           narrow window References was drawn past the bottom edge with no way
-          to reach it). */}
-      <div ref={body} className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto lg:grid lg:grid-cols-[minmax(0,1fr)_300px] lg:grid-rows-[minmax(180px,42%)_minmax(0,1fr)] lg:overflow-hidden">
+          to reach it).
+
+          The filled view (SAK-471) is the same grid with the top row and the
+          two cells in it gone, so the row holding the card and the order is
+          the only row and takes everything under the heading. Narrow, where
+          the grid is off, the same two cells are simply not in the stack. */}
+      <div ref={body} className={`flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto lg:grid lg:grid-cols-[minmax(0,1fr)_300px] ${rows.body} lg:overflow-hidden`}>
         {/* nothing to rest on leaves no hole: the sky takes the whole top row */}
-        <div data-lesson-cell="sky" className={`relative h-[28%] min-h-[150px] shrink-0 overflow-hidden rounded-2xl border border-sky-line md:h-[42%] md:min-h-[180px] lg:col-start-1 lg:row-start-1 lg:h-auto lg:min-h-0 lg:shrink ${references.length ? "" : "lg:col-span-2"}`}>
-          <SkyField
-            items={data.items}
-            roots={taught}
-            graph={graph}
-            width={1120}
-            height={400}
-            pad={40}
-            baseSize={56}
-            fill
-            lookOf={lookOf}
-            briefTooltip={(id) => stateOf(id) === "locked"}
-            onStarClick={open}
-            starDisabled={(id) => stateOf(id) === "locked"}
-            fog
-            seed="lesson"
-            label="Tonight's constellations, with a star for every piece, character and word"
-          />
-        </div>
+        {skyShown(view) && (
+          <div data-lesson-cell="sky" className={`relative h-[28%] min-h-[150px] shrink-0 overflow-hidden rounded-2xl border border-sky-line md:h-[42%] md:min-h-[180px] lg:col-start-1 lg:row-start-1 lg:h-auto lg:min-h-0 lg:shrink ${references.length ? "" : "lg:col-span-2"}`}>
+            <SkyField
+              items={data.items}
+              roots={taught}
+              graph={graph}
+              width={1120}
+              height={400}
+              pad={40}
+              baseSize={56}
+              fill
+              lookOf={lookOf}
+              briefTooltip={(id) => stateOf(id) === "locked"}
+              onStarClick={open}
+              starDisabled={(id) => stateOf(id) === "locked"}
+              fog
+              seed="lesson"
+              label="Tonight's constellations, with a star for every piece, character and word"
+            />
+          </div>
+        )}
         {/* bottom left: the card, which scrolls inside its own cell beside
             the order. Below lg it is as tall as it is and the body scrolls. */}
-        <div data-lesson-cell="card" ref={cardBox} className="min-h-0 shrink-0 lg:col-start-1 lg:row-start-2 lg:shrink lg:overflow-y-auto lg:pr-1">
+        <div data-lesson-cell="card" ref={cardBox} className={`min-h-0 shrink-0 lg:col-start-1 ${rows.bottom} lg:shrink lg:overflow-y-auto lg:pr-1`}>
           {openPage ? (
             // a page is the same card a star gets (Sam, 2026-09-05), with
             // nothing under it and nothing to hear of its own
@@ -367,7 +404,7 @@ export function SkyLesson({ data, drillHref, observatoryHref, written, hear, pit
             scrolls inside itself now that each owns a cell of its own; the
             column that used to scroll them both (SAK-416) is gone with the
             column. */}
-        <div data-lesson-cell="order" className="flex min-h-0 shrink-0 lg:col-start-2 lg:row-start-2 lg:shrink">
+        <div data-lesson-cell="order" className={`flex min-h-0 shrink-0 lg:col-start-2 ${rows.bottom} lg:shrink`}>
           <SkyPanel title="Tonight, in order" className="flex h-full min-h-0 w-full flex-col !p-4">
             {/* why the order runs the way it does, when tonight has a shape
                 to explain; nothing at all when it does not (SAK-464) */}
@@ -403,7 +440,7 @@ export function SkyLesson({ data, drillHref, observatoryHref, written, hear, pit
             the Atlas. Sam: "it should say term." A star already in the sky
             is not a kind of thing but a reason to be in this list, so it
             keeps saying so. */}
-        {references.length > 0 && (
+        {skyShown(view) && references.length > 0 && (
           <div data-lesson-cell="references" className="flex min-h-0 shrink-0 lg:col-start-2 lg:row-start-1 lg:shrink">
             <SkyPanel title="References" className="flex h-full min-h-0 w-full flex-col !p-4">
               <ul className="mt-3 flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto lg:pr-1">

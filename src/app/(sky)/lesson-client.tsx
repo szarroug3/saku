@@ -33,12 +33,17 @@
 // moment it opens, clicked or not, so the next lesson listing it opens on step
 // one. A lesson picked up through Continue keeps SAK-444's place instead: it
 // is handed no pages, and where it was left wins.
+//
+// AND IT OPENS THE WAY IT WAS LEFT LOOKING (SAK-471). Whether the bottom half
+// was filling the window is one key in this browser, read here and written on
+// every press of the control in the heading.
 
 import { useCallback, useEffect, useMemo, useRef } from "react";
 
 import { HearButton } from "./hear-button";
 import { SkyLesson, type SkyLessonData } from "@/sky/components/sky-lesson";
 import { referencePages, unseenPages } from "@/sky/lib/lesson";
+import { lessonView, type LessonView } from "@/sky/lib/lesson-view";
 import { hasPlace, lessonAt, lessonFor, NO_PLACE, type SavedPlace } from "@/sky/lib/place";
 
 import { loadLesson } from "./actions";
@@ -47,8 +52,17 @@ import { useSkyData } from "./local";
 import { seePages, usePagesSeenAtOpen } from "./pages-seen";
 import { PitchMark } from "./pitch-reading";
 import { keepLesson, usePlaceAtOpen } from "./quiz-run-store";
+import { useStored, writeStored } from "./stored";
 import { WrittenBlock } from "./written-block";
 import { seeId } from "./writes";
+
+/** Which way the lesson's cells were last drawn (SAK-471). This browser's,
+ * not this account's: it is how a learner likes to read on the screen in
+ * front of them, the same as the Atlas panel's width, so it is kept here
+ * rather than in the settings the account syncs. The pretend learner and the
+ * showcase keep it too, since it is a choice about the window and not about
+ * what anyone has learned. */
+const LESSON_VIEW_KEY = "sky:lesson:view";
 
 export function LessonClient({ sample, showcase, signedIn, initial, picks, accountPlace = NO_PLACE }: { sample: boolean; showcase: boolean; signedIn: boolean; initial: SkyLessonData | null; picks: readonly string[]; accountPlace?: SavedPlace }) {
   const load = useCallback((w: Parameters<typeof loadLesson>[0]) => loadLesson(w, picks), [picks]);
@@ -77,6 +91,12 @@ export function LessonClient({ sample, showcase, signedIn, initial, picks, accou
   // none, the way they record nothing: those two screens are a look at the
   // whole lesson, so they open on step one every time.
   const shown = usePagesSeenAtOpen();
+  // The view the lesson opens in, and where a press puts the new one. Read
+  // live rather than once: nothing in the lesson depends on it but the
+  // layout, so a second tab changing it is not a problem the way a moving
+  // place or a moving page list would be.
+  const startView = lessonView(useStored<unknown>(LESSON_VIEW_KEY, null));
+  const onView = useCallback((view: LessonView) => writeStored(LESSON_VIEW_KEY, view), []);
   const references = data?.references;
   const pages = useMemo(() => referencePages(references ?? []), [references]);
   const openPages = useMemo(
@@ -119,6 +139,8 @@ export function LessonClient({ sample, showcase, signedIn, initial, picks, accou
       startAt={startAt}
       openPages={openPages}
       onPlace={sample || showcase ? undefined : onPlace}
+      startView={startView}
+      onView={onView}
     />
   );
 }

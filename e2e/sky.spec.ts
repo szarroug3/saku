@@ -515,6 +515,67 @@ test("the lesson is a two by two, and each row's two panels are one height", asy
   expect(seen && seen.y).toBeLessThan(900);
 });
 
+test("the lesson's bottom half can take the whole window, and the choice holds (SAK-471)", async ({ page }) => {
+  // SAK-471. Sam: "i would like the bottom half of this page (the lesson
+  // details and tonight, in order) to be resizable or at least expandable so
+  // the user can make it fill up the full screen or something similar to the
+  // atlas page."
+  const cell = async (name: string) => {
+    const box = await page.locator(`[data-lesson-cell="${name}"]`).boundingBox();
+    if (!box) throw new Error(`no ${name} cell`);
+    return box;
+  };
+  const lesson = `/lesson?sample&picks=${encodeURIComponent("word:電車")}`;
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto(lesson);
+  await expect(page.getByRole("heading", { name: "References", exact: true })).toBeVisible();
+  const sky = await cell("sky");
+  const wasCard = await cell("card");
+
+  const fill = page.getByRole("button", { name: "Fill the screen with the details" });
+  await expect(fill).toHaveAttribute("aria-expanded", "false");
+  await fill.click();
+  // the sky and References are out of the way, and the card has the space
+  // they were in: it starts where the sky started and ends where it ended
+  await expect(page.locator('[data-lesson-cell="sky"]')).toHaveCount(0);
+  await expect(page.locator('[data-lesson-cell="references"]')).toHaveCount(0);
+  const card = await cell("card");
+  const order = await cell("order");
+  expect(card.height).toBeGreaterThan(wasCard.height + sky.height);
+  expect(Math.abs(card.y - sky.y)).toBeLessThanOrEqual(1);
+  expect(Math.abs(card.y + card.height - (wasCard.y + wasCard.height))).toBeLessThanOrEqual(1);
+  // and the two panels under the heading are still exactly one height
+  expect(Math.abs(order.height - card.height)).toBeLessThanOrEqual(1);
+  // the step and the buttons that walk it are still in reach, unscrolled
+  await expect(page.getByText(/^Step \d+ of \d+$/)).toBeVisible();
+  const next = await page.getByRole("button", { name: "Next", exact: true }).boundingBox();
+  expect(next && next.y + next.height).toBeLessThan(900);
+
+  // a second press brings the two by two back, the size it was
+  const bring = page.getByRole("button", { name: "Bring the sky back" });
+  await expect(bring).toHaveAttribute("aria-expanded", "true");
+  await bring.click();
+  await expect(page.locator('[data-lesson-cell="sky"]')).toBeVisible();
+  expect(Math.abs((await cell("card")).height - wasCard.height)).toBeLessThanOrEqual(1);
+
+  // the choice is this browser's, so a lesson opened again opens in it
+  await page.getByRole("button", { name: "Fill the screen with the details" }).click();
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Tonight, in order" })).toBeVisible();
+  await expect(page.locator('[data-lesson-cell="sky"]')).toHaveCount(0);
+
+  // narrow, where the four are a stack rather than a grid, the same press
+  // leaves the details and the order with the whole of it
+  await page.setViewportSize({ width: 760, height: 900 });
+  await page.goto(lesson);
+  await expect(page.getByRole("heading", { name: "Tonight, in order" })).toBeVisible();
+  await expect(page.locator('[data-lesson-cell="sky"]')).toHaveCount(0);
+  const narrow = await cell("card");
+  await page.getByRole("button", { name: "Bring the sky back" }).click();
+  await expect(page.locator('[data-lesson-cell="sky"]')).toBeVisible();
+  expect((await cell("card")).y).toBeGreaterThan(narrow.y);
+});
+
 test("a button that is a link walks there instead of reloading the page", async ({ page }) => {
   // SAK-362. SkyButton with an href rendered a plain anchor, so every one of
   // them threw the loaded app away and fetched the whole page again.
