@@ -12,13 +12,15 @@
 // the start for reference, and a star opened stays lit. Order and locking
 // come from src/sky/lib/lesson.ts over the graph.
 //
-// THE BOTTOM HALF CAN TAKE THE WHOLE WINDOW (SAK-471). The round control in
-// the heading, the one the Atlas panel has for widening, puts the sky and
-// References away and gives the card and the order everything under the
-// heading; a second press brings the two by two back. Which view the lesson
-// opens in is this browser's own choice, read once at the start and written
-// on every press by the route (lesson-client.tsx). What the choice means for
-// the grid is in src/sky/lib/lesson-view.ts.
+// THE DETAILS CARD IS DRAGGED TALLER (SAK-471). It has a handle on its top
+// edge, the one the Atlas entry panel has on its left edge, and a round button
+// beside the handle that does the whole way in one press. Dragging up shortens
+// the sky above the card; dragging down gives the sky its room back, to the
+// two by two and no further. References and "Tonight, in order" are drawn at
+// their own heights in the right column and never move, whatever the handle
+// does. How far up the handle was left is this browser's own choice, read once
+// at the start and written on every drag by the route (lesson-client.tsx), and
+// what the number means for the grid is in src/sky/lib/lesson-split.ts.
 //
 // The order is what tonight TEACHES. What it rests on is the references
 // (SAK-416): the stars already in the sky under tonight's items, and the
@@ -37,7 +39,7 @@
 // lesson stands on step one the whole way through the lead, and the pages
 // are never steps.
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 
 import type { StarLook } from "@/sky/components/constellation";
 import { LessonCard, type HearComponent, type PitchComponent } from "@/sky/components/lesson-card";
@@ -49,7 +51,7 @@ import { SkyPanel } from "@/sky/components/sky-panel";
 import { buildGraph } from "@/sky/lib/graph";
 import { japaneseFont } from "@/sky/lib/japanese";
 import { isUnlocked, lessonSteps, orderNote, starState, type LessonReference, type LessonTeach } from "@/sky/lib/lesson";
-import { lessonRows, otherView, skyShown, viewLabel, type LessonView } from "@/sky/lib/lesson-view";
+import { detailsFloor, detailsPercent, dragSplit, lessonSplit, pressedSplit, skyShown, splitLabel, splitStyle, stepSplit } from "@/sky/lib/lesson-split";
 import { KIND_LABEL } from "@/sky/lib/tokens";
 import type { SkyItem } from "@/sky/lib/types";
 
@@ -99,12 +101,11 @@ interface SkyLessonProps {
    * 2026-09-17). Nothing here ever ends the lesson: the sitting runs on into
    * the drill's rounds, and the drill is what keeps it from there. */
   onPlace?: (place: { at: number; steps: number; star: string }) => void;
-  /** The view this browser was last left in (SAK-471), read once when the
-   * lesson opens: the two by two, or its bottom half with the whole window.
-   * The press after that is the lesson's own to hold. */
-  startView?: LessonView;
-  /** A view chosen here, for whoever keeps it between visits. */
-  onView?: (view: LessonView) => void;
+  /** How much of the left column the sky was left with (SAK-471), read once
+   * when the lesson opens. The drags after that are the lesson's own to hold. */
+  startSky?: number;
+  /** A share the learner dragged to, for whoever keeps it between visits. */
+  onSky?: (share: number) => void;
   height?: string;
 }
 
@@ -154,7 +155,7 @@ function RailRow({ current, locked = false, lit, glyph, label, eyebrow, onClick 
   );
 }
 
-export function SkyLesson({ data, drillHref, observatoryHref, written, hear, pitch, onOpen, startAt, openPages, onPlace, startView = "split", onView, height }: SkyLessonProps) {
+export function SkyLesson({ data, drillHref, observatoryHref, written, hear, pitch, onOpen, startAt, openPages, onPlace, startSky, onSky, height }: SkyLessonProps) {
   const graph = useMemo(() => buildGraph(data.items), [data.items]);
   const learned = useMemo(() => new Set(data.learned), [data.learned]);
   const steps = useMemo(() => lessonSteps(graph, data.picks, learned), [graph, data.picks, learned]);
@@ -179,14 +180,10 @@ export function SkyLesson({ data, drillHref, observatoryHref, written, hear, pit
   const [stepAt, setStepAt] = useState<string | null>(steps[from]?.id ?? null);
   // which page of the selected star is showing, for a star taught over several
   const [page, setPage] = useState(0);
-  // Which way the four cells are drawn (SAK-471), and the one press that
-  // turns the two by two into the details and the order with the whole
-  // window. The choice opens on what the browser was holding and is handed
-  // back to it on every press, so a lesson opened tomorrow opens the way this
-  // one was left.
-  const [view, setView] = useState<LessonView>(startView);
-  const rows = lessonRows(view);
-  const flipView = () => { const next = otherView(view); setView(next); onView?.(next); };
+  // How much of the left column the sky has (SAK-471). It opens on what the
+  // browser was holding and is handed back on every drag and press, so a
+  // lesson opened tomorrow opens as tall as this one was left.
+  const [sky, setSky] = useState(() => lessonSplit(startSky));
   const stepIndex = Math.max(0, steps.findIndex((s) => s.id === stepAt));
   const stepOf = (id: string) => steps.findIndex((s) => s.id === id);
   const pagesOf = (id: string) => (referenceOf.get(id)?.page?.teach ?? data.teach[id])?.pages?.length ?? 1;
@@ -222,6 +219,41 @@ export function SkyLesson({ data, drillHref, observatoryHref, written, hear, pit
   const rail = useRef<HTMLOListElement>(null);
   useEffect(() => { cardBox.current?.scrollTo({ top: 0 }); body.current?.scrollTo({ top: 0 }); }, [selected, page]);
   useEffect(() => { rail.current?.querySelector('[aria-current="step"]')?.scrollIntoView({ block: "nearest" }); }, [selected]);
+
+  // THE HANDLE (SAK-471), built the way the Atlas panel's is: the pointer is
+  // followed on the window rather than on the handle, so a fast drag that
+  // leaves the 12px strip keeps resizing, and the listeners come off on the
+  // first pointerup. The left column's height is read once per drag from the
+  // body grid's own box, which does not change while the drag runs: the right
+  // column is what fixes it, and the right column is not being dragged.
+  //
+  // The share the learner is left with goes to the route on pointerup rather
+  // than on every move, so one drag writes to the browser once. `held` is what
+  // the writer reads, because `setSky` does not hand the new value back.
+  const held = useRef(lessonSplit(startSky));
+  const put = (share: number) => { held.current = share; setSky(share); };
+  const columnHeight = () => body.current?.clientHeight ?? 0;
+  const startDrag = (e: ReactPointerEvent<HTMLDivElement>) => {
+    const from = e.clientY, was = sky, column = columnHeight();
+    const move = (ev: PointerEvent) => put(dragSplit(was, ev.clientY - from, column));
+    const stop = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", stop);
+      onSky?.(held.current);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", stop);
+    e.preventDefault();
+  };
+  // the handle is focusable, and the arrow keys move it a line of text at a
+  // time; the round button beside it does the whole way in one press
+  const nudge = (up: boolean) => { const next = stepSplit(sky, up, columnHeight()); put(next); onSky?.(next); };
+  const pressHandle = (e: ReactKeyboardEvent<HTMLDivElement>) => {
+    if (e.key !== "ArrowUp" && e.key !== "ArrowDown") return;
+    e.preventDefault();
+    nudge(e.key === "ArrowUp");
+  };
+  const flipSky = () => { const next = pressedSplit(sky); put(next); onSky?.(next); };
 
   // Where the lesson stands, written down the moment it opens and after every
   // step (SAK-444), so the one Continue button can offer the lesson back the
@@ -307,13 +339,11 @@ export function SkyLesson({ data, drillHref, observatoryHref, written, hear, pit
     return () => window.removeEventListener("keydown", key);
   }, []);
 
-  // Everything beside the title, which is where the lesson is walked from and
-  // now where it is resized from too. The heading stays put and never
-  // scrolls, so "Step n of N", Back, Next and the one round control are all
-  // in reach in either view without scrolling anything (SAK-471).
+  // Everything beside the title, which is where the lesson is walked from.
+  // The heading stays put and never scrolls, so "Step n of N", Back and Next
+  // are in reach however tall the card has been dragged (SAK-471).
   const nav = (
     <div className="flex items-center gap-2 font-sky-ui text-[13px] text-sky-muted">
-      <RoundButton label={viewLabel(view)} expanded={view === "filled"} onClick={flipView}>⌃</RoundButton>
       {nothing ? (
         observatoryHref && <SkyButton href={observatoryHref}>Pick something to learn</SkyButton>
       ) : (
@@ -346,65 +376,106 @@ export function SkyLesson({ data, drillHref, observatoryHref, written, hear, pit
           narrow window References was drawn past the bottom edge with no way
           to reach it).
 
-          The filled view (SAK-471) is the same grid with the top row and the
-          two cells in it gone, so the row holding the card and the order is
-          the only row and takes everything under the heading. Narrow, where
-          the grid is off, the same two cells are simply not in the stack. */}
-      <div ref={body} className={`flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto lg:grid lg:grid-cols-[minmax(0,1fr)_300px] ${rows.body} lg:overflow-hidden`}>
-        {/* nothing to rest on leaves no hole: the sky takes the whole top row */}
-        {skyShown(view) && (
-          <div data-lesson-cell="sky" className={`relative h-[28%] min-h-[150px] shrink-0 overflow-hidden rounded-2xl border border-sky-line md:h-[42%] md:min-h-[180px] lg:col-start-1 lg:row-start-1 lg:h-auto lg:min-h-0 lg:shrink ${references.length ? "" : "lg:col-span-2"}`}>
-            <SkyField
-              items={data.items}
-              roots={taught}
-              graph={graph}
-              width={1120}
-              height={400}
-              pad={40}
-              baseSize={56}
-              fill
-              lookOf={lookOf}
-              briefTooltip={(id) => stateOf(id) === "locked"}
-              onStarClick={open}
-              starDisabled={(id) => stateOf(id) === "locked"}
-              fog
-              seed="lesson"
-              label="Tonight's constellations, with a star for every piece, character and word"
-            />
-          </div>
-        )}
-        {/* bottom left: the card, which scrolls inside its own cell beside
-            the order. Below lg it is as tall as it is and the body scrolls. */}
-        <div data-lesson-cell="card" ref={cardBox} className={`min-h-0 shrink-0 lg:col-start-1 ${rows.bottom} lg:shrink lg:overflow-y-auto lg:pr-1`}>
-          {openPage ? (
-            // a page is the same card a star gets (Sam, 2026-09-05), with
-            // nothing under it and nothing to hear of its own
-            <LessonCard className="min-h-full" item={openPage.item} teach={openPage.teach} madeOf={[]} partOf={[]} hear={hear} pitch={pitch} page={page} onPage={setPage} onSelect={open} />
-          ) : current ? (
-            <LessonCard
-              className="min-h-full"
-              item={current}
-              teach={data.teach[current.id]}
-              madeOf={itemsOf(graph.prerequisitesOf(current.id))}
-              partOf={itemsOf(graph.dependentsOf(current.id).filter((d) => tonight.has(d)))}
-              written={written?.[current.id]}
-              hear={hear}
-              pitch={pitch}
-              page={page}
-              onPage={setPage}
-              onSelect={open}
-            />
-          ) : (
-            <SkyPanel title="Nothing to teach">
-              <p className="mt-2 text-[14px] text-sky-muted">Everything picked is already in your sky. There is no lesson to give you, so pick something new, or practice what you have.</p>
-            </SkyPanel>
-          )}
+          THE TWO ROWS ARE THE LEFT COLUMN'S ALONE (SAK-471). The top row is
+          `--sky-row`, which the handle on the card's top edge writes, and the
+          card's row takes whatever is left. References and the order are drawn
+          over BOTH rows instead, each at its own share of the same height and
+          pushed to the top or the bottom of that area, so their boxes are
+          fixed by the height of the grid and by nothing the handle does. That
+          is what lets the card grow without References or the order moving by
+          a pixel, and at rest the shares are the rows' own, so the sky and
+          References are the same height and the card and the order are the
+          same height. The row gap goes to zero along with the row when the sky
+          is put away, so the card has the whole column and not the column less
+          a gap. */}
+      <div ref={body} style={splitStyle(sky) as CSSProperties} className="flex min-h-0 flex-1 flex-col gap-x-4 gap-y-4 overflow-y-auto lg:grid lg:grid-cols-[minmax(0,1fr)_300px] lg:grid-rows-[var(--sky-row)_minmax(0,1fr)] lg:gap-y-[var(--sky-gap)] lg:overflow-hidden">
+        {/* Nothing to rest on leaves no hole: the sky takes the whole top row.
+            Dragged all the way up it is not drawn at lg at all, and it is
+            always drawn below lg, where the four are a stack and the handle is
+            not offered. */}
+        <div data-lesson-cell="sky" className={`relative h-[28%] min-h-[150px] shrink-0 overflow-hidden rounded-2xl border border-sky-line md:h-[42%] md:min-h-[180px] lg:col-start-1 lg:row-start-1 lg:h-auto lg:min-h-0 lg:shrink ${references.length ? "" : "lg:col-span-2"} ${skyShown(sky) ? "" : "lg:hidden"}`}>
+          <SkyField
+            items={data.items}
+            roots={taught}
+            graph={graph}
+            width={1120}
+            height={400}
+            pad={40}
+            baseSize={56}
+            fill
+            lookOf={lookOf}
+            briefTooltip={(id) => stateOf(id) === "locked"}
+            onStarClick={open}
+            starDisabled={(id) => stateOf(id) === "locked"}
+            fog
+            seed="lesson"
+            label="Tonight's constellations, with a star for every piece, character and word"
+          />
         </div>
-        {/* bottom right: the order, as tall as the card beside it. Each panel
-            scrolls inside itself now that each owns a cell of its own; the
-            column that used to scroll them both (SAK-416) is gone with the
-            column. */}
-        <div data-lesson-cell="order" className={`flex min-h-0 shrink-0 lg:col-start-2 ${rows.bottom} lg:shrink`}>
+        {/* Bottom left: the card, which scrolls inside its own cell beside the
+            order. Below lg it is as tall as it is and the body scrolls.
+
+            The handle and the round button are drawn in the gap above it, out
+            of the layout, the way the Atlas panel's handle is drawn in the gap
+            to its left. With the sky put away there is no gap and no room
+            above the grid either (the page body clips what hangs over its
+            top), so the two of them move down onto the card's own top edge,
+            over its padding. Neither is offered below lg: there is no sky
+            above the card there to take room from. */}
+        <div data-lesson-cell="card" className="relative min-h-0 shrink-0 lg:col-start-1 lg:row-start-2 lg:shrink">
+          <div
+            role="separator"
+            aria-orientation="horizontal"
+            aria-label="Drag to make the details taller"
+            aria-valuenow={detailsPercent(sky)}
+            aria-valuemin={detailsFloor()}
+            aria-valuemax={100}
+            aria-controls="lesson-details"
+            tabIndex={0}
+            title="Drag to resize"
+            onPointerDown={startDrag}
+            onKeyDown={pressHandle}
+            className={`group absolute right-0 left-0 z-10 hidden h-3 cursor-row-resize touch-none lg:flex lg:items-center lg:justify-center ${skyShown(sky) ? "-top-3" : "top-0"}`}
+          >
+            <span aria-hidden className="h-0.5 w-16 rounded-full bg-sky-line group-hover:bg-sky-accent group-focus:bg-sky-accent" />
+          </div>
+          <span className={`absolute z-20 hidden lg:block ${skyShown(sky) ? "-top-[22px] right-0" : "top-1 right-1"}`}>
+            <RoundButton label={splitLabel(sky)} expanded={!skyShown(sky)} controls="lesson-details" onClick={flipSky} className="bg-sky-panel">⌃</RoundButton>
+          </span>
+          <div id="lesson-details" ref={cardBox} className="min-h-0 lg:h-full lg:overflow-y-auto lg:pr-1">
+            {openPage ? (
+              // a page is the same card a star gets (Sam, 2026-09-05), with
+              // nothing under it and nothing to hear of its own
+              <LessonCard className="min-h-full" item={openPage.item} teach={openPage.teach} madeOf={[]} partOf={[]} hear={hear} pitch={pitch} page={page} onPage={setPage} onSelect={open} />
+            ) : current ? (
+              <LessonCard
+                className="min-h-full"
+                item={current}
+                teach={data.teach[current.id]}
+                madeOf={itemsOf(graph.prerequisitesOf(current.id))}
+                partOf={itemsOf(graph.dependentsOf(current.id).filter((d) => tonight.has(d)))}
+                written={written?.[current.id]}
+                hear={hear}
+                pitch={pitch}
+                page={page}
+                onPage={setPage}
+                onSelect={open}
+              />
+            ) : (
+              <SkyPanel title="Nothing to teach">
+                <p className="mt-2 text-[14px] text-sky-muted">Everything picked is already in your sky. There is no lesson to give you, so pick something new, or practice what you have.</p>
+              </SkyPanel>
+            )}
+          </div>
+        </div>
+        {/* Bottom right: the order. It is drawn over both rows and pushed to
+            the bottom of them at its own height, which is the second row's
+            height in the two by two, so it is as tall as the card beside it at
+            rest and stays exactly where it is while the card grows (SAK-471).
+            Each panel scrolls inside itself now that each owns a cell of its
+            own; the column that used to scroll them both (SAK-416) is gone
+            with the column. */}
+        <div data-lesson-cell="order" className="flex min-h-0 shrink-0 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:h-[calc(58%-1rem)] lg:shrink lg:self-end">
           <SkyPanel title="Tonight, in order" className="flex h-full min-h-0 w-full flex-col !p-4">
             {/* why the order runs the way it does, when tonight has a shape
                 to explain; nothing at all when it does not (SAK-464) */}
@@ -428,10 +499,13 @@ export function SkyLesson({ data, drillHref, observatoryHref, written, hear, pit
             </ol>
           </SkyPanel>
         </div>
-        {/* top right, beside the sky and exactly as tall as it: what tonight
-            rests on. Nothing here is a step, so a row wears no lock and
-            opening one leaves "Step n of N" where it was. An empty list is
-            not a panel (SAK-416) and not a cell either (SAK-446).
+        {/* Top right, beside the sky and exactly as tall as it: what tonight
+            rests on. It is drawn over both rows at the sky's own share of them
+            and pushed to the top, so it keeps that height and that place
+            however far the card below is dragged (SAK-471). Nothing here is a
+            step, so a row wears no lock and opening one leaves "Step n of N"
+            where it was. An empty list is not a panel (SAK-416) and not a cell
+            either (SAK-446).
 
             A page's eyebrow is the KIND word, the one the Atlas and the
             Observatory use for the same thing (SAK-432). It used to be the
@@ -440,8 +514,8 @@ export function SkyLesson({ data, drillHref, observatoryHref, written, hear, pit
             the Atlas. Sam: "it should say term." A star already in the sky
             is not a kind of thing but a reason to be in this list, so it
             keeps saying so. */}
-        {skyShown(view) && references.length > 0 && (
-          <div data-lesson-cell="references" className="flex min-h-0 shrink-0 lg:col-start-2 lg:row-start-1 lg:shrink">
+        {references.length > 0 && (
+          <div data-lesson-cell="references" className="flex min-h-0 shrink-0 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:h-[42%] lg:shrink lg:self-start">
             <SkyPanel title="References" className="flex h-full min-h-0 w-full flex-col !p-4">
               <ul className="mt-3 flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto lg:pr-1">
                 {references.map((r) => {
