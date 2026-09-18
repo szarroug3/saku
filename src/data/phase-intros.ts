@@ -654,7 +654,7 @@ export const DAKUTEN_H: PhaseIntro = {
   id: "intro-dakuten-hiragana",
   name: "Dakuten and handakuten",
   setId: "hiragana",
-  title: "Two marks change the sound, not the character.",
+  title: "Two marks change the sound without changing the character.",
   body: [
     {
       mark: "゛",
@@ -673,7 +673,7 @@ export const DAKUTEN_H: PhaseIntro = {
     // at once and the sentence is true of the pair. Only the split needed to know
     // which mark it belongs to.
     {
-      text: "Nothing new to draw: every one of these is a kana you already know, with a mark on it.",
+      text: "There is nothing new to draw: every one of these is a kana you already know, with a mark on it.",
     },
     // TAGGED ゛: the count is the two strokes' alone (the circle makes five),
     // so it stays off the handakuten page. See `bodyFor` in data/marks.ts.
@@ -688,7 +688,7 @@ export const DAKUTEN_K: PhaseIntro = {
   id: "intro-dakuten-katakana",
   name: "Dakuten and handakuten in katakana",
   setId: "katakana",
-  title: "Two marks change the sound, not the character.",
+  title: "Two marks change the sound without changing the character.",
   body: [
     {
       mark: "゛",
@@ -716,14 +716,14 @@ export const COMBO_H: PhaseIntro = {
   title: "A small や, ゆ or よ fuses onto the kana in front of it.",
   body: [
     {
-      text: "Only the い-row kana take these: き, し, ち, に, ひ, み, り and their voiced partners. き with a small ゃ is one sound in one beat, kya, not two.",
+      text: "Only the い-row kana take these: き, し, ち, に, ひ, み, り and their voiced partners. き with a small ゃ is kya, one sound in one beat.",
     },
     {
       lead: "The size is the whole tell.",
-      text: "きゃ, with the small ゃ, is “kya”. きや, with a full-size や, is “kiya”: two separate sounds, two beats. Side by side the difference is obvious; on its own, look at the height. You will misread a few at first. That is normal, and it stops once you have seen enough of them.",
+      text: "きゃ, with the small ゃ, is “kya”. きや, with a full-size や, is “kiya”: two separate sounds, two beats. Side by side the difference is obvious; on its own, look at the height. You will misread a few at first. That is normal. It stops once you have seen enough of them.",
     },
     {
-      text: "No new shapes again. Each one is two characters you already know, one of them shrunk. These are called yōon: a small ゃ, ゅ or ょ fused onto the kana in front of it.",
+      text: "There are no new shapes here either. Each one is two characters you already know, one of them shrunk. These are called yōon: a small ゃ, ゅ or ょ fused onto the kana in front of it.",
     },
   ],
   examples: [
@@ -740,14 +740,14 @@ export const COMBO_K: PhaseIntro = {
   title: "A small ャ, ュ or ョ fuses onto the kana in front of it.",
   body: [
     {
-      text: "Only the イ-row kana take these: キ, シ, チ, ニ, ヒ, ミ, リ and their voiced partners. キ with a small ャ is one sound in one beat, kya, not two.",
+      text: "Only the イ-row kana take these: キ, シ, チ, ニ, ヒ, ミ, リ and their voiced partners. キ with a small ャ is kya, one sound in one beat.",
     },
     {
       lead: "The size is the whole tell.",
-      text: "キャ, with the small ャ, is “kya”. キヤ, with a full-size ヤ, is “kiya”: two separate sounds, two beats. Side by side the difference is obvious; on its own, look at the height. You will misread a few at first. That is normal, and it stops once you have seen enough of them.",
+      text: "キャ, with the small ャ, is “kya”. キヤ, with a full-size ヤ, is “kiya”: two separate sounds, two beats. Side by side the difference is obvious; on its own, look at the height. You will misread a few at first. That is normal. It stops once you have seen enough of them.",
     },
     {
-      text: "Same rule as the hiragana yōon, on shapes you already know. Nothing new to draw.",
+      text: "The rule is the one you saw in hiragana, on shapes you already know. There is nothing new to draw.",
     },
   ],
   examples: [
@@ -772,7 +772,7 @@ export const LONG_H: PhaseIntro = {
     },
     {
       lead: "Two that surprise people.",
-      text: "え is usually lengthened with い, not another え. And お is usually lengthened with う, not another お.",
+      text: "You would expect え to be held with another え, but it is usually held with い. お works the same way: it takes う.",
     },
   ],
   examples: [
@@ -790,11 +790,11 @@ export const LONG_K: PhaseIntro = {
   title: "Katakana holds a vowel with one long dash.",
   body: [
     {
-      text: "Same rule as hiragana: a held vowel makes a different word. Katakana just writes it differently, with a single dash, ー, whatever the vowel is.",
+      text: "The rule is the same as in hiragana: a held vowel makes a different word. Katakana writes it differently, with a single dash, ー, whatever the vowel is.",
     },
     {
       lead: "One mark covers all five vowels,",
-      text: "so there is no え+い or お+う to remember on this side. ー just means “hold the vowel before it”.",
+      text: "so there is no え+い or お+う to remember on this side. ー means “hold the vowel before it”.",
     },
     {
       text: "It follows the direction of the writing: horizontal in a horizontal line, and turned upright when the text runs down the page.",
@@ -860,12 +860,12 @@ export const SOKUON_H: PhaseIntro = {
       text: "It is never said on its own. It stops the mouth for one beat and doubles the consonant that comes after it.",
     },
     {
-      lead: "The size is the whole tell, again.",
+      lead: "The size is the whole tell here too.",
       text: "きって, with the small っ, is “kitte”. きつて, with a full-size つ, would be “kitsute”: three separate sounds. Look at the height, exactly as you do with ゃ.",
     },
     {
-      lead: "It is a beat, not a gap.",
-      text: "The pause takes as long as any other kana does, which is why きて and きって are two different words rather than one said carelessly.",
+      lead: "The っ is a beat of its own.",
+      text: "The pause takes as long as any other kana does. That is what makes きて and きって two different words.",
     },
   ],
   examples: [
@@ -883,7 +883,7 @@ export const SOKUON_K: PhaseIntro = {
     {
       mark: "ッ",
       lead: "(small tsu): a shrunken ツ.",
-      text: "The same rule you saw in hiragana, on katakana shapes.",
+      text: "This is the same rule you saw in hiragana, on katakana shapes.",
     },
     {
       lead: "Borrowed words are full of it,",
@@ -1000,11 +1000,11 @@ export const ITERATION_MARK: PhaseIntro = {
     },
     {
       lead: "It stands in for the character before it.",
-      text: "人々 is 人 written twice, and you read it as though it were written out. The second half usually takes the same voicing as dakuten, so it is ひとびと, hito-bito, not hito-hito.",
+      text: "人々 is 人 written twice, and you read it as though it were written out. The second half usually takes the same voicing as dakuten, so it is ひとびと: the second ひと starts with び.",
     },
     {
       lead: "It shows up in compounds.",
-      text: "Repeating a noun this way often reads as a plural or as “various”. It happens with certain words only, not the general way Japanese makes a plural.",
+      text: "Repeating a noun this way often reads as a plural or as “various”. It happens with certain words only. Japanese does not make plurals this way in general.",
     },
   ],
   examples: [
@@ -1042,12 +1042,12 @@ export const RENDAKU: PhaseIntro = {
       text: "when two words join into a compound, the first consonant of the second word often gets a dakuten sound.",
     },
     {
-      lead: "The kanji does not change, only the sound.",
+      lead: "Only the sound changes.",
       text: "The second half takes the same voicing you know from dakuten. You will see it constantly in compounds from here on.",
     },
     {
-      lead: "It is a tendency, not a requirement.",
-      text: "It does not always happen so treat it as something to expect and recognize rather than a rule to apply blindly.",
+      lead: "It is a tendency.",
+      text: "It does not always happen. Expect the change when two words join, and recognize it when you see it, but do not apply it as a rule.",
     },
   ],
   examples: [
@@ -1099,7 +1099,7 @@ export const OKURIGANA_INTRO: PhaseIntro = {
     },
     {
       lead: "The tail affects the pronunciation.",
-      text: "生 on its own can be read several ways. In 生きる, the tail is きる and 生 is read い. In 生まれる, the tail is まれる and 生 is read う. Same kanji, different tail, different sound.",
+      text: "生 on its own can be read several ways. In 生きる, the tail is きる and 生 is read い. In 生まれる, the tail is まれる and 生 is read う.",
     },
   ],
   // No worked examples: the second paragraph already names 生きる (tail きる, 生 =
@@ -1111,11 +1111,11 @@ export const OKURIGANA_MOVING: PhaseIntro = {
   id: "intro-okurigana-moving",
   name: "Moving okurigana",
   setId: NO_SCRIPT,
-  title: "Sometimes the tail moves. Sometimes it stays.",
+  title: "The tail moves on some words and stays put on others.",
   body: [
     {
       lead: "On a verb or an adjective, the tail can change.",
-      text: "The okurigana is the part that shifts when the word changes tense or form. The kanji stays put; only the tail moves.",
+      text: "The okurigana is the part that changes when the word changes tense or form. The kanji stays as it is.",
       examples: [
         { from: "生きる", accentFrom: "きる", op: "→", to: "生きた", accentTo: "きた", gloss: "lived", sayFrom: "生きる", say: "生きた" },
         { from: "生きる", accentFrom: "きる", op: "→", to: "生きない", accentTo: "きない", gloss: "does not live", sayFrom: "生きる", say: "生きない" },
@@ -1123,7 +1123,7 @@ export const OKURIGANA_MOVING: PhaseIntro = {
     },
     {
       lead: "Not every tail moves.",
-      text: "Plenty of words have okurigana that never changes. 答え is just 答え: the え is on the end and stays put, no matter how the word is used.",
+      text: "Plenty of words have okurigana that never changes. 答え is always 答え: the え on the end stays there however the word is used.",
       examples: [
         { from: "答 + え", accentFrom: "え", to: "答え", accentTo: "え", reading: "こたえ", gloss: "answer", say: "答え" },
       ],
@@ -1155,15 +1155,15 @@ export const TRANSITIVITY_INTRO: PhaseIntro = {
       text: "Japanese often has two verbs for the same happening: one for when it happens on its own, and one for when someone makes it happen. English reuses one word for both: 'The door opened' and 'I opened the door' are both 'open'. Japanese uses 開く and 開ける.",
     },
     {
-      text: "You will get these backwards for a while. English gives you no help here, because 'open' does both jobs. Expect to mix them up, and expect that to sort itself out with time.",
+      text: "You will get these backwards for a while. English gives you no help here, because 'open' does both jobs. That sorts itself out with time.",
     },
     {
       lead: "The endings often shift in familiar ways.",
-      text: "Most pairs share a kanji and swap only the kana on the end. The usual shifts are まる→める, る→す, and く→ける. Naming the shift helps you remember a pair, but it never tells you which verb is which, and some pairs follow no rule at all.",
+      text: "Most pairs share a kanji and swap only the kana on the end. The usual shifts are まる→める, る→す, and く→ける. Naming the shift helps you remember a pair, but it never tells you which verb is which. Some pairs follow no rule at all.",
     },
   ],
   calloutTip:
-    "The sentence itself can hint at which one it is. が often marks the thing something happens to when no one is named as doing it; を often marks the thing someone is acting on. It is worth noticing, not something to rely on. Plenty of sentences will not fit the pattern, and it is no substitute for knowing the pair itself.",
+    "The sentence itself can hint at which one it is. が often marks the thing something happens to when no one is named as doing it; を often marks the thing someone is acting on. Plenty of sentences will not fit that pattern, so notice it without relying on it. Nothing takes the place of knowing the pair itself.",
   examples: [
     { from: "始まる (はじまる)", op: "→", to: "始める (はじめる)", gloss: "まる → める (The class started. → I started the class.)" },
     { from: "直る (なおる)", op: "→", to: "直す (なおす)", gloss: "る → す (It got fixed. → I fixed it.)" },
@@ -1287,10 +1287,10 @@ export const NUMBERS_BIG: PhaseIntro = {
     },
     {
       lead: "A few of them shift sound, like the counters do.",
-      text: "300 is さんびゃく, 600 is ろっぴゃく and 800 is はっぴゃく, not さんひゃく. 3,000 is さんぜん and 8,000 is はっせん. It is the same hardening you saw on 本 and 匹, happening where the number joins ひゃく and せん.",
+      text: "300 is さんびゃく, 600 is ろっぴゃく and 800 is はっぴゃく. 3,000 is さんぜん and 8,000 is はっせん. It is the same hardening you saw on 本 and 匹, happening where the number joins ひゃく and せん.",
     },
     {
-      lead: "Japanese counts in ten-thousands, not thousands.",
+      lead: "Japanese groups big numbers by ten-thousands.",
       text: "After まん there is no fresh word for “million”. 100,000 is 十万 じゅうまん, ten of the ten-thousands, and 1,000,000 is 百万, a hundred of them. You keep grouping by 万 instead of a bigger single word.",
     },
   ],
@@ -1337,7 +1337,7 @@ export const PITCH_INTRO: PhaseIntro = {
   name: "Pitch accent",
   setId: NO_SCRIPT,
   eyebrow: "What pitch accent is",
-  title: "A word has a tune: some beats are said high, some low.",
+  title: "A word has a tune. Your voice rises and falls across it.",
   body: [
     {
       lead: "Pitch accent is the rise and fall across a word.",
@@ -1345,11 +1345,11 @@ export const PITCH_INTRO: PhaseIntro = {
     },
     {
       lead: "A flat line means the pitch never drops.",
-      text: "Many words have no fall at all. Their line runs level across the reading and simply stops, with no downturn, which tells you the voice holds its pitch to the end of the word instead of dropping partway through.",
+      text: "Many words have no fall at all. Their line runs level across the reading and stops at the end of it, with no downturn. The voice holds its pitch all the way through the word.",
     },
     {
       lead: "The symbol is here to help you tell same-sounding words apart.",
-      text: "箸 (chopsticks) and 橋 (bridge) are both read はし, and the pitch is the only difference in sound: 箸 starts high and drops, 橋 starts low and rises. The line is drawn here so that difference is learned from the start, because a pronunciation learned wrong is hard to unlearn later. Most words are not a pair like this, so mostly the line is just how the word sounds.",
+      text: "箸 (chopsticks) and 橋 (bridge) are both read はし, and the pitch is the only difference in sound: 箸 starts high and drops, 橋 starts low and rises. The line is drawn here so that difference is learned from the start, because a pronunciation learned wrong is hard to unlearn later. Most words are not a pair like this, so the line is usually there to show you how the word sounds.",
     },
     {
       lead: "The line only appears where the data supports it.",
@@ -1417,7 +1417,7 @@ export const ONYOMI_INTRO: PhaseIntro = {
       text: "When multiple kanji are linked together to form a larger vocabulary word, you usually read them using on’yomi. 人 becomes じん in 外国人 (foreigner), and 車 becomes しゃ in 電車 (train).",
     },
     {
-      lead: "Use that pattern as a clue, not a guarantee.",
+      lead: "Use that pattern as a clue.",
       text: "Japanese has many exceptions and mixed-reading words, so the word's own reading is what counts. Each kanji page places its kun’yomi and on’yomi side by side, with an everyday word showing where each reading is used.",
     },
   ],
@@ -1448,10 +1448,10 @@ export const BUILT_FROM_INTRO: PhaseIntro = {
     },
     {
       lead: "A kanji can be all meaning, too.",
-      text: "明 (bright) is 日 (sun) beside 月 (moon): two meaning pieces, no sound piece, the two of them together giving the idea of brightness. Plenty of kanji are built this way.",
+      text: "明 (bright) is 日 (sun) beside 月 (moon). Both pieces give meaning, and together they give the idea of brightness. Plenty of kanji are built this way.",
     },
     {
-      lead: "And some pieces are just shape.",
+      lead: "Some pieces are there for the shape alone.",
       text: "A few strokes are only there to make the character look the way it does, with no meaning and no sound worth learning. The box leaves those out, so what it shows you is always doing one of the two real jobs.",
     },
   ],
