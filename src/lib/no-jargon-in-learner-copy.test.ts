@@ -109,6 +109,51 @@ const ALLOWED = new Set([
   "src/app/(sky)/atlas.ts:keigo-registers",
 ]);
 
+/** SAK-472. The machine tells Sam named, narrowed to the ones a regular
+ * expression can see without arguing about it. Most of that card was reading:
+ * a group of three for rhythm, two tidy parallel sentences, a paragraph that
+ * ends with its own moral. None of those can be matched, and a rule that tried
+ * would fail on the copy that teaches by minimal pair ("きゃ is kya. きや is
+ * kiya.") or on the five-item list a counter page genuinely needs. */
+const TELLS: ReadonlyArray<{ readonly name: string; readonly shape: RegExp; readonly instead: string }> = [
+  // "On the way, not there yet." (SAK-472), under Getting there
+  {
+    name: "a contrast hung on the end of a sentence with a comma",
+    shape: /,\s(?:not|never)\s[a-z][a-z' ]*[.!?]?$/,
+    instead: "write two plain sentences, or one that says the whole thing",
+  },
+  {
+    name: "throat-clearing before the sentence starts",
+    shape: /^(?:here's the thing|simply put|the point is|at its core|in essence|essentially|ultimately|needless to say|it's worth noting|note that|keep in mind)\b/i,
+    instead: "start with the fact",
+  },
+  {
+    name: "not only X but also Y",
+    shape: /\bnot only\b[^.]*\bbut also\b/i,
+    instead: "say both things plainly",
+  },
+  {
+    name: "a brochure word",
+    shape: /\b(?:seamless(?:ly)?|robust|delve|dives? into|leverage|unleash|effortless(?:ly)?|game[- ]chang(?:er|ing)|journey|welcome to)\b/i,
+    instead: "say what happens",
+  },
+];
+
+/** `file:sentence` for the two sentences a tell matches and should not.
+ * Whitespace is squeezed first, so a key survives the line the copy wraps on. */
+const TELLS_ALLOWED = new Set([
+  // Sam read and approved this paragraph word for word (src/sky/README.md,
+  // "The Observatory's own words"), so it is hers, not the sweep's
+  "src/app/(sky)/observatory.ts:Kana are the Japanese alphabet: characters that stand for sounds, not meanings.",
+  // the は/が cluster note, which SAK-470 is rewriting under the same rules.
+  // When its rewrite is in, this entry goes stale and the test below says so
+  "src/data/grammar/clusters.ts:exposure, not from a lesson.",
+]);
+
+/** The one covered file that is not prose: it generates the sky's stylesheet,
+ * and the engineering header inside its template literal is read by nobody. */
+const NOT_PROSE = new Set(["src/sky/lib/sky-wash-file.ts"]);
+
 const SOURCE = /\.tsx?$/;
 const TEST = /\.test\.tsx?$/;
 
@@ -188,5 +233,76 @@ describe("no linguist's jargon in what a learner reads (SAK-443, SAK-452)", () =
     );
     const stale = [...ALLOWED].filter((entry) => !seen.has(entry));
     assert.deepEqual(stale, [], `allowlisted text that is no longer in the copy:\n${stale.join("\n")}`);
+  });
+});
+
+/** One sentence at a time, with the line breaks the source wraps on squeezed
+ * out, because a tell sits at the end of a sentence and the sentence is often
+ * split across several string literals. */
+function sentencesIn(text: string): readonly string[] {
+  return text.replace(/\s+/g, " ").trim().split(/(?<=[.!?])\s+/).filter(Boolean);
+}
+
+describe("nothing a learner reads sounds machine-written (SAK-472)", () => {
+  test("no sentence carries a tell a regular expression can see", () => {
+    const files = [...new Set(COVERED.flatMap(filesUnder))].filter((f) => !NOT_PROSE.has(f));
+    assert.ok(files.length > 100, `only ${files.length} files swept, so the walk is broken`);
+
+    const hits = files.flatMap((file) =>
+      copyIn(file).flatMap(({ line, text }) =>
+        sentencesIn(text).flatMap((sentence) =>
+          TELLS_ALLOWED.has(`${file}:${sentence}`)
+            ? []
+            : TELLS.filter(({ shape }) => shape.test(sentence)).map(
+                ({ name, instead }) => `${file}:${line}: ${sentence}\n  -> ${name}; ${instead}`,
+              ),
+        ),
+      ),
+    );
+
+    assert.deepEqual(
+      hits,
+      [],
+      `a sentence a learner reads has one of the tells Sam named (SAK-472):\n${hits.join("\n")}\n\n` +
+        "Write it the way a teacher would say it out loud.",
+    );
+  });
+
+  test("the tells match the sentences they were written from, and leave teaching alone", () => {
+    const caught = [
+      "At least 6 of your last 10 attempts were right. On the way, not there yet.",
+      "Here's the thing: every kana is one beat.",
+      "It is not only a shape but also a sound.",
+      "Unleash your Japanese on a seamless learning journey.",
+    ];
+    for (const written of caught) {
+      const flagged = sentencesIn(written).some((s) => TELLS.some(({ shape }) => shape.test(s)));
+      assert.ok(flagged, `the tells missed: ${written}`);
+    }
+    // the copy that teaches by naming the mistake, which is how a teacher says
+    // it: the correction IS the sentence, and these must all pass
+    const kept = [
+      'This is said "shi", not "si". This is the one odd sound in the s row.',
+      "The っ in って is a small っ, not a full-size つ.",
+      "う shifts to わ, not あ.",
+      "四月 is しがつ, not よんがつ.",
+      "きゃ, with the small ゃ, is “kya”. きや, with a full-size や, is “kiya”.",
+      "Pieces first, then the character, then the word.",
+    ];
+    for (const written of kept) {
+      const flagged = sentencesIn(written).filter((s) => TELLS.some(({ shape }) => shape.test(s)));
+      assert.deepEqual(flagged, [], `a teaching sentence was flagged: ${written}`);
+    }
+  });
+
+  test("every tell says what to write instead, and no allowlisted sentence is stale", () => {
+    for (const { name, instead } of TELLS) assert.ok(instead.length > 0, `${name} has nothing to offer instead`);
+    const seen = new Set(
+      [...new Set(COVERED.flatMap(filesUnder))]
+        .filter((f) => !NOT_PROSE.has(f))
+        .flatMap((file) => copyIn(file).flatMap(({ text }) => sentencesIn(text).map((s) => `${file}:${s}`))),
+    );
+    const stale = [...TELLS_ALLOWED].filter((entry) => !seen.has(entry));
+    assert.deepEqual(stale, [], `allowlisted sentence that is no longer in the copy:\n${stale.join("\n")}`);
   });
 });

@@ -747,7 +747,7 @@ export const COMBO_K: PhaseIntro = {
       text: "キャ, with the small ャ, is “kya”. キヤ, with a full-size ヤ, is “kiya”: two separate sounds, two beats. Side by side the difference is obvious; on its own, look at the height. You will misread a few at first. That is normal. It stops once you have seen enough of them.",
     },
     {
-      text: "The rule is the one you saw in hiragana, on shapes you already know. There is nothing new to draw.",
+      text: "These are the same yōon you learned in hiragana, on shapes you already know. There is nothing new to draw.",
     },
   ],
   examples: [

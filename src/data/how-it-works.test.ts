@@ -66,8 +66,8 @@ describe("fact-checked claims stay in the copy", () => {
   test("the SRS section is where the rounds and breaks are told", () => {
     const srs = HOW_IT_WORKS_SECTIONS.find((s) => s.id === "srs")!.paragraphs.join(" ");
     assert.match(srs, /three rounds/);
-    assert.match(srs, /During a break, Saku shows you nothing/);
-    assert.match(srs, /days, then weeks/);
+    assert.match(srs, /During a break, Saku shows you no cards and no answers/);
+    assert.match(srs, /days and then weeks/);
   });
 
   // SAK-442, Sam: "i do not want the lesson to reteach it. i want it to appear
@@ -107,7 +107,7 @@ describe("fact-checked claims stay in the copy", () => {
     const progress = HOW_IT_WORKS_SECTIONS.find((s) => s.id === "progress-words")!;
     const solid = progress.bullets!.find((b) => b.label === "Solid")!;
     assert.match(solid.body, /8 of your last 10/);
-    assert.match(solid.body, /claim alone can never make something solid/i);
+    assert.match(solid.body, /claim on its own never makes something solid/i);
   });
 
   test("the break-time claim is present (confirmed true: the rest screen carries the stepper)", () => {
