@@ -1743,7 +1743,7 @@ test("the particles picked for tonight are moons, and nothing there is a planet"
   // (Sam: "planets should be rarer"). A particle is a moon now, a grammar
   // pattern a comet, and only a sentence type is still a planet.
   await page.goto("/observatory?sample");
-  const cards = page.locator("section", { has: page.getByRole("heading", { name: "Sentence rules" }) }).getByRole("button");
+  const cards = page.locator("section", { has: page.getByRole("heading", { name: "Sentences" }) }).getByRole("button");
   const particles = ["marks the topic", "marks the subject", "marks the direct object", "marks where something is or is going", "marks where an action happens"];
   for (const name of particles) await cards.filter({ hasText: name }).first().click();
   await expect(page.getByText(/^5 Picks · /)).toBeVisible();
@@ -1765,7 +1765,7 @@ test("a grammar pattern is a comet in the lesson sky, tail and all", async ({ pa
   // SAK-465, the other half: 〜てから is a pattern and not a particle, so it
   // draws as a comet rather than as a moon or as a planet.
   await page.goto("/observatory?sample");
-  const cards = page.locator("section", { has: page.getByRole("heading", { name: "Sentence rules" }) }).getByRole("button");
+  const cards = page.locator("section", { has: page.getByRole("heading", { name: "Sentences" }) }).getByRole("button");
   await cards.filter({ hasText: "after doing X" }).first().click();
   await page.getByRole("link", { name: "Start lesson" }).click();
   await expect(page).toHaveURL(/\/lesson\?/);
