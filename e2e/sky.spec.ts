@@ -717,8 +717,9 @@ test("the Particle page lists the particles, and a row opens that particle's pag
   const wa = page.getByRole("button", { name: "は", exact: true }).first();
   await expect(wa).toBeVisible();
   await wa.click();
-  // は's own page, which traveled with the term
-  await expect(page.getByRole("heading", { name: "〜は: Marks the topic." })).toBeVisible();
+  // は's own page, which traveled with the term (its "pattern: meaning"
+  // heading is gone since SAK-464, so the build table's own line stands for it)
+  await expect(page.getByText("Take a noun, just as it is, and add は.")).toBeVisible();
   // and it points back
   await expect(page.getByRole("button", { name: /Open Read about it/ })).toBeVisible();
 });
