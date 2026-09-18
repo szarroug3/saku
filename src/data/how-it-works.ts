@@ -81,9 +81,9 @@ export const HOW_IT_WORKS_SECTIONS: readonly HowItWorksSection[] = [
     title: "Why things come back (SRS)",
     paragraphs: [
       "Saku doesn't ask you something once and file it away. This is spaced repetition (SRS): once you've learned something, it keeps coming back, with the gaps getting longer as you get it right.",
-      "It starts inside the lesson. A lesson's quiz runs in three rounds, and each round goes through the whole set of cards, not just what you got wrong last time. Between rounds, Saku schedules a break: 5 minutes before round 2, 10 minutes before round 3 by default. The length is adjustable on the break screen itself, where you'd want to change it, and it's remembered. A quiz of what's due, and a practice deck, run once.",
-      "During a break, Saku shows you nothing: no cards, no answers, no preview, because a rest with the material still in front of you isn't a rest. You learn it by coming back and trying to recall it. You can leave the page; the clock keeps counting.",
-      "After the lesson the gaps are days, then weeks, and not on a fixed schedule. Saku tracks how confident it currently is that you'd still get it right, and re-asks the things it's least sure about. When it's confident, it stays quiet and leaves you alone. When it's unsure, it asks again.",
+      "It starts inside the lesson. A lesson's quiz runs in three rounds, and each round goes through the whole set of cards. A card you got right last time comes back too. Between rounds, Saku schedules a break: 5 minutes before round 2, 10 minutes before round 3 by default. The length is adjustable on the break screen itself, and Saku remembers what you set. A quiz of what's due runs once. So does a practice deck.",
+      "During a break, Saku shows you no cards and no answers, because a rest with the material still in front of you isn't a rest. You learn it by coming back and trying to recall it. You can leave the page; the clock keeps counting.",
+      "After the lesson the gaps grow to days and then weeks. There is no fixed schedule behind it. Saku tracks how confident it currently is that you'd still get it right, and re-asks the things it's least sure about. What it is confident about, it leaves alone.",
       "And if something's clearly slipped, Saku doesn't send you back through its lesson. It shows up as Slipping, in your sky, in the Atlas and in Practice, so you can drill it when you choose. A missed card still opens its page under the quiz, so the explanation is right there.",
     ],
     paragraphAccents: [
@@ -103,11 +103,11 @@ export const HOW_IT_WORKS_SECTIONS: readonly HowItWorksSection[] = [
     bullets: [
       {
         label: "I know these",
-        body: "Select one thing or several in the Atlas and say so. It's recorded as a claim, it immediately unlocks anything that was waiting on it (a later lesson that needed a kanji or word you just claimed, for example), and it doesn't make up a test record: it stays untested until you're asked. A claim fades over roughly three months, at which point Saku checks in on it for real.",
+        body: "Select one thing or several in the Atlas and say so. It's recorded as a claim, and anything that was waiting on it unlocks right away: a later lesson that needed a kanji or word you claimed, for example. No test record is made up for it, so it stays untested until you're asked. A claim fades over roughly three months, at which point Saku checks in on it for real.",
       },
       {
         label: "I don't know these",
-        body: "The reverse. Takes a claim back, so the thing is offered to be learned again.",
+        body: "This takes a claim back, so the thing is offered to be learned again.",
       },
       {
         label: "Quiz me",
@@ -132,21 +132,21 @@ export const HOW_IT_WORKS_SECTIONS: readonly HowItWorksSection[] = [
       },
       {
         label: "Solid",
-        body: "You've been tested recently, and it's gone well: at least 8 of your last 10 real attempts were right. Saying \"solid\" always requires real test results; a claim alone can never make something solid.",
+        body: "You've been tested recently, and it's gone well: at least 8 of your last 10 real attempts were right. A claim on its own never makes something solid.",
         bodyAccents: ["8 of your last 10"],
       },
       {
         label: "Getting there",
-        body: "At least 6 of your last 10 attempts were right. On the way, not there yet.",
+        body: "At least 6 of your last 10 attempts were right. You are on the way.",
       },
       { label: "Shaky", body: "Fewer than 6 of your last 10 attempts were right." },
       {
         label: "Slipping",
-        body: "You had this at some point, and Saku has real history on it, but it's been long enough (or gone badly enough recently) that Saku no longer expects you'd get it right today. Different from shaky: shaky is struggling right now, slipping is something you once had that's fading because you haven't used it. It stays learned either way: it is never put back on the list of things to learn, and you drill it in Practice when you choose.",
+        body: "You had this at some point, and Saku has real history on it, but it's been long enough (or gone badly enough recently) that Saku no longer expects you'd get it right today. It is not the same as shaky, which means you are struggling with it right now. Slipping is something you once had that's fading because you haven't used it. It stays learned either way: it is never put back on the list of things to learn, and you drill it in Practice when you choose.",
       },
       {
         label: "Mix-ups",
-        body: "A separate thing from all of the above. This marks two things you keep confusing with each other, regardless of how well you know either one on its own. Something can be solid and still show up as a mix-up if you consistently swap it for its look-alike partner. A mix-up clears itself once you've kept the two apart for enough runs in a row; how many is yours to set in Settings.",
+        body: "This one is separate from all of the above. It marks two things you keep confusing with each other, regardless of how well you know either one on its own. Something can be solid and still show up as a mix-up if you consistently swap it for its look-alike partner. A mix-up clears itself once you've kept the two apart for enough runs in a row; how many is yours to set in Settings.",
       },
     ],
     afterBullets: [
@@ -159,7 +159,7 @@ export const HOW_IT_WORKS_SECTIONS: readonly HowItWorksSection[] = [
     paragraphs: [
       "Walk away and Saku keeps your place. One Continue button, on the Planetarium and the Observatory, offers whichever you left last: your lesson, or a quiz at the card you were on with the answers you already gave still counted. Anything else you left waits on the Sessions page, under Unfinished, with the same way back and a way to let it go.",
       "A lesson is one sitting: the steps, round 1, a break, round 2, a break, round 3. From the moment you open it until its last round is over, Continue takes you back to wherever you were in it, and says where that is: \"step 3 of 9\", \"round 1, card 4 of 18\", \"break before round 2 of 3, 3 min left\". Opening the drill does not end the lesson; finishing the last round does.",
-      "Saku keeps one quiz and one lesson. Starting a second quiz while one is unfinished asks you first, and starting a lesson never asks: it is always the lesson you picked, and its drill always deals its own cards.",
+      "Saku keeps one quiz and one lesson. Starting a second quiz while one is unfinished asks you first. Starting a lesson never asks, because it is always the lesson you picked, and its drill always deals its own cards.",
       "A lesson you come back to opens on the step you left, with the same steps in the same order.",
     ],
     paragraphAccents: [
@@ -171,7 +171,7 @@ export const HOW_IT_WORKS_SECTIONS: readonly HowItWorksSection[] = [
     bullets: [
       {
         label: "End the quiz",
-        body: "Finishes the round early. Whatever you've answered is recorded and shown on the results; the cards you didn't reach are left out, not marked wrong. End the last round and the sitting is over, so Continue stops offering it.",
+        body: "Finishes the round early. Whatever you've answered is recorded and shown on the results; the cards you didn't reach are left out and are not marked wrong. End the last round and the sitting is over, so Continue stops offering it.",
       },
       {
         label: "Back to the observatory",
@@ -192,7 +192,7 @@ export const HOW_IT_WORKS_SECTIONS: readonly HowItWorksSection[] = [
     id: "practice",
     title: "Practice counts",
     paragraphs: [
-      "Practice is for drilling whatever you like, however you like: a collection or a part of one, a standing, a size, a saved recipe. It uses the same cards the quiz does, and it counts the same way. What you get right and wrong there moves your standings and your schedule exactly as a quiz would, the run shows up under Sessions, and what you keep missing comes back first the next time you practice it.",
+      "Practice is for drilling whatever you like: a collection or a part of one, a standing, a size, a saved recipe. It uses the same cards the quiz does, and it counts the same way. What you get right and wrong there moves your standings and your schedule exactly as a quiz would. The run shows up under Sessions, and what you keep missing comes back first the next time you practice it.",
     ],
   },
 ];

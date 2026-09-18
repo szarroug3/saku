@@ -82,7 +82,7 @@ export const WHY_STROKE_ORDER: Why = {
     strong: "Stroke order is worth learning with each character.",
   },
   paras: [
-    "Every character has a correct order and direction to draw its strokes, and it isn’t arbitrary. In addition to being the traditional way of writing, stroke order is worth learning because when you follow it, the shape comes out balanced and legible almost by itself. The rules (top to bottom, left to right) are what the shapes were designed around. When you write it a different way, even the same strokes tend to come out lopsided. Learning the order is the fastest way to write characters that actually look right. This is especially important when writing by hand.",
+    "Every character has a correct order and direction to draw its strokes. It is the traditional way of writing, and following it is also what makes the shape come out balanced and legible almost by itself: the rules (top to bottom, left to right) are what the shapes were designed around. Write the same strokes in another order and the character tends to come out lopsided. That matters most when you write by hand.",
   ],
 };
 
@@ -180,8 +180,8 @@ export const WHY_TRACK: Record<string, Why> = {
       rest: "You learn each one just before the first kanji that uses it, so a kanji is never broken down into a piece you haven’t seen.",
     },
     paras: [
-      "A radical is a small shape that recurs inside many kanji, and it usually hints at what those kanji mean. The water radical 氵 turns up in kanji about water and liquids: 海 (sea), 泳 (swim), 湖 (lake). The tree radical 木 turns up in kanji about trees and wood: 林 (woods), 森 (forest). So spotting a familiar radical gives you a head start on what a brand-new kanji means, not just how it is drawn. It is a strong hint rather than a promise, since some radicals are only structural.",
-      "A radical is usually not a word you speak, it’s a component. This track only asks you for its meaning, because that meaning is what helps with the kanji that use it.",
+      "A radical is a small shape that recurs inside many kanji, and it usually hints at what those kanji mean. The water radical 氵 turns up in kanji about water and liquids: 海 (sea), 泳 (swim), 湖 (lake). The tree radical 木 turns up in kanji about trees and wood: 林 (woods), 森 (forest). So spotting a familiar radical gives you a head start on what a brand-new kanji means. The hint is a strong one, but not every radical gives it: some are only part of the shape.",
+      "A radical is usually not a word you speak. It is a piece that kanji are built from. This track only asks you for its meaning, because that meaning is what helps with the kanji that use it.",
       "We teach a radical just before the first kanji that needs it. Once you know that radical’s meaning, the kanji that uses it unlocks. A handful of radicals appear in no common kanji; those are taught at the very end, for completeness.",
     ],
   },
@@ -192,7 +192,7 @@ export const WHY_TRACK: Record<string, Why> = {
     },
     paras: [
       "Kanji are reused across many words, so learning one can open up several at once. That makes the pace uneven. Some days you will have a pile of new words, some days none, because you are still collecting the kanji they need.",
-      "Each kanji is built around a smaller shape called a radical, and the radical often hints at the meaning: the water shape 氵 shows up in 海 (sea) and 泳 (swim). Most radicals are themselves kanji you learn on their own. A handful are only ever building blocks and never a character you would study by itself, like the steam shape 气 inside 気. Those get their own tile here, marked as a radical, taught just before the kanji that needs them, so a kanji is never broken into a piece you have not seen.",
+      "Each kanji is built around a smaller shape called a radical, and the radical often hints at the meaning: the water shape 氵 shows up in 海 (sea) and 泳 (swim). Most radicals are themselves kanji you learn on their own. A handful are only ever building blocks and never a character you would study by itself, like the steam shape 气 inside 気. Those get their own tile here, marked as a radical, and they come just before the kanji that needs them. A kanji is never broken into a piece you have not seen.",
       "Each kanji can also have multiple readings, and words are what decide which reading is used. Learning kanji first gives you the pieces, and learning words gives those pieces real pronunciation and context. The most common kanji come first.",
     ],
   },
@@ -218,9 +218,9 @@ export const WHY_TRACK: Record<string, Why> = {
       rest: "Most are made of kanji, so they unlock as you learn those.",
     },
     paras: [
-      "Words are the real goal: 先生, 電車, たべる are the things you say and understand. Kanji and grammar both build up to this track: kanji are the characters a word is written with, grammar is how you join words into a sentence.",
+      "Words are the real goal: 先生, 電車, たべる are the things you say and understand. Kanji and grammar both build up to this track. Kanji are the characters a word is written with, and grammar is how you join words into a sentence.",
       "A word is only taught here once you know every kanji in it (電車 waits until you’ve learned both 電 and 車), because showing a compound built from pieces you don’t have is teaching a shape with nothing under it. That’s why the words above so often point you back to the kanji track: the fastest way to unlock more words is to learn the kanji they’re made of.",
-      "Words with no kanji at all (これ, もう, とても) have nothing to unlock, so you can learn them straight away. That’s why the earliest words you can practice here are the kana-only ones.",
+      "Words with no kanji at all (これ, もう, とても) have nothing to unlock, so the kana-only words are the earliest ones you can practice here.",
     ],
   },
   grammar: {
@@ -229,7 +229,7 @@ export const WHY_TRACK: Record<string, Why> = {
       rest: "Knowing words isn’t the same as knowing how to connect them.",
     },
     paras: [
-      "Grammar is the patterns that turn 食べる (“eat”) into “after eating”, “want to eat”, “please eat”. It’s a different kind of thing from a word or a kanji. It's a rule for combining, not another item to memorize.",
+      "Grammar is the patterns that turn 食べる (“eat”) into “after eating”, “want to eat”, “please eat”. A pattern is a rule for putting words together, so it is a different kind of thing from a word or a kanji.",
       "You don’t need a big vocabulary before you start because a pattern is taught with words you already know. Kanji unlocks words; grammar is what you do with those words once you know them.",
       "Patterns are taught starting with the easiest ones first so early grammar uses the simple verbs and words you’re already learning in the other tracks.",
     ],
@@ -258,7 +258,7 @@ export const WHY_TRACK: Record<string, Why> = {
       rest: "You already know the plain verb; this teaches the honorific form (for what someone else does) and the humble form (for what you do).",
     },
     paras: [
-      "Japanese has more than one word for the same action, and which one you use depends on who is doing it. For what a person you respect does, you use the HONORIFIC form, to raise them. For what you do yourself, you use the HUMBLE form, to step back. It is the same action either way, but using the wrong one is like bowing to yourself, and it is heard immediately.",
+      "Japanese has more than one word for the same action, and which one you use depends on who is doing it. For what a person you respect does, you use the HONORIFIC form, to raise them. For what you do yourself, you use the HUMBLE form, to step back. It is the same action either way. Using the wrong one is like bowing to yourself, and people hear it at once.",
       "A set opens as soon as you know the plain verb it replaces, so keigo starts early, on words you already have.",
     ],
   },
@@ -268,8 +268,8 @@ export const WHY_TRACK: Record<string, Why> = {
       rest: "You already know both verbs on their own; this teaches which one goes with which situation.",
     },
     paras: [
-      "Japanese often has two verbs for the same event: one for when something happens on its own, and one for when someone makes it happen. 開く is “the door opened”, 開ける is “I opened the door”. It is the same door and the same event, but the two sentences use different verbs, and picking the wrong one sounds wrong the way “the door was opened by itself on purpose” would in English.",
-      "A pair is taught only once you have learned both of its verbs as vocabulary, because the choice between them means nothing until you know both. The endings shift in familiar ways, but the shift never tells you which verb is which, and some pairs follow no pattern at all. So each pair is learned as a pair.",
+      "Japanese often has two verbs for the same event: one for when something happens on its own, and one for when someone makes it happen. 開く is “the door opened”, 開ける is “I opened the door”. It is the same door and the same event, but the two sentences use different verbs. Picking the wrong one sounds as odd as “the door was opened by itself on purpose” does in English.",
+      "A pair is taught only once you have learned both of its verbs as vocabulary, because the choice between them means nothing until you know both. The endings shift in familiar ways, but the shift never tells you which verb is which. Some pairs follow no pattern at all, so each pair is learned as a pair.",
     ],
   },
 };

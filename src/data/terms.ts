@@ -167,7 +167,7 @@ export const TERMS: readonly Term[] = [
     name: "Kana",
     // Read before hiragana or katakana is taught (Sam, 2026-09-05), so it
     // explains kana on its own terms and only previews the two sets.
-    summary: "Japanese's sound characters: each one is a syllable, not a meaning.",
+    summary: "Japanese's sound characters: each one is a syllable.",
     body: [
       "Kana are the characters Japanese uses for sounds. Each kana stands for one syllable, like a, ka or shi, rather than for a meaning, and together they can spell any Japanese word.",
       "There are two matching sets of them, hiragana and katakana, and you will learn each in turn.",
@@ -335,7 +335,7 @@ export const TERMS: readonly Term[] = [
     summary: "A small や, ゆ or よ joined to an i row kana, like きゃ.",
     body: [
       "A yōon is a small や, ゆ or よ written after a kana from the i row, such as き, so the two form one blended sound. き plus a small ゃ gives きゃ “kya”, said as a single beat.",
-      "The small kana is written at half size, which is what tells you to blend the two rather than say them one after the other.",
+      "The small kana is written at half size, and that size is what tells you to blend the two instead of saying them one after the other.",
     ],
     searchAlso: ["yoon", "youon", "yōon", "combo", "combination", "contracted sound", "small ya yu yo"],
     // No cards. This page is the general definition of what a yōon is; it does not
@@ -387,7 +387,7 @@ export const TERMS: readonly Term[] = [
     summary: "A small word that marks another word's job in the sentence, like は, を or へ.",
     body: [
       "A particle is a short word placed after another word to show what job it is doing. は marks the topic, を marks the object, and へ points toward a direction.",
-      "They are how Japanese keeps track of who did what, in place of relying on word order.",
+      "They are how Japanese keeps track of who did what, where English relies on word order.",
     ],
     searchAlso: ["particle", "particles", "joshi"],
   },

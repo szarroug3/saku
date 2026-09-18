@@ -44,7 +44,7 @@ export const RESOURCE_SECTIONS: readonly ResourceSection[] = [
       {
         name: "Tofugu: Learn hiragana",
         url: "https://www.tofugu.com/japanese/learn-hiragana/",
-        blurb: "A mnemonic for every shape, free, start to finish in a weekend.",
+        blurb: "A mnemonic for every shape. It is free and takes about a weekend.",
         lastVerified: VERIFIED,
       },
       {
@@ -68,7 +68,7 @@ export const RESOURCE_SECTIONS: readonly ResourceSection[] = [
       {
         name: "Anki",
         url: "https://apps.ankiweb.net/",
-        blurb: "Flashcards you build yourself. Free, offline, and yours to keep.",
+        blurb: "Flashcards you build yourself, free and offline. The decks are yours to keep.",
         lastVerified: VERIFIED,
       },
     ],
@@ -86,7 +86,7 @@ export const RESOURCE_SECTIONS: readonly ResourceSection[] = [
       {
         name: "Tae Kim's Guide to Japanese",
         url: "https://guidetojapanese.org/learn/",
-        blurb: "Free, complete, and explains why the grammar works, not just what to say.",
+        blurb: "Free and complete. It explains why the grammar works instead of only what to say.",
         lastVerified: VERIFIED,
       },
     ],

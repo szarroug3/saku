@@ -84,7 +84,7 @@ export const HIRAGANA_TRACK: PhaseIntro = {
   body: [
     {
       lead: "Kana is the Japanese alphabet.",
-      text: "It comes in two sets, hiragana and katakana. A kana stands for a whole sound rather than a single letter: か is “ka”, き is “ki”. There are about forty-six in each set.",
+      text: "It comes in two sets, hiragana and katakana. A kana stands for a whole sound instead of a single letter: か is “ka”, き is “ki”. There are about forty-six in each set.",
     },
     {
       lead: "Each kana is one beat.",
@@ -111,7 +111,7 @@ export const KATAKANA_TRACK: PhaseIntro = {
   name: "Katakana",
   setId: "katakana",
   eyebrow: "What katakana is",
-  title: "Katakana is the other half of kana: the same sounds, a second set of shapes.",
+  title: "Katakana is the other half of kana: the same sounds written with a second set of shapes.",
   body: [
     {
       lead: "You already know how all of it sounds.",
@@ -161,7 +161,7 @@ export const RADICAL_TRACK: PhaseIntro = {
       // the question that label provokes, and the "氵 inside 海" example waits
       // for the paragraph after it.
       lead: "Being a radical says nothing about whether a character stands alone.",
-      text: "It answers one question: do other kanji get built out of this shape? 人 is a radical, and it is also a kanji you learn and a word you can say, all at once. 气 is a radical and nothing else, so you will only ever see it inside another character. Both get the label, because both are pieces.",
+      text: "The label answers one thing: whether other kanji are built out of this shape. 人 is a radical, and it is also a kanji you learn and a word you can say. 气 is a radical and nothing else, so you will only ever see it inside another character. Both are pieces, so both get the label.",
     },
     {
       lead: "Radicals are not always shown the same way.",
@@ -187,8 +187,8 @@ export const KANJI_TRACK: PhaseIntro = {
   title: "Kanji are the characters Japanese words are written with.",
   body: [
     {
-      lead: "A kanji stands for a meaning or an idea, not a fixed sound.",
-      text: "Kana stand for sounds and nothing else. A kanji stands for an idea, and the sound it takes depends on the word it's in. 人 means person no matter where it is. It is said ひと as a word by itself, じん in the word 外国人, にん in the word 三人. One character, one meaning, several pronunciations.",
+      lead: "A kanji stands for a meaning or an idea, and its sound depends on the word.",
+      text: "Kana stand for sounds and nothing else. A kanji stands for an idea, and the sound it takes depends on the word it's in. 人 means person no matter where it is. It is said ひと as a word by itself, じん in the word 外国人, にん in the word 三人.",
     },
     {
       lead: "A kanji is not one shape to memorize.",
@@ -214,7 +214,7 @@ export const WORD_TRACK: PhaseIntro = {
     },
     {
       lead: "Expect these in bursts.",
-      text: "Nothing for a stretch, then several at once, as you learn the kanji they need. Learning a word is also what decides which reading its kanji take, so this is where those characters get their real pronunciation.",
+      text: "You will get nothing for a stretch, then several at once, as you learn the kanji they need. Learning a word is also what decides which reading its kanji take, so this is where those characters get their real pronunciation.",
     },
   ],
 };
@@ -240,10 +240,10 @@ export const VARIANT_INTRO: PhaseIntro = {
   body: [
     {
       lead: "The character is the same; only its drawing changes.",
-      text: "人 is written 亻 when it stands on the left of a kanji, as in 体. It is still 人, it still means person, and it is still the character you learned. A piece is just redrawn to make room for what is beside it.",
+      text: "人 is written 亻 when it stands on the left of a kanji, as in 体. It is still 人 and it still means person. The piece is redrawn to make room for what is beside it.",
     },
     {
-      lead: "So a form is one less shape to learn, not one more.",
+      lead: "So a form is one less shape to learn.",
       text: "亻, 氵 and 忄 are not new characters. Once you see that 亻 is 人, 氵 is 水 and 忄 is 心, a kanji built from them is built from pieces you already know.",
     },
     {
@@ -292,7 +292,7 @@ export const COUNTERS_TRACK: PhaseIntro = {
   body: [
     {
       lead: "Counters are for things; a bare number is for the number itself.",
-      text: "Counting specific things takes a counter: 本 for pens, 人 for people. A number with no counter is for the number as a number. Math, a phone number, a price, a page, a year. English blurs the two, since “one apple” and “the number one” are both “one”; Japanese keeps them apart, so いち is the number one and ひとつ or いっぽん do the counting.",
+      text: "Counting specific things takes a counter: 本 for pens, 人 for people. A number with no counter is for the number as a number: math, a phone number, a price, a page, a year. English blurs the two, since “one apple” and “the number one” are both “one”; Japanese keeps them apart, so いち is the number one and ひとつ or いっぽん do the counting.",
     },
   ],
 };
@@ -325,14 +325,14 @@ export const KEIGO_TRACK: PhaseIntro = {
   name: "Keigo",
   setId: "",
   eyebrow: "What keigo is",
-  title: "Japanese changes a verb by who you are speaking to, and about whom.",
+  title: "Japanese changes a verb by who you are speaking to and whose action it is.",
   body: [
     {
       lead: "Keigo is the politeness system.",
       text: "The same action has more than one verb, and which one you use depends on whose action it is: the person you are speaking to, or you yourself.",
     },
     {
-      lead: "It is a whole different word, not a changed one.",
+      lead: "It is a whole different word.",
       text: "This is the part people expect to be like grammar, and it is not. You do not conjugate the verb or add an ending. A keigo verb replaces the plain verb outright: it is a separate word you learn on its own and use in place of the one you already know.",
     },
     {
@@ -341,11 +341,11 @@ export const KEIGO_TRACK: PhaseIntro = {
     },
     {
       lead: "Lowering yourself is called humble.",
-      text: "You use a humble verb for your own actions, to step back from the person you are speaking to. It is only ever used for yourself.",
+      text: "You use a humble verb for your own actions, to step back from the person you are speaking to. You never use one for what someone else does.",
     },
     {
       lead: "Some kanji come before the verbs that use them.",
-      text: "A keigo verb is often written with kanji you have not learned. Before the verb, the lesson teaches those kanji and the smaller radicals they are built from, so the verb reads as pieces you already know rather than a set of new shapes. These pieces are not keigo themselves; they are just what this particular verb is spelled with.",
+      text: "A keigo verb is often written with kanji you have not learned. Before the verb, the lesson teaches those kanji and the smaller radicals they are built from, so the verb is made of pieces you already know instead of a set of new shapes. These pieces are not keigo themselves; they are what this particular verb is spelled with.",
     },
   ],
 };
