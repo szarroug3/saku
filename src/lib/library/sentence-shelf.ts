@@ -9,10 +9,11 @@
 // 2026-09-08).
 //
 // So the sections are the sentence types, in teaching order, and each one holds
-// the type followed by the patterns the curriculum places before it
-// (src/lib/sentence-rule-order.ts). は and が sit under "Simple sentences",
-// 〜てから under "Te-form links and helpers", and the shelf answers "what do I
-// need in order to say this kind of thing".
+// the type followed by the patterns the curriculum places with it
+// (src/lib/sentence-rule-order.ts, which says on every step which type it was
+// placed for: は before Simple, を after it, both Simple's). は and が sit under
+// "Simple sentences", 〜てから under "Te-form links and helpers", and the shelf
+// answers "what do I need in order to say this kind of thing".
 //
 // A pattern is on TWO shelves now, here and on Grammar, which is allowed and
 // already true elsewhere (the number-construction pages browse on Counting
@@ -42,26 +43,30 @@ function resolve(id: LibEntry["id"] | null): LibEntry[] {
 }
 
 /** The sentences shelf's sections: one per sentence type, in the order the
- * track teaches them, each holding the type and then the patterns placed
- * before it. A type with no entry in this build drops out, and takes its
- * patterns with it, the same degradation every other shelf takes. */
+ * track teaches them, each holding the type and then the patterns placed for
+ * it. A type with no entry in this build drops out, and takes its patterns
+ * with it, the same degradation every other shelf takes. */
 export function sentenceShelfSections(): ShelfSection[] {
-  const sections: ShelfSection[] = [];
-  let waiting: LibEntry[] = [];
+  const sections: { id: string; label: string; entries: LibEntry[] }[] = [];
+  const byTier = new Map<string, { entries: LibEntry[] } | null>();
+  /** The section for one type, made the first time the order names it, which
+   * is at the first pattern placed for it. The type itself leads it, so the
+   * section is the type and then its grammar however the order runs. */
+  const sectionFor = (tierId: string) => {
+    const known = byTier.get(tierId);
+    if (known !== undefined) return known;
+    const type = resolve(markEntry(`sentence-rule-${tierId}`));
+    if (!type.length) { byTier.set(tierId, null); return null; }
+    const section = { id: `sentence-rule-${tierId}`, label: type[0].name ?? type[0].meanings[0] ?? tierId, entries: [...type] };
+    byTier.set(tierId, section);
+    sections.push(section);
+    return section;
+  };
   for (const step of sentenceRuleOrder()) {
-    if (step.kind === "pattern") {
-      waiting.push(...resolve(patternEntry(step.id)));
-      continue;
-    }
-    const type = resolve(markEntry(`sentence-rule-${step.id}`));
-    if (type.length) {
-      sections.push({
-        id: `sentence-rule-${step.id}`,
-        label: type[0].name ?? type[0].meanings[0] ?? step.id,
-        entries: [...type, ...waiting],
-      });
-    }
-    waiting = [];
+    if (step.kind === "tier") { sectionFor(step.id); continue; }
+    // a pattern no type asked for is a leftover: the Grammar shelf's
+    if (!step.tier) continue;
+    sectionFor(step.tier)?.entries.push(...resolve(patternEntry(step.id)));
   }
   return sections;
 }

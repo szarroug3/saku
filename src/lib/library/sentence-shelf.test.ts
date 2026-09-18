@@ -45,7 +45,9 @@ describe("the sentences shelf is cut into the sentence types", () => {
   });
 
   test("the grammar under a type is the grammar taught before it", () => {
-    assert.deepEqual(held("sentence-rule-simple"), ["Simple sentences", "〜な", "〜は", "〜が", "〜を", "〜に", "〜で", "〜だけ"]);
+    // the type leads, then what it requires, then what its own sentences use
+    // (SAK-468): 〜な is not here at all any more, it is the grammar track's
+    assert.deepEqual(held("sentence-rule-simple"), ["Simple sentences", "〜は", "〜が", "〜を", "〜に", "〜で", "〜だけ"]);
     assert.ok(held("sentence-rule-sequential").includes("〜てから"), "〜てから is under the te-form type");
     assert.ok(held("sentence-rule-sequential").includes("〜て"), "and the form it is built on is with it");
   });

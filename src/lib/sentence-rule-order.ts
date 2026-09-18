@@ -1,6 +1,6 @@
-// The one order the "Sentence rules" track is taught in: every particle and
-// pattern placed right before the sentence type that needs it, then the
-// sentence type itself, then the grammar no sentence type ever needs.
+// The one order the "Sentence rules" track is taught in: a sentence type right
+// after the patterns it requires, then the patterns its own example sentences
+// use, then the grammar no sentence type ever needs.
 //
 // WHY THIS EXISTS
 // ===============
@@ -18,22 +18,41 @@
 //
 // THE RULE
 // ========
-// One list. The adjective/noun form leads, as the track already has it, because
-// the word classes it teaches come before everything. Then, for each sentence
-// type in SENTENCE_ORDERING_TIERS order:
+// One list. For each sentence type in SENTENCE_ORDERING_TIERS order:
 //
-//   1. its `grammarPrereqs`, all of them, in teaching order, because the
-//      learner has to be able to read the type's examples;
-//   2. the patterns its own readable sentences actually use, most used first,
-//      teaching order breaking a tie. A pattern listed on the tier that no
-//      sentence of that tier uses is NOT placed here; it falls to the tail;
-//   3. before any of those, the form it is built on, when the track teaches
+//   1. its `grammarPrereqs`, all of them, in teaching order, because those are
+//      what the type IS: a Simple sentence is a topic or a subject and a
+//      predicate, so は and が have to come first;
+//   2. before any of those, the form it is built on, when the track teaches
 //      that form as a lesson of its own: the て/で-form before 〜てから, the
 //      ない-form before 〜ないでください. This is grammar-shelf.ts's rule, which
 //      already relies on a form's own recipe being the first one taught on it;
-//   4. then the sentence type.
+//   3. then the sentence type itself;
+//   4. then the patterns its own readable sentences use that are not placed
+//      yet, most used first, teaching order breaking a tie. A pattern listed
+//      on the tier that no sentence of that tier uses is NOT placed here; it
+//      falls to the tail.
 //
 // Then every recipe no type ever asked for, in the track's own order.
+//
+// WHY THE TYPE COMES BEFORE THE PARTICLES ITS EXAMPLES USE
+// ========================================================
+// It used to come after them, so Simple read 〜な, は, が, を, に, で, だけ,
+// Simple: seven lessons before the one they are for. Sam, 2026-09-17: "why
+// isn't simple sentences not after topic/subject? why does it come after all
+// these other particles". A type needs は and が to exist at all; を and に and
+// で and だけ are only what its curated examples happen to turn on, and a page
+// can hold those examples back until the learner can read them (SAK-468 part
+// two). So Simple now reads は, が, Simple, を, に, で, だけ.
+//
+// The adjective and noun form (〜な) no longer leads the list either. It is
+// grammar, not a sentence rule, and it is already the first thing the grammar
+// track teaches (CURRICULUM_PATTERNS starts with `prenominal-form`), so it
+// falls to the tail here and the Sentences row waits on it instead: Sam, on
+// the same day, "if that's grammar but is required, it's the first thing
+// taught in grammar iirc. you can lock the sentence track behind learning it
+// in the grammar track." That gate is in observatory.ts, where the section's
+// other `needs` are.
 //
 // Nothing is placed twice: every recipe appears exactly once and every tier
 // appears exactly once, which is what sentence-rule-order.test.ts holds.
@@ -48,9 +67,16 @@ import { RECIPES, type Recipe } from "@/data/grammar/recipes";
 import { emptyHistory } from "@/lib/history-ops";
 import { grammarRank } from "@/lib/library/grammar-order";
 
-/** One place in the order: a grammar pattern to learn, or a sentence type. */
+/** One place in the order: a grammar pattern to learn, or a sentence type.
+ *
+ * A pattern says which sentence type it was placed for, since the type no
+ * longer stands at the end of its own run: は comes before Simple and を after
+ * it, and both are Simple's. A pattern no type asked for says nothing, which
+ * is what makes it one of the leftovers. Everything that reads the order by
+ * type (the Observatory's row, the Atlas's Sentences shelf) reads this rather
+ * than guessing from the position. */
 export type SentenceRuleStep =
-  | { readonly kind: "pattern"; readonly id: string }
+  | { readonly kind: "pattern"; readonly id: string; readonly tier?: string }
   | { readonly kind: "tier"; readonly id: string };
 
 /** Every recipe in the track's own teaching order, the same sort the grammar
@@ -91,16 +117,19 @@ function usesInTier(tier: (typeof SENTENCE_ORDERING_TIERS)[number]): ReadonlyMap
   return uses;
 }
 
-/** What a sentence type needs, in the order it wants them: its prereqs in
- * teaching order, then the patterns its own sentences use, most used first. */
-function needsOf(tier: (typeof SENTENCE_ORDERING_TIERS)[number]): readonly string[] {
-  const known = (id: string) => RECIPE_BY_ID.has(id);
-  const prereqs = [...tier.grammarPrereqs].filter(known).sort((a, b) => grammarRank(a) - grammarRank(b));
+/** What a sentence type requires: its prereqs, in teaching order. These are
+ * the patterns the type is made of, so they come before it. */
+function requiredBy(tier: (typeof SENTENCE_ORDERING_TIERS)[number]): readonly string[] {
+  return [...tier.grammarPrereqs].filter((id) => RECIPE_BY_ID.has(id)).sort((a, b) => grammarRank(a) - grammarRank(b));
+}
+
+/** What a sentence type's own readable sentences use, most used first. These
+ * come after it: they are what its examples turn on, not what it is. */
+function usedBy(tier: (typeof SENTENCE_ORDERING_TIERS)[number]): readonly string[] {
   const uses = usesInTier(tier);
-  const used = [...uses.keys()]
-    .filter(known)
+  return [...uses.keys()]
+    .filter((id) => RECIPE_BY_ID.has(id))
     .sort((a, b) => (uses.get(b) ?? 0) - (uses.get(a) ?? 0) || grammarRank(a) - grammarRank(b));
-  return [...prereqs, ...used];
 }
 
 /** The whole track in one list: patterns interleaved with the sentence types
@@ -111,24 +140,24 @@ export function sentenceRuleOrder(): readonly SentenceRuleStep[] {
   if (order) return order;
   const steps: SentenceRuleStep[] = [];
   const placed = new Set<string>();
-  const place = (id: string) => {
+  /** Place a pattern, for the sentence type that asked for it. The form it is
+   * built on is placed first, for the same type. */
+  const place = (id: string, tier?: string) => {
     if (placed.has(id)) return;
     const recipe = RECIPE_BY_ID.get(id);
     if (!recipe) return;
     // the form it is built on comes first, when the track teaches one
     const shape = shapeOf(recipe);
     const foundation = shape ? FORM_LESSON.get(shape) : undefined;
-    if (foundation && foundation !== id) place(foundation);
+    if (foundation && foundation !== id) place(foundation, tier);
     placed.add(id);
-    steps.push({ kind: "pattern", id });
+    steps.push({ kind: "pattern", id, ...(tier ? { tier } : {}) });
   };
 
-  // the adjective/noun form leads, as the track has it: the word classes it
-  // teaches come before every pattern that conjugates one
-  if (TRACK[0]) place(TRACK[0].id);
   for (const tier of SENTENCE_ORDERING_TIERS) {
-    for (const id of needsOf(tier)) place(id);
+    for (const id of requiredBy(tier)) place(id, tier.id);
     steps.push({ kind: "tier", id: tier.id });
+    for (const id of usedBy(tier)) place(id, tier.id);
   }
   // whatever no sentence type ever asked for, in the track's own order
   for (const r of TRACK) place(r.id);
