@@ -38,7 +38,7 @@ import type { EntryId } from "@/types/facts";
 import type { HistoryFile } from "@/types/store";
 
 import { standingFor } from "./learner";
-import { conceptTwin, PARTICLE_TERM, teachFor } from "./teach";
+import { conceptTwin, PARTICLE_TERM, readablePatterns, teachFor } from "./teach";
 import { hasOffer, offerings, offerPicker, pickFacts, TSU_RULE, type Offerings } from "./observatory";
 
 /** The shelves, in the order the app teaches the subjects. Every cut of
@@ -291,7 +291,10 @@ export function atlasEntryFromHistory(history: HistoryFile, id: string, now = Da
   // table that opens one opens it the same way (the Particle page's particles),
   // so those pages travel with the entry: the panel picks by id out of what it
   // has been given, and an id it has never seen selects nothing
-  const teach = teachFor(item);
+  // a sentence type's page shows only the examples this learner can read
+  // (SAK-468); nothing else on a shelf reads the set, so nothing else pays
+  // for working it out
+  const teach = teachFor(item, item.kind === "sentence" ? { readable: readablePatterns(history, [], now) } : {});
   const reachable = [
     ...(teach?.wordKind ? [teach.wordKind.readAbout] : []),
     ...(teach?.pages ?? []).flatMap((p) => p.tables ?? []).flatMap((t) => t.opens ?? []).filter((x): x is string => !!x),

@@ -29,6 +29,18 @@ export interface TierExample {
   en: string;
   enOrdered: string;
   jp: string;
+  /**
+   * The grammar patterns this sentence turns on, by recipe id, so a page can
+   * show a learner only the examples they can read (SAK-468).
+   *
+   * Named `p` after the same field on an assembly item (src/data/assembly.ts),
+   * and read the same way, with one difference: the corpus lists the patterns
+   * that CLASSIFY a sentence, so a Simple item is `["wo"]` and its は goes
+   * unsaid. Here every pattern the sentence uses is listed, は and が
+   * included, because the question this answers is "can the learner read this
+   * line", and a learner who has not met は cannot.
+   */
+  p: readonly string[];
   ending: TierChunk;
   core: TierChunk;
   topic: TierChunk;
@@ -46,6 +58,7 @@ export const TIER_EXAMPLES: Record<SentenceOrderingTierId, readonly TierExample[
       en: "I say that.",
       enOrdered: "As for me → that → say.",
       jp: "私はそれを言う。",
+      p: ["wa", "wo"],
       ending: { en: "say", jp: "言う" },
       core: { en: "that", jp: "それを" },
       topic: { en: "I", enOrdered: "As for me", jp: "私は" },
@@ -55,6 +68,7 @@ export const TIER_EXAMPLES: Record<SentenceOrderingTierId, readonly TierExample[
       en: "What do I say?",
       enOrdered: "As for me → what → say?",
       jp: "私は何を言う？",
+      p: ["wa", "wo"],
       ending: { en: "say", jp: "言う" },
       core: { en: "what", jp: "何を" },
       topic: { en: "I", enOrdered: "As for me", jp: "私は" },
@@ -64,6 +78,7 @@ export const TIER_EXAMPLES: Record<SentenceOrderingTierId, readonly TierExample[
       en: "I eat this.",
       enOrdered: "As for me → this → eat.",
       jp: "私はこれを食べる。",
+      p: ["wa", "wo"],
       ending: { en: "eat", jp: "食べる" },
       core: { en: "this", jp: "これを" },
       topic: { en: "I", enOrdered: "As for me", jp: "私は" },
@@ -75,6 +90,7 @@ export const TIER_EXAMPLES: Record<SentenceOrderingTierId, readonly TierExample[
       en: "If you eat that, I will say so.",
       enOrdered: "If you eat that → as for me → so → will say.",
       jp: "それを食べたら、私はそう言う。",
+      p: ["wa", "wo", "tara"],
       ending: { en: "will say", jp: "言う" },
       core: { en: "so", jp: "そう" },
       topic: {
@@ -90,6 +106,7 @@ export const TIER_EXAMPLES: Record<SentenceOrderingTierId, readonly TierExample[
       en: "If I say so, the teacher will understand this.",
       enOrdered: "If I say so → as for the teacher → this → will understand.",
       jp: "私がそう言えば、先生はこれがわかる。",
+      p: ["wa", "ga", "ba"],
       ending: { en: "will understand", jp: "わかる" },
       core: { en: "this", jp: "これが" },
       topic: {
@@ -105,6 +122,7 @@ export const TIER_EXAMPLES: Record<SentenceOrderingTierId, readonly TierExample[
       en: "If this is true, I will say so.",
       enOrdered: "If this is true → as for me → so → will say.",
       jp: "これが本当なら、私はそう言う。",
+      p: ["wa", "ga", "nara"],
       ending: { en: "will say", jp: "言う" },
       core: { en: "so", jp: "そう" },
       topic: {
@@ -122,6 +140,7 @@ export const TIER_EXAMPLES: Record<SentenceOrderingTierId, readonly TierExample[
       en: "Because it's delicious, I eat it.",
       enOrdered: "Because it's delicious → as for me → eat.",
       jp: "おいしいから、私は食べる。",
+      p: ["wa", "kara-reason"],
       ending: { en: "eat", jp: "食べる" },
       core: { en: "Because it's delicious", jp: "おいしいから" },
       topic: { en: "I", enOrdered: "as for me", jp: "私は" },
@@ -131,6 +150,7 @@ export const TIER_EXAMPLES: Record<SentenceOrderingTierId, readonly TierExample[
       en: "Because I don't understand, I ask.",
       enOrdered: "Because I don't understand → as for me → ask.",
       jp: "わからないので、私は聞く。",
+      p: ["wa", "node"],
       ending: { en: "ask", jp: "聞く" },
       core: { en: "Because I don't understand", jp: "わからないので" },
       topic: { en: "I", enOrdered: "as for me", jp: "私は" },
@@ -140,6 +160,7 @@ export const TIER_EXAMPLES: Record<SentenceOrderingTierId, readonly TierExample[
       en: "Because that's wrong, I say so.",
       enOrdered: "Because that's wrong → as for me → say so.",
       jp: "それは違うから、私はそう言う。",
+      p: ["wa", "kara-reason"],
       ending: { en: "say so", jp: "そう言う" },
       core: { en: "Because that's wrong", jp: "それは違うから" },
       topic: { en: "I", enOrdered: "as for me", jp: "私は" },
@@ -151,6 +172,7 @@ export const TIER_EXAMPLES: Record<SentenceOrderingTierId, readonly TierExample[
       en: "I must eat this.",
       enOrdered: "As for me → eat this → must.",
       jp: "私はこれを食べなければならない。",
+      p: ["wa", "wo", "nakereba-naranai"],
       ending: { en: "must", jp: "なければならない" },
       core: { en: "eat this", jp: "これを食べ" },
       topic: { en: "I", enOrdered: "As for me", jp: "私は" },
@@ -160,6 +182,7 @@ export const TIER_EXAMPLES: Record<SentenceOrderingTierId, readonly TierExample[
       en: "I must say that.",
       enOrdered: "As for me → say that → must.",
       jp: "私はそれを言わなければならない。",
+      p: ["wa", "wo", "nakereba-naranai"],
       ending: { en: "must", jp: "なければならない" },
       core: { en: "say that", jp: "それを言わ" },
       topic: { en: "I", enOrdered: "As for me", jp: "私は" },
@@ -169,6 +192,7 @@ export const TIER_EXAMPLES: Record<SentenceOrderingTierId, readonly TierExample[
       en: "I have to eat this.",
       enOrdered: "As for this → eat → have to.",
       jp: "これは食べないといけない。",
+      p: ["wa", "nai-to-ikenai"],
       ending: { en: "have to", jp: "ないといけない" },
       core: { en: "eat", jp: "食べ" },
       topic: { en: "this", enOrdered: "As for this", jp: "これは" },
@@ -180,6 +204,7 @@ export const TIER_EXAMPLES: Record<SentenceOrderingTierId, readonly TierExample[
       en: "I accidentally said that.",
       enOrdered: "As for me → that → accidentally said.",
       jp: "私はそれを言ってしまった。",
+      p: ["wa", "wo", "te-shimau"],
       ending: { en: "accidentally said", jp: "言ってしまった" },
       core: { en: "that", jp: "それを" },
       topic: { en: "I", enOrdered: "As for me", jp: "私は" },
@@ -189,6 +214,7 @@ export const TIER_EXAMPLES: Record<SentenceOrderingTierId, readonly TierExample[
       en: "I try eating this.",
       enOrdered: "As for me → this → try eating.",
       jp: "私はこれを食べてみる。",
+      p: ["wa", "wo", "te-miru"],
       ending: { en: "try eating", jp: "食べてみる" },
       core: { en: "this", jp: "これを" },
       topic: { en: "I", enOrdered: "as for me", jp: "私は" },
@@ -198,6 +224,7 @@ export const TIER_EXAMPLES: Record<SentenceOrderingTierId, readonly TierExample[
       en: "I have that.",
       enOrdered: "As for me → that → have.",
       jp: "私はそれを持っている。",
+      p: ["wa", "wo", "te-iru"],
       ending: { en: "have", jp: "持っている" },
       core: { en: "that", jp: "それを" },
       topic: { en: "I", enOrdered: "As for me", jp: "私は" },
@@ -209,6 +236,7 @@ export const TIER_EXAMPLES: Record<SentenceOrderingTierId, readonly TierExample[
       en: "I want to eat this.",
       enOrdered: "As for me → eat this → want to.",
       jp: "私はこれを食べたい。",
+      p: ["wa", "wo", "tai"],
       ending: { en: "want to", jp: "たい" },
       core: { en: "eat this", jp: "これを食べ" },
       topic: { en: "I", enOrdered: "As for me", jp: "私は" },
@@ -218,6 +246,7 @@ export const TIER_EXAMPLES: Record<SentenceOrderingTierId, readonly TierExample[
       en: "This is easy to eat.",
       enOrdered: "As for this → eat → easy to.",
       jp: "これは食べやすい。",
+      p: ["wa", "yasui"],
       ending: { en: "easy to", jp: "やすい" },
       core: { en: "eat", jp: "食べ" },
       topic: { en: "This is", enOrdered: "As for this", jp: "これは" },
@@ -227,6 +256,7 @@ export const TIER_EXAMPLES: Record<SentenceOrderingTierId, readonly TierExample[
       en: "This is hard to say.",
       enOrdered: "As for this → say → hard to.",
       jp: "これは言いにくい。",
+      p: ["wa", "nikui"],
       ending: { en: "hard to", jp: "にくい" },
       core: { en: "say", jp: "言い" },
       topic: { en: "This is", enOrdered: "As for this", jp: "これは" },
@@ -238,6 +268,7 @@ export const TIER_EXAMPLES: Record<SentenceOrderingTierId, readonly TierExample[
       en: "I wrote this for the teacher.",
       enOrdered: "As for me → the teacher → this → wrote → as a favor.",
       jp: "私は先生にこれを書いてあげた。",
+      p: ["wa", "ni", "wo", "te-ageru"],
       ending: { en: "as a favor", jp: "あげた" },
       core: {
         en: "wrote this for the teacher",
@@ -251,6 +282,7 @@ export const TIER_EXAMPLES: Record<SentenceOrderingTierId, readonly TierExample[
       en: "The teacher kindly said that to me.",
       enOrdered: "As for the teacher → me → so → said → for me.",
       jp: "先生は私にそう言ってくれた。",
+      p: ["wa", "ni", "te-kureru"],
       ending: { en: "for me", jp: "くれた" },
       core: {
         en: "said that to me",
@@ -264,6 +296,7 @@ export const TIER_EXAMPLES: Record<SentenceOrderingTierId, readonly TierExample[
       en: "I had the teacher say that.",
       enOrdered: "As for me → from the teacher → so → say → received the favor.",
       jp: "私は先生にそう言ってもらった。",
+      p: ["wa", "ni", "te-morau"],
       ending: { en: "had", enOrdered: "received the favor", jp: "もらった" },
       core: {
         en: "the teacher say that",
@@ -279,6 +312,7 @@ export const TIER_EXAMPLES: Record<SentenceOrderingTierId, readonly TierExample[
       en: "I think so.",
       enOrdered: "As for me → so → think.",
       jp: "私はそう思う。",
+      p: ["wa", "to-omou"],
       ending: { en: "think", jp: "と思う" },
       core: { en: "so", jp: "そう" },
       topic: { en: "I", enOrdered: "As for me", jp: "私は" },
@@ -288,6 +322,7 @@ export const TIER_EXAMPLES: Record<SentenceOrderingTierId, readonly TierExample[
       en: "That might be wrong.",
       enOrdered: "As for that → wrong → might be.",
       jp: "それは違うかもしれない。",
+      p: ["wa", "kamoshirenai"],
       ending: { en: "might be", jp: "かもしれない" },
       core: { en: "wrong", jp: "違う" },
       topic: { en: "That", enOrdered: "As for that", jp: "それは" },
@@ -297,6 +332,7 @@ export const TIER_EXAMPLES: Record<SentenceOrderingTierId, readonly TierExample[
       en: "This seems to be true.",
       enOrdered: "As for this → true → seems.",
       jp: "これは本当らしい。",
+      p: ["wa", "rashii"],
       ending: { en: "seems", jp: "らしい" },
       core: { en: "true", jp: "本当" },
       topic: { en: "This", enOrdered: "As for this", jp: "これは" },
@@ -308,6 +344,7 @@ export const TIER_EXAMPLES: Record<SentenceOrderingTierId, readonly TierExample[
       en: "Even though it's delicious, I don't eat it.",
       enOrdered: "Even though it's delicious → as for me → don't eat.",
       jp: "おいしいのに、私は食べない。",
+      p: ["wa", "noni"],
       ending: { en: "don't eat", jp: "食べない" },
       core: { en: "Even though it's delicious", jp: "おいしいのに" },
       topic: { en: "I", enOrdered: "as for me", jp: "私は" },
@@ -322,6 +359,7 @@ export const TIER_EXAMPLES: Record<SentenceOrderingTierId, readonly TierExample[
       en: "I left without saying anything.",
       enOrdered: "Without saying anything → as for me → left.",
       jp: "何も言わないで、私は出た。",
+      p: ["wa", "nai-de"],
       ending: { en: "left", jp: "出た" },
       core: { en: "without saying anything", jp: "何も言わないで" },
       topic: { en: "I", enOrdered: "as for me", jp: "私は" },
@@ -331,6 +369,7 @@ export const TIER_EXAMPLES: Record<SentenceOrderingTierId, readonly TierExample[
       en: "I said it without knowing it.",
       enOrdered: "Without knowing that → as for me → said it.",
       jp: "それを知らないで、私は言った。",
+      p: ["wa", "wo", "nai-de"],
       ending: { en: "said it", jp: "言った" },
       core: { en: "without knowing that", jp: "それを知らないで" },
       topic: { en: "I", enOrdered: "as for me", jp: "私は" },
@@ -342,6 +381,7 @@ export const TIER_EXAMPLES: Record<SentenceOrderingTierId, readonly TierExample[
       en: "Please eat this.",
       enOrdered: "This → eat → please.",
       jp: "これを食べてください。",
+      p: ["wo", "te-request"],
       ending: {
         en: "Please",
         enOrdered: "please",
@@ -362,6 +402,7 @@ export const TIER_EXAMPLES: Record<SentenceOrderingTierId, readonly TierExample[
       en: "Please don't say that.",
       enOrdered: "That → don't say → please.",
       jp: "それを言わないでください。",
+      p: ["wo", "nai-request"],
       ending: {
         en: "Please",
         enOrdered: "please",
@@ -378,6 +419,7 @@ export const TIER_EXAMPLES: Record<SentenceOrderingTierId, readonly TierExample[
       en: "Let's eat this.",
       enOrdered: "This → eat → let's.",
       jp: "これを食べましょう。",
+      p: ["wo", "mashou"],
       ending: {
         en: "Let's",
         enOrdered: "let's",
@@ -589,17 +631,43 @@ export const TIER_LESSONS: Record<SentenceOrderingTierId, readonly LessonDefinit
   ],
 };
 
-function stepExamples(tierId: SentenceOrderingTierId, key: StepKey) {
-  return TIER_EXAMPLES[tierId].map((example) => ({ example, activePart: key }));
+/**
+ * The examples of one sentence type that a learner can read: the ones whose
+ * every pattern they have learned, claimed, or picked for tonight (SAK-468).
+ * `readable` undefined is every example, which is what a page with no learner
+ * behind it shows.
+ *
+ * WHEN NOTHING IS READABLE YET. Simple's examples all turn on を, and を is
+ * not something Simple requires: a learner reaches Simple knowing は and が
+ * and no more. A page of steps with no sentence under any of them teaches
+ * nothing, so the fallback is the examples that are CLOSEST, the ones missing
+ * the fewest patterns, rather than none. The page says nothing about the ones
+ * held back either way (Sam's rule from SAK-464: no line about what is shut).
+ */
+export function readableTierExamples(
+  tierId: SentenceOrderingTierId,
+  readable?: ReadonlySet<string>,
+): readonly TierExample[] {
+  const all = TIER_EXAMPLES[tierId];
+  if (!readable) return all;
+  const missing = (e: TierExample) => e.p.filter((id) => !readable.has(id)).length;
+  const open = all.filter((e) => missing(e) === 0);
+  if (open.length) return open;
+  const fewest = Math.min(...all.map(missing));
+  return all.filter((e) => missing(e) === fewest);
 }
 
-export function lessonsForTier(tierId: SentenceOrderingTierId) {
+function stepExamples(tierId: SentenceOrderingTierId, key: StepKey, readable?: ReadonlySet<string>) {
+  return readableTierExamples(tierId, readable).map((example) => ({ example, activePart: key }));
+}
+
+export function lessonsForTier(tierId: SentenceOrderingTierId, readable?: ReadonlySet<string>) {
   return TIER_LESSONS[tierId].map((lesson, index) => ({
     id: `${tierId}-step-${index + 1}-${lesson.key}`,
     step: `Step ${index + 1}`,
     title: lesson.title,
     details: lesson.details,
-    examples: stepExamples(tierId, lesson.key),
+    examples: stepExamples(tierId, lesson.key, readable),
   }));
 }
 

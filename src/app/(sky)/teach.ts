@@ -40,11 +40,14 @@ import { TERMS, termEntry } from "@/data/terms";
 import { readingUnits, vocabRow } from "@/data/vocab";
 import { exampleFor } from "@/data/word-examples";
 import { lessonsForTier, positionedStepParts, stepPartOrder, type PositionedStepPart, type StepKey, type TierExample } from "@/lib/sentence-rule-walk";
+import { libEntry } from "@/lib/library/entries";
+import { standingFor } from "./learner";
 import { TSU_RULE } from "./observatory";
 import { type LessonTeach, type PartedSentence, type SoundLine as SkySoundLine, type TeachForm, type TeachPage, type TeachParagraph, type TeachTable } from "@/sky/lib/lesson";
 import type { SkyItem } from "@/sky/lib/types";
 
 import type { EntryId } from "@/types/facts";
+import type { HistoryFile } from "@/types/store";
 
 const spans = (line: SoundLine) => line.map((s) => ({ text: s.text, ...(s.accent ? { accent: true } : {}) }));
 
@@ -140,9 +143,33 @@ function romajiOf(glyph: string): string | undefined {
 }
 
 /** What the card says for one star, from whatever the app knows about it. */
-/** What a lesson narrows the card to: the one reading being taught. */
+/** What a lesson narrows the card to: the one reading being taught, and the
+ * grammar the learner can read, which a sentence type's page shows its
+ * examples from (SAK-468). No `readable` set is every example, which is what
+ * a card with no learner behind it shows. */
 interface TeachScope {
   reading?: string;
+  readable?: ReadonlySet<string>;
+}
+
+/**
+ * The grammar a learner can read, by recipe id: every pattern they have
+ * learned or claimed, plus the ones they have picked for tonight, which count
+ * the same here as everywhere else in the Sky (SAK-464's rule for a tile,
+ * SAK-468's for an example sentence).
+ *
+ * Worked out once per request and handed to `teachFor`, not once per card:
+ * it walks the whole pattern table, and only a sentence type's page reads it.
+ */
+export function readablePatterns(history: HistoryFile, picks: readonly string[] = [], now = Date.now()): ReadonlySet<string> {
+  const picked = new Set(picks);
+  const out = new Set<string>();
+  for (const recipe of RECIPES) {
+    const entry = libEntry(patternEntry(recipe.id));
+    if (!entry) continue;
+    if (picked.has(entry.id) || standingFor(entry, history, now).met) out.add(recipe.id);
+  }
+  return out;
 }
 
 export function teachFor(item: SkyItem, scope: TeachScope = {}): LessonTeach {
@@ -248,7 +275,7 @@ export function teachFor(item: SkyItem, scope: TeachScope = {}): LessonTeach {
   if (item.kind === "sentence") {
     // a sentence rule: the app's walk, page by page
     const tier = (Object.keys(SENTENCE_ORDERING_GUIDES) as SentenceOrderingTierId[]).find((k) => item.id.endsWith(`sentence-rule-${k}`));
-    if (tier) t.pages = sentenceRulePages(tier);
+    if (tier) t.pages = sentenceRulePages(tier, scope.readable);
     return t;
   }
   if (item.kind === "verbPair") {
@@ -330,7 +357,17 @@ export function teachFor(item: SkyItem, scope: TeachScope = {}): LessonTeach {
  * hook and its worked example, plain), then one step per part of the frame,
  * each with the tier's examples three ways and that part marked. The same
  * data and span maths the app's walk renders (src/lib/sentence-rule-walk.ts). */
-function sentenceRulePages(tier: SentenceOrderingTierId): TeachPage[] {
+/**
+ * A sentence type's walk: the intro, then a page per step, each showing the
+ * examples the learner can read (`readable`, the patterns they have learned,
+ * claimed or picked for tonight).
+ *
+ * The page says nothing about an example it is holding back, which is Sam's
+ * rule from SAK-464 for anything a learner cannot take yet. The intro's own
+ * headline sentence stays whatever the guide wrote: it is what that page's
+ * paragraphs are about, not one of a list.
+ */
+function sentenceRulePages(tier: SentenceOrderingTierId, readable?: ReadonlySet<string>): TeachPage[] {
   const g = SENTENCE_ORDERING_GUIDES[tier];
   const labels = CHUNK_ROLE_LABELS[tier];
   const order = stepPartOrder(tier);
@@ -363,7 +400,7 @@ function sentenceRulePages(tier: SentenceOrderingTierId): TeachPage[] {
   };
   return [
     intro,
-    ...lessonsForTier(tier).map((l) => ({
+    ...lessonsForTier(tier, readable).map((l) => ({
       eyebrow: l.step,
       title: l.title,
       hook: g.hook,

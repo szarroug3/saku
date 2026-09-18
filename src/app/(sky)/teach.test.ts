@@ -10,13 +10,16 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
+import { patternEntry } from "@/data/grammar";
 import { grammarConceptEntry } from "@/data/grammar-concepts";
 import { CURRICULUM_LESSONS } from "@/data/grammar/lessons";
 import { PARTICLE_ROWS } from "@/data/grammar/particles";
 import { termEntry } from "@/data/terms";
 import { emptyHistory } from "@/lib/history-ops";
-import { libEntry } from "@/lib/library/entries";
+import { knownFactsOf, libEntry } from "@/lib/library/entries";
+import { readableTierExamples } from "@/lib/sentence-rule-walk";
 import type { EntryId } from "@/types/facts";
+import type { HistoryFile } from "@/types/store";
 
 import { atlasEntryFromHistory } from "./atlas";
 import { pageFromIntro } from "./teach";
@@ -352,5 +355,64 @@ describe("the Particle page lists every particle Saku teaches", () => {
     const read = (wa?.related ?? []).find((g) => g.title === "Read about it");
     assert.ok(read, "は's page has no way back to the Particle page");
     assert.ok(read.items.some((x) => x.id === PARTICLE), "は's page points somewhere else");
+  });
+});
+
+// SAK-468. Sam asked for a sentence type's page to show only the examples a
+// learner can read at that point in the order, so a page reached right after
+// は and が is not three sentences of grammar they have never met. Every
+// curated example says which patterns it turns on (`p` in
+// src/lib/sentence-rule-walk.ts), and the page keeps the ones the learner has
+// learned, claimed, or picked for tonight. It says nothing about the rest,
+// which is SAK-464's rule for anything held back.
+describe("a sentence type's page shows the examples the learner can read", () => {
+  /** A learner who has claimed these patterns and nothing else. */
+  const claiming = (...ids: readonly string[]): HistoryFile => {
+    const history = emptyHistory();
+    for (const id of ids) {
+      const entry = libEntry(patternEntry(id));
+      assert.ok(entry, `${id} is a pattern`);
+      for (const f of knownFactsOf(entry)) history.claims = { ...history.claims, [f]: NOW };
+    }
+    return history;
+  };
+  /** Every example sentence on one type's page, in Japanese, once each. */
+  const examplesOn = (tier: string, history: HistoryFile): string[] => {
+    const teach = atlasEntryFromHistory(history, `writing-rule:sentence-rule-${tier}`, NOW)?.teach;
+    const steps = (teach?.pages ?? []).filter((p) => p.eyebrow?.startsWith("Step"));
+    assert.ok(steps.length > 0, `${tier} has no steps`);
+    return [...new Set(steps.flatMap((p) => (p.examples ?? []).map((e) => e.japanese.map((r) => r.text).join(""))))];
+  };
+
+  it("holds back the one built from a pattern the learner has not met", () => {
+    assert.deepEqual(examplesOn("desire", claiming("wa", "yasui", "nikui")), [
+      "これは食べやすい。",
+      "これは言いにくい。",
+    ]);
+  });
+
+  it("brings it back the moment they have it", () => {
+    assert.deepEqual(examplesOn("desire", claiming("wa", "wo", "yasui", "nikui", "tai")), [
+      "私はこれを食べたい。",
+      "これは食べやすい。",
+      "これは言いにくい。",
+    ]);
+  });
+
+  // Simple is the one type with no example readable from its own
+  // requirements: every curated Simple sentence turns on を, which は and が
+  // do not bring. A page of steps with nothing under them teaches nothing, so
+  // it shows the closest examples instead of none.
+  it("shows the closest examples when none is readable yet", () => {
+    const justRead = examplesOn("simple", claiming("wa", "ga"));
+    assert.deepEqual(justRead, ["私はそれを言う。", "私は何を言う？", "私はこれを食べる。"]);
+    assert.deepEqual(examplesOn("simple", claiming("wa", "ga", "wo")), justRead, "the same three, readable outright once を is met");
+  });
+
+  it("shows every example when there is no learner to read it for", () => {
+    // the rule is asked for, not assumed: a caller with no learner in hand
+    // (the walk's own data, a page built from the tables alone) gets the lot
+    assert.equal(readableTierExamples("desire").length, 3);
+    assert.equal(readableTierExamples("desire", new Set(["wa", "yasui"])).length, 1);
   });
 });

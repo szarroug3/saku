@@ -27,7 +27,7 @@ import type { SkyItem } from "@/sky/lib/types";
 import type { HistoryFile } from "@/types/store";
 
 import { offerings, offerPicker, pickFacts, TSU_RULE, type Offerings } from "./observatory";
-import { pageFromIntro, teachFor } from "./teach";
+import { pageFromIntro, readablePatterns, teachFor } from "./teach";
 
 /** One of everything, for a look at every kind of card: a plain kana row,
  * the row with ん (a heads up), a word with a piece and a kanji under it,
@@ -121,7 +121,11 @@ export function lessonFromPicks(history: HistoryFile, picks: readonly string[], 
   const pages = known
     .flatMap((pick) => walkFor(stars.filter((s) => s.pick === pick).map((s) => s.id), before, offer, readings))
     .filter((page) => { if (seen.has(page.item.id)) return false; seen.add(page.item.id); return true; });
-  for (const id of ids) { const it = byId.get(id); if (it && !it.group) teach[id] = teachFor(it, { reading: readings.get(id) }); }
+  // what a sentence type's page may show an example built from: what the
+  // learner had before tonight, and tonight's picks, which are what they are
+  // about to have (SAK-468)
+  const readable = readablePatterns(before, known, now);
+  for (const id of ids) { const it = byId.get(id); if (it && !it.group) teach[id] = teachFor(it, { reading: readings.get(id), readable }); }
   // what tonight rests on and does not teach: the stars already in the sky
   // under tonight's picks, and the pages the walk put behind them
   const references = lessonReferences(graph, known, learnedSet, pages);
