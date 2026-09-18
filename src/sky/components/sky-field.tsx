@@ -29,7 +29,7 @@ import { ConstellationFigure, type StarLook } from "@/sky/components/constellati
 import { SkyCanvas, type SkyView } from "@/sky/components/sky-canvas";
 import { Floating, pointerAnchor, type Anchor } from "@/sky/components/sky-card";
 import { SkyTooltip } from "@/sky/components/sky-tooltip";
-import { bodyOf, bodyRadius, layoutConstellation, placeConstellation, roleOf, sizeFor } from "@/sky/lib/constellation";
+import { bodyOfItem, bodyRadius, layoutConstellation, placeConstellation, roleOf, sizeFor } from "@/sky/lib/constellation";
 import { buildGraph, type PrerequisiteGraph } from "@/sky/lib/graph";
 import { scatterInWorld, type Placed } from "@/sky/lib/scatter";
 import type { SkyItem } from "@/sky/lib/types";
@@ -129,7 +129,7 @@ export function SkyField({ items, roots, width = 1120, height = 900, pad = 26, b
   const baseLook = useCallback((root: string, id: string): StarLook => {
     const it = graph.itemOf(id);
     const standing = it?.standing ?? "not-seen";
-    const look: StarLook = { role: roleOf(it?.kind ?? "word"), body: bodyOf(it?.kind ?? "word"), standing, tonight: tonight?.has(root) && standing === "not-seen" };
+    const look: StarLook = { role: roleOf(it?.kind ?? "word"), body: bodyOfItem(it), standing, tonight: tonight?.has(root) && standing === "not-seen" };
     return lookOf ? lookOf(id, look) : look;
   }, [graph, tonight, lookOf]);
 
@@ -155,8 +155,8 @@ export function SkyField({ items, roots, width = 1120, height = 900, pad = 26, b
     const unit = (size: number) => Math.max(0.7, Math.min(1.8, size / 70));
     const boxes = drawn.map((root) => {
       const l = layouts.get(root)!;
-      const kind = graph.itemOf(root)?.kind ?? "word";
-      const reach = bodyRadius(bodyOf(kind), roleOf(kind));
+      const it = graph.itemOf(root);
+      const reach = bodyRadius(bodyOfItem(it), roleOf(it?.kind ?? "word"));
       let size = sizeFor(l.stars.length, rootSet.has(root) ? baseSize : firmamentBase);
       for (let i = 0; i < 2; i++) size = Math.max(size, Math.ceil(2 * reach * unit(size) + 10));
       return { key: root, size };
@@ -213,7 +213,7 @@ export function SkyField({ items, roots, width = 1120, height = 900, pad = 26, b
   // Memoized because it is the same walk over every drawn constellation
   // that the drawing itself does, and hovering a star must not set that
   // walk going again (SAK-411).
-  const hits = useMemo(() => seen.flatMap((p) => placeConstellation(layouts.get(p.root)!, p.cx, p.cy, p.r).filter((s) => !s.group && !baseLook(p.root, s.id).hidden).map((s) => ({ key: `${p.root}/${s.id}`, id: s.id, root: p.root, x: s.px, y: s.py, r: bodyRadius(bodyOf(graph.itemOf(s.id)?.kind ?? "word"), roleOf(graph.itemOf(s.id)?.kind ?? "word")) * Math.max(0.7, Math.min(1.8, p.size / 70)) + 5 }))), [seen, layouts, baseLook, graph]);
+  const hits = useMemo(() => seen.flatMap((p) => placeConstellation(layouts.get(p.root)!, p.cx, p.cy, p.r).filter((s) => !s.group && !baseLook(p.root, s.id).hidden).map((s) => ({ key: `${p.root}/${s.id}`, id: s.id, root: p.root, x: s.px, y: s.py, r: bodyRadius(bodyOfItem(graph.itemOf(s.id)), roleOf(graph.itemOf(s.id)?.kind ?? "word")) * Math.max(0.7, Math.min(1.8, p.size / 70)) + 5 }))), [seen, layouts, baseLook, graph]);
   // one hit circle per star, up to the point where that is absurd
   const circles = hittable && hits.length <= HIT_CIRCLES_UP_TO ? hits : [];
 

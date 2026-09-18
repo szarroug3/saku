@@ -35,6 +35,7 @@ import { VERB_PAIRS, type VerbPair } from "@/data/transitivity";
 import { pairEntry, pairForEntry, TRANSITIVITY_SUBJECT } from "@/data/transitivity-facts";
 import { VOCAB_SUBJECT } from "@/data/vocab";
 import { COUNTER_KIND, entryForGlyph, knownFactsOf, LIB_ENTRIES_BY_KIND, libEntry, NUMBER_CONSTRUCTION_KIND, SENTENCE_RULE_KIND, type LibEntry } from "@/lib/library/entries";
+import { PARTICLE_RECIPE_IDS } from "@/lib/library/grammar-shelf";
 import { SENTENCE_ORDERING_TIERS, sentenceTierShortLabel } from "@/data/assembly";
 import { sentenceTierBlock } from "@/lib/sentence-ordering-plan";
 import { sentenceRuleOrder } from "@/lib/sentence-rule-order";
@@ -49,6 +50,12 @@ import { componentEntry, skyAdder, skyItems, standingFor, type SkyItems } from "
 
 /** How many of a long section to offer; the page lays out fewer. */
 const SHOW = 24;
+
+/** The library entry of every bare particle, so a grammar item can be given
+ * the flag the sky draws a moon from. The recipe ids are the Library's own
+ * particle section, read rather than listed again here (SAK-465). */
+const PARTICLE_ENTRIES: ReadonlySet<string> = new Set([...PARTICLE_RECIPE_IDS].map((id) => patternEntry(id) as string));
+const isParticleEntry = (id: string) => PARTICLE_ENTRIES.has(id);
 
 /** The native numbers (ひとつ to とお) as one pick: the 〜つ rule. */
 export const TSU_RULE = "counter-rule:tsu";
@@ -190,7 +197,9 @@ function picker(sky: Pick<SkyItems, "items" | "add">) {
       case COUNTER_KIND: return offer(entry, "counter");
       // a counting rule (numbers 11 to 99, the 〜本 counter's system): counted with the counters
       case NUMBER_CONSTRUCTION_KIND: return offer(entry, "counter", { english: entry.name ?? entry.meanings[0] ?? entry.id });
-      case GRAMMAR_SUBJECT: return offer(entry, "grammar");
+      // a grammar pattern, with the one thing the sky needs to draw it: a
+      // bare particle is a moon and everything else is a comet (SAK-465)
+      case GRAMMAR_SUBJECT: return offer(entry, "grammar", isParticleEntry(entry.id) ? { particle: true } : {});
       // a sentence rule has no glyph of its own: its short label stands in, as on the app's tiles
       case SENTENCE_RULE_KIND: { const name = sentenceTierShortLabel(entry.name ?? entry.meanings[0] ?? entry.id); return offer(entry, "sentence", { english: name, glyph: name }); }
       case TRANSITIVITY_SUBJECT: { const p = pairForEntry(entry.id); return p ? offerPair(p, entry) : undefined; }

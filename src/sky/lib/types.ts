@@ -76,6 +76,16 @@ export interface SkyItem {
   /** Its parts are its content and the card lists them itself (the 〜つ
    * rule's ten forms), so the card shows no "Made of". */
   listsParts?: boolean;
+  /**
+   * On a grammar pattern: the pattern is a bare particle (は, が, を, に, で,
+   * だけ and the rest of the app's particle section), so the sky draws it as
+   * a moon rather than a comet. See `bodyOf` in src/sky/lib/constellation.ts.
+   *
+   * A flag rather than a kind of its own: a particle is picked, gated,
+   * quizzed and taught exactly as any other grammar pattern is, and the only
+   * thing that differs is what it is drawn as. Ignored on every other kind.
+   */
+  particle?: boolean;
   /** The radicals a kanji is built from, for looking a kanji up by what
    * can be seen in it (SAK-325). Only on a kanji tile. */
   parts?: readonly string[];

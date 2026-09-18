@@ -1669,3 +1669,50 @@ test("the atlas unselects everything in one press", async ({ page }) => {
   await expect(picked).toHaveCount(0);
   await expect(unselect).toHaveCount(0);
 });
+
+test("the particles picked for tonight are moons, and nothing there is a planet", async ({ page }) => {
+  // SAK-465. Five particles picked used to be five ringed planets in one
+  // cluster: the biggest body in the sky drawn on its most ordinary thing
+  // (Sam: "planets should be rarer"). A particle is a moon now, a grammar
+  // pattern a comet, and only a sentence type is still a planet.
+  await page.goto("/observatory?sample");
+  const cards = page.locator("section", { has: page.getByRole("heading", { name: "Sentence rules" }) }).getByRole("button");
+  const particles = ["marks the topic", "marks the subject", "marks the direct object", "marks where something is or is going", "marks where an action happens"];
+  for (const name of particles) await cards.filter({ hasText: name }).first().click();
+  await expect(page.getByText(/^5 Picks · /)).toBeVisible();
+
+  const sky = page.locator('svg[aria-label="Tonight\'s picks, as the constellations they will be"]');
+  await expect(sky.locator('[data-body="moon"]')).toHaveCount(5);
+  await expect(sky.locator('[data-body="planet"]')).toHaveCount(0);
+  await expect(sky.locator('[data-body="comet"]')).toHaveCount(0);
+  // a moon is a disc with a crescent of the night lying on it: two flat
+  // tones, the standing's own color and the night behind it
+  const moon = sky.locator('[data-body="moon"]').first();
+  const crescent = moon.locator("path");
+  await expect(crescent).toHaveCount(1);
+  await expect(crescent).toHaveAttribute("fill", "var(--sky-ground-0)");
+  await expect(moon.locator("circle").last()).toBeVisible();
+});
+
+test("a grammar pattern is a comet in the lesson sky, tail and all", async ({ page }) => {
+  // SAK-465, the other half: 〜てから is a pattern and not a particle, so it
+  // draws as a comet rather than as a moon or as a planet.
+  await page.goto("/observatory?sample");
+  const cards = page.locator("section", { has: page.getByRole("heading", { name: "Sentence rules" }) }).getByRole("button");
+  await cards.filter({ hasText: "after doing X" }).first().click();
+  await page.getByRole("link", { name: "Start lesson" }).click();
+  await expect(page).toHaveURL(/\/lesson\?/);
+
+  const sky = page.locator('svg[aria-label^="Tonight\'s constellations"]');
+  const comet = sky.locator('[data-body="comet"]');
+  await expect(comet).toHaveCount(1);
+  await expect(sky.locator('[data-body="moon"]')).toHaveCount(0);
+  await expect(sky.locator('[data-body="planet"]')).toHaveCount(0);
+  // the tail is one filled triangle out to a point, in starlight like the
+  // planet's ring, and the head is a dot in the standing's own color
+  const tail = comet.locator("path");
+  await expect(tail).toHaveCount(1);
+  await expect(tail).toHaveAttribute("fill", "var(--sky-star)");
+  await expect(tail).toHaveAttribute("d", /^M .* L .* L .* Z$/);
+  await expect(comet.locator("circle").last()).toBeVisible();
+});

@@ -16,15 +16,22 @@
 // only draws it. Color is still by standing through the standing tokens, so
 // a star is the same color as its chip.
 //
-// What each thing IS was settled first (Sam, 2026-09-05): a grammar pattern
-// or a sentence rule is a planet with a ring, a counter an asteroid, a verb
-// pair a binary star; everything else a star. Every consumer reads positions
-// from placeConstellation and paint from paintFor, so the drawing can change
-// without touching them.
+// What each thing IS was settled first (Sam, 2026-09-05, revised
+// 2026-09-17): a sentence type is a planet with a ring, a particle a moon, a
+// grammar pattern a comet, a counter an asteroid, a verb pair a binary star;
+// everything else a star. `bodyOf` picks it, and every consumer reads
+// positions from placeConstellation and paint from paintFor, so the drawing
+// can change without touching them.
+//
+// Every body is drawn the same way: flat shapes, no gradient anywhere, and
+// two tones only. One is the standing's own color, so the body says how it
+// is going, and the other is either the night behind it (--sky-ground-0,
+// for a shadow) or starlight (--sky-star, for the planet's ring and the
+// comet's tail). That is what keeps six bodies looking like one sky.
 
 import { cloneElement, type ReactElement, type ReactNode } from "react";
 
-import { ASTEROID, asteroidShape, BINARY, bodyRadius, paintFor, placeConstellation, PLANET, STAR_RADIUS, TONIGHT_HALO, linePaintFor, type Body, type ConstellationLayout, type Paint, type StarLook, type StarRole } from "@/sky/lib/constellation";
+import { ASTEROID, asteroidShape, BINARY, bodyRadius, COMET, cometAway, MOON, paintFor, placeConstellation, PLANET, STAR_RADIUS, TONIGHT_HALO, linePaintFor, type Body, type ConstellationLayout, type Paint, type StarLook, type StarRole } from "@/sky/lib/constellation";
 
 export type { Paint, StarLook };
 
@@ -47,7 +54,20 @@ interface ConstellationProps {
   children?: ReactNode;
 }
 
-interface BodyProps { id: string; x: number; y: number; body: Body; role: StarRole; paint: Paint; glowOpacity: number; u: number }
+interface BodyProps {
+  id: string;
+  x: number;
+  y: number;
+  body: Body;
+  role: StarRole;
+  paint: Paint;
+  glowOpacity: number;
+  u: number;
+  /** Which way a comet's tail points, as a unit vector (see `cometAway`).
+   * Left out everywhere a body stands on its own, and then the comet takes
+   * the direction its id seeds. Ignored by every other body. */
+  away?: readonly [number, number];
+}
 
 /** How much a muted star is dimmed to. */
 const MUTED = 0.12;
@@ -65,7 +85,7 @@ const MUTED = 0.12;
  * lets the caller tell a star that is ONE element from one that is several
  * and skip the wrapper when there is nothing to wrap. Nothing about the
  * drawing changes: an SVG group with no attributes on it is a no-op. */
-function bodyParts({ id, x, y, body, role, paint, glowOpacity, u }: BodyProps): ReactElement[] {
+function bodyParts({ id, x, y, body, role, paint, glowOpacity, u, away }: BodyProps): ReactElement[] {
   const reach = bodyRadius(body, role) * u;
   const glow = (r: number) => (paint.glow > 0 ? [<circle key="glow" cx={x} cy={y} r={r + paint.glow * u} fill={paint.fill} opacity={glowOpacity} />] : []);
   const figure = (): ReactElement[] => {
@@ -82,6 +102,36 @@ function bodyParts({ id, x, y, body, role, paint, glowOpacity, u }: BodyProps): 
             <path d={`M ${x} ${y - r} A ${r} ${r} 0 0 1 ${x} ${y + r} Z`} fill="var(--sky-ground-0)" opacity={0.3} />
             <path d={`M ${x - rx} ${y} A ${rx} ${ry} 0 0 0 ${x + rx} ${y}`} fill="none" stroke="var(--sky-star)" strokeWidth={w} opacity={0.9} />
           </g>,
+        ];
+      }
+      case "moon": {
+        const r = MOON.r * u, inner = MOON.shadow * r;
+        // the whole disc in its standing's color, and a crescent of the
+        // night lying along one limb: the two arcs are the disc's own edge
+        // and a flatter one bulging back across it, so the crescent is
+        // widest at the middle and comes to a point at each horn. Tilted,
+        // like the planet's ring, so a row of them is not a row of the same
+        // stamp.
+        return [
+          ...glow(r),
+          <g key="moon" transform={`rotate(${MOON.tilt} ${x} ${y})`}>
+            <circle cx={x} cy={y} r={r} fill={paint.fill} />
+            <path d={`M ${x} ${y - r} A ${r} ${r} 0 0 0 ${x} ${y + r} A ${inner} ${r} 0 0 1 ${x} ${y - r} Z`} fill="var(--sky-ground-0)" opacity={0.8} />
+          </g>,
+        ];
+      }
+      case "comet": {
+        const head = COMET.head * u, tail = COMET.tail * u;
+        const [dx, dy] = away ?? cometAway(id, 0, 0);
+        // the head in its standing's color, and a tail tapering from the
+        // head's two sides to a point out in the dark, in starlight like
+        // the planet's ring. The tail is drawn first, so the head stays the
+        // brightest thing about it.
+        const side = { x: -dy * head, y: dx * head };
+        return [
+          <path key="tail" d={`M ${x + side.x} ${y + side.y} L ${x + dx * tail} ${y + dy * tail} L ${x - side.x} ${y - side.y} Z`} fill="var(--sky-star)" opacity={0.55} />,
+          ...glow(head),
+          <circle key="head" cx={x} cy={y} r={head} fill={paint.fill} />,
         ];
       }
       case "asteroid": {
@@ -180,7 +230,10 @@ export function ConstellationFigure({ layout, cx, cy, r, lookOf, unit = 1, dots 
             if (look.hidden || s.group) return null;
             const paint = paintFor(look);
             const body = look.body ?? "star";
-            const parts = bodyParts({ id: s.id, x: s.px, y: s.py, body, role: look.role, paint, glowOpacity: look.emphasis ? 0.22 : 0.16, u });
+            // a comet's tail points away from the middle of its own
+            // constellation; nothing else reads this
+            const away = body === "comet" ? cometAway(s.id, s.px - cx, s.py - cy) : undefined;
+            const parts = bodyParts({ id: s.id, x: s.px, y: s.py, body, role: look.role, paint, glowOpacity: look.emphasis ? 0.22 : 0.16, u, away });
             const mark = { "data-star": s.id, "data-body": body };
             // A star that is one element says which star it is on that
             // element, rather than in a group around it. That is the whole

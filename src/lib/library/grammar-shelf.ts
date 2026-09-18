@@ -62,8 +62,13 @@ type SectionKey = Form | typeof OTHER | typeof PARTICLES;
  * clause pattern like 〜ので is not), so it is listed by hand and read here. If
  * the set drifts from the recipe table a test would not catch it — keep it in
  * sync with the particles ALLOWLIST block in recipes.ts.
+ *
+ * Exported because the sky asks the same question for a different reason
+ * (SAK-465): a particle is drawn as a moon and any other grammar pattern as a
+ * comet, and there should be one answer to "is this a particle", not two lists
+ * that can drift apart.
  */
-const PARTICLE_IDS: ReadonlySet<string> = new Set([
+export const PARTICLE_RECIPE_IDS: ReadonlySet<string> = new Set([
   "wa", // は — topic
   "ga", // が — subject
   "ni", // に — location / destination
@@ -88,7 +93,7 @@ const PARTICLE_IDS: ReadonlySet<string> = new Set([
  * has no form and joins it too.
  */
 function sectionKeyOf(r: Recipe): SectionKey {
-  if (PARTICLE_IDS.has(r.id)) return PARTICLES;
+  if (PARTICLE_RECIPE_IDS.has(r.id)) return PARTICLES;
   const f = verbAttachForm(r);
   if (f && f !== "dictionary") return f;
   const adjectiveForm = r.attach.find(

@@ -4,10 +4,10 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { asteroidShape, bodyOf, hashUnit, layoutConstellation, linePaintFor, paintFor, placeConstellation, roleOf, sizeFor, TONIGHT_HALO, type StarLook } from "@/sky/lib/constellation";
+import { asteroidShape, BODY_ORDER, bodyOfItem, bodyRadius, cometAway, hashUnit, layoutConstellation, linePaintFor, paintFor, placeConstellation, roleOf, sizeFor, STAR_RADIUS, TONIGHT_HALO, type StarLook } from "@/sky/lib/constellation";
 import { buildGraph } from "@/sky/lib/graph";
 import type { Standing } from "@/sky/lib/standing";
-import type { SkyItem } from "@/sky/lib/types";
+import type { SkyItem, SkyKind } from "@/sky/lib/types";
 
 const item = (id: string, kind: SkyItem["kind"], components?: string[]): SkyItem => ({ id, kind, glyph: id, english: id, standing: "not-seen", components });
 const g = buildGraph([
@@ -118,13 +118,53 @@ describe("the constellation layout", () => {
   });
 
   it("draws each kind as its body", () => {
-    assert.equal(bodyOf("word"), "star");
-    assert.equal(bodyOf("kana"), "star");
-    assert.equal(bodyOf("keigo"), "star");
-    assert.equal(bodyOf("grammar"), "planet");
-    assert.equal(bodyOf("sentence"), "planet");
-    assert.equal(bodyOf("counter"), "asteroid");
-    assert.equal(bodyOf("verbPair"), "binary");
+    const body = (kind: SkyKind, particle?: boolean) => bodyOfItem({ kind, particle });
+    assert.equal(body("word"), "star");
+    assert.equal(body("kana"), "star");
+    assert.equal(body("keigo"), "star");
+    assert.equal(body("radical"), "star");
+    assert.equal(body("counter"), "asteroid");
+    assert.equal(body("verbPair"), "binary");
+    // SAK-465: only a sentence type is a planet. A grammar pattern is a
+    // comet, and a pattern that is a bare particle is a moon.
+    assert.equal(body("sentence"), "planet");
+    assert.equal(body("grammar"), "comet");
+    assert.equal(body("grammar", true), "moon");
+    // the flag says nothing about anything else
+    assert.equal(body("sentence", true), "planet");
+    assert.equal(body("word", true), "star");
+    // a star with no item behind it draws as a word would
+    assert.equal(bodyOfItem(undefined), "star");
+  });
+
+  it("lists every body once, and gives each one a reach", () => {
+    // the one list of the bodies: nothing else writes their names out
+    assert.deepEqual([...new Set(BODY_ORDER)], [...BODY_ORDER], "no body listed twice");
+    const kinds: readonly SkyKind[] = ["kana", "radical", "kanji", "word", "counter", "grammar", "sentence", "term", "mark", "concept", "verbPair", "keigo"];
+    const drawn = new Set(kinds.flatMap((kind) => [bodyOfItem({ kind }), bodyOfItem({ kind, particle: true })]));
+    assert.deepEqual([...BODY_ORDER].sort(), [...drawn].sort(), "every body some kind draws, and no more");
+    for (const body of BODY_ORDER) {
+      const reach = bodyRadius(body, "word");
+      assert.ok(reach > 0, `${body} has a reach`);
+      // a moon and a comet are bodies, not dots: each reaches further than
+      // the biggest star, and neither crowds a planet
+      if (body === "moon" || body === "comet") {
+        assert.ok(reach > STAR_RADIUS.word, `${body} reaches past a word star`);
+        assert.ok(reach < bodyRadius("planet", "word"), `${body} keeps inside a planet's ring`);
+      }
+    }
+  });
+
+  it("points a comet's tail away from the middle, and the same way every time", () => {
+    const [dx, dy] = cometAway("grammar:teiru", 0, 30);
+    assert.ok(Math.abs(dx) < 1e-6 && Math.abs(dy - 1) < 1e-6, `straight down: ${dx}, ${dy}`);
+    assert.deepEqual(cometAway("grammar:teiru", -12, 5), cometAway("grammar:teiru", -12, 5));
+    // a comet at the middle of its own constellation has no way to point,
+    // so it takes one from its id and keeps it
+    const middle = cometAway("grammar:teiru", 0, 0);
+    assert.deepEqual(middle, cometAway("grammar:teiru", 0, 0));
+    assert.notDeepEqual(middle, cometAway("grammar:tai", 0, 0));
+    assert.ok(Math.abs(Math.hypot(...middle) - 1) < 1e-3, "a direction, not a length");
   });
 
   it("gives an asteroid the same lump every time, about the unit circle", () => {

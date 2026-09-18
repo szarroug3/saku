@@ -15,7 +15,7 @@
 
 import type { Constellation } from "./graph";
 import type { Standing } from "./standing";
-import type { SkyKind } from "./types";
+import type { SkyItem, SkyKind } from "./types";
 
 /** A hash of a string to [0, 1): the prototype's `seeded`, kept as is so the
  * shapes it drew are the shapes the app draws. */
@@ -41,15 +41,39 @@ export function roleOf(kind: SkyKind): StarRole {
   return "word";
 }
 
-/** What kind of body a thing is drawn as (Sam's call, 2026-09-05): kana,
- * pieces, kanji and words are stars; a grammar pattern or a sentence rule
- * is a planet; a counter is an asteroid; a verb pair is a binary star, two
- * suns round one center. Keigo are words, so stars. */
-export type Body = "star" | "planet" | "asteroid" | "binary";
+/** What kind of body a thing is drawn as (Sam's call, 2026-09-05, revised
+ * 2026-09-17): kana, pieces, kanji and words are stars; a counter is an
+ * asteroid; a verb pair is a binary star, two suns round one center. Keigo
+ * are words, so stars.
+ *
+ * The three grammar bodies are the 2026-09-17 revision. Every grammar
+ * pattern and every sentence type used to be a ringed planet, so five
+ * particles picked for one night were five planets in a cluster, and the
+ * biggest body in the sky was also its most common one (Sam: "planets
+ * should be rarer"). How many there are now decides the body:
+ *
+ *   a particle (は, が, を, に, で, だけ and the rest), six or so   a moon
+ *   a grammar pattern (〜ている, 〜たい and the rest), 111          a comet
+ *   a sentence type (Simple and the other nine), ten              a planet
+ *
+ * so a planet is the rare thing it looks like, and a moon beside it reads
+ * as the small piece a particle is. */
+export type Body = "star" | "moon" | "comet" | "asteroid" | "binary" | "planet";
 
-export function bodyOf(kind: SkyKind): Body {
+/** Every body, once, rarest first: ten sentence types, sixty-nine verb
+ * pairs, fifteen counters, a hundred and eleven grammar patterns, six
+ * particles, and then the thousands of stars. The one list of the bodies, so
+ * nothing writes their names out a second time, and the order the home walks
+ * to decide which body to open the sky on (sky-home.tsx). */
+export const BODY_ORDER: readonly Body[] = ["planet", "binary", "asteroid", "comet", "moon", "star"];
+
+/** What a kind is drawn as. `particle` is the flag a grammar item carries
+ * when its pattern is a bare particle (see SkyItem.particle); it is ignored
+ * on every other kind. Asked through `bodyOfItem`, which is what every
+ * caller actually holds. */
+function bodyOf(kind: SkyKind, particle = false): Body {
   switch (kind) {
-    case "grammar":
+    case "grammar": return particle ? "moon" : "comet";
     case "sentence": return "planet";
     case "counter": return "asteroid";
     case "verbPair": return "binary";
@@ -57,11 +81,21 @@ export function bodyOf(kind: SkyKind): Body {
   }
 }
 
+/** The body an item is drawn as. Every caller in the sky holds an item that
+ * may be missing (a star whose item never arrived draws as a word would), so
+ * they ask this rather than unpacking the kind and the flag themselves. */
+export function bodyOfItem(item: Pick<SkyItem, "kind" | "particle"> | undefined): Body {
+  return bodyOf(item?.kind ?? "word", item?.particle);
+}
+
 /** How far a body reaches from its center at unit scale: the hit area and
- * the room it needs. A star's is its dot; a planet's is its ring. */
+ * the room it needs. A star's is its dot; a planet's is its ring; a comet's
+ * is the tip of its tail, which is the farthest it is ever drawn. */
 export function bodyRadius(body: Body, role: StarRole): number {
   switch (body) {
     case "planet": return PLANET.ring;
+    case "moon": return MOON.r * 1.15;
+    case "comet": return COMET.tail;
     case "asteroid": return ASTEROID.r * 1.15;
     case "binary": return BINARY.b.x + BINARY.b.r;
     default: return STAR_RADIUS[role];
@@ -72,10 +106,35 @@ export function bodyRadius(body: Body, role: StarRole): number {
  * to read as a planet at the smallest scale the sky draws (Sam, 2026-09-05:
  * "I can barely tell this is a planet"). */
 export const PLANET = { r: 16, ring: 30, ringDepth: 9.5, tilt: -24 };
+/** The moon: a disc three times a word star wide, with a crescent of shadow
+ * lying along one limb. `shadow` is how far the shadow's inner edge bulges
+ * back over the lit half, as a share of the radius: near zero is a half moon,
+ * and this leaves a little over half the disc lit with a curved edge between
+ * the two. The six candidates were drawn side by side at every scale the sky
+ * uses and looked at; this is the one that still reads as a moon at 0.7,
+ * where the disc is 14 screen pixels across. Much smaller than a planet on
+ * purpose: a particle is a small thing. */
+export const MOON = { r: 10, shadow: 0.18, tilt: -25 };
+/** The comet: a bright head, and a tail this long from the head's center,
+ * tapering to a point away from the constellation's middle. The head is
+ * smaller than a counter's rock and well under a planet's disc; only the
+ * tail reaches far, and it reaches one way. */
+export const COMET = { head: 5.5, tail: 18 };
 /** The asteroid: a lumpy shape of this many corners about this radius. */
 export const ASTEROID = { r: 11, corners: 7 };
 /** The binary: two suns, offset from the center, far enough apart to read as two. */
 export const BINARY = { a: { x: -8, y: -2.5, r: 7 }, b: { x: 8.5, y: 3.5, r: 5.2 } };
+
+/** Which way a comet's tail points, as a unit vector: away from the middle
+ * of its own constellation, which is what (dx, dy) says. A comet sitting AT
+ * that middle (a grammar pattern is usually the root of its own
+ * constellation) has no such direction, so it takes one seeded by its id and
+ * keeps it on every sky. Rounded like every other number the sky draws with,
+ * so the server and the browser agree to the last digit. */
+export function cometAway(id: string, dx: number, dy: number): readonly [number, number] {
+  const angle = Math.hypot(dx, dy) < 1e-6 ? hashUnit(`${id}|tail`) * Math.PI * 2 : Math.atan2(dy, dx);
+  return [round4(Math.cos(angle)), round4(Math.sin(angle))];
+}
 
 /** The corners of an asteroid, seeded by its id so it is the same lump on
  * every sky: unit radius, to be scaled and offset by the drawer. */

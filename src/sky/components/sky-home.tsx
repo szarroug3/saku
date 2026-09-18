@@ -17,7 +17,7 @@ import { DiscoveryPanel, discoveryTotals, type DiscoveryRow } from "@/sky/compon
 import { MixUpsPanel, type MixUp } from "@/sky/components/mix-ups-panel";
 import { ContinueButton } from "@/sky/components/quiz-resume";
 import { SkyField } from "@/sky/components/sky-field";
-import { bodyOf, type Body } from "@/sky/lib/constellation";
+import { BODY_ORDER, bodyOfItem } from "@/sky/lib/constellation";
 import { Eyebrow } from "@/sky/components/sky-card";
 import { SURFACE } from "@/sky/components/sky-panel";
 import { FoldRow, SkyButton } from "@/sky/components/sky-button";
@@ -70,13 +70,20 @@ interface SkyHomeProps {
 export function SkyHome({ data, observatoryHref = "/observatory", onClearMixUp, resume, height }: SkyHomeProps) {
   const graph = useMemo(() => buildGraph(data.items), [data.items]);
   const stars = useMemo(() => [...new Set([...skyStars(graph, data.roots), ...(data.firmament ?? [])])], [graph, data.roots, data.firmament]);
-  // the sky opens on a planet if there is one, else a binary, else an
-  // asteroid: the learner's furthest reach, and the part of the sky worth
-  // a look first. The bodies are scattered like everything else (Sam,
-  // 2026-09-05: not grouped), so this is a place to start, not a tour.
+  // the sky opens on the rarest body the learner has reached, which is
+  // BODY_ORDER's own order: a sentence type (a planet) before a verb pair,
+  // a verb pair before a counter, and a grammar pattern (a comet) or a
+  // particle (a moon) only when there is nothing rarer up there. Never a
+  // star, because nearly all of the sky is stars. The bodies are scattered
+  // like everything else (Sam, 2026-09-05: not grouped), so this is a place
+  // to start, not a tour.
   const openOn = useMemo(() => {
-    const first = (body: Body) => data.roots.find((id) => bodyOf(graph.itemOf(id)?.kind ?? "word") === body);
-    return first("planet") ?? first("binary") ?? first("asteroid");
+    for (const body of BODY_ORDER) {
+      if (body === "star") continue;
+      const found = data.roots.find((id) => bodyOfItem(graph.itemOf(id)) === body);
+      if (found) return found;
+    }
+    return undefined;
   }, [graph, data.roots]);
   const counts = useMemo(() => data.standingCounts ?? tallyStandings(stars, (id) => graph.itemOf(id)?.standing), [data.standingCounts, stars, graph]);
   const totals = discoveryTotals(data.discovery);
