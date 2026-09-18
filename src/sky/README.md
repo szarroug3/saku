@@ -6132,3 +6132,9 @@ The "Sentence rules" row ended on a dim "Simple" tile reading "Opens once you kn
 **The words.** "Particle" for は, が, を, に, で, だけ and their kin; "sentence type" for Simple and the other nine; "grammar pattern" for 〜ている and the rest. Only the app's tables know that は is a particle and 〜ている is not, so that one is set where they are read: `offerPick` puts `label: "particle"` on the item, from `isParticle` in src/lib/library/grammar-shelf.ts, which is the same list the Library's own "Particles" section is cut by. The other two are `KIND_LABEL`, which said "grammar" and "sentences" and now says the specific word.
 
 **The row is "Sentences".** It holds the particles a sentence needs and the sentence type they lead to, and "Sentence rules" made the particles sound like rules of sentence building. The Library's own shelf of the ten types keeps its name; that shelf really is the sentence rules.
+
+## The line over the lesson's order describes the lesson it is on (2026-09-17, SAK-464)
+
+"Tonight, in order" carried one fixed line under it: "Pieces first, then the character, then the word." On a lesson of nothing but particles that is three wrong nouns in a row, and Sam asked for it to describe the lesson it is on or be left out.
+
+`orderNote` in src/sky/lib/lesson.ts takes tonight's steps and answers the one thing the order really does: teach what a thing is built from before the thing. The full ladder where the night has all three, the half where it has two ("The characters first, then the word."), and nothing at all where every step stands on its own, which is a night of particles, sentence types, kana, counters, keigo, verb pairs, or words with no kanji under them. Nothing means no line, not a vaguer one: the order of things that need nothing is the order they were picked in, and there is no rule to explain.

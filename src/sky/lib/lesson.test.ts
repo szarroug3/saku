@@ -7,7 +7,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import { buildGraph } from "@/sky/lib/graph";
-import { isUnlocked, lessonReferences, lessonSteps, referencePages, starState, unseenPages, type LessonPage } from "@/sky/lib/lesson";
+import { isUnlocked, lessonReferences, lessonSteps, orderNote, referencePages, starState, unseenPages, type LessonPage } from "@/sky/lib/lesson";
 import type { SkyItem } from "@/sky/lib/types";
 
 const item = (id: string, kind: SkyItem["kind"], extra: Partial<SkyItem> = {}): SkyItem => ({ id, kind, glyph: id, english: id, standing: "not-seen", ...extra });
@@ -130,5 +130,32 @@ describe("the pages a lesson opens on", () => {
 
   it("marks every page of the lesson, listed or opened or not", () => {
     assert.deepEqual(referencePages(refs), ["page:term:kanji", "page:page:built-from"]);
+  });
+});
+
+// SAK-464. The line under "Tonight, in order" read "Pieces first, then the
+// character, then the word." whatever the night held, including a night of
+// particles, which have no pieces and are not characters or words. Sam: make
+// it describe the lesson it is on, or leave it out.
+describe("what the order says about itself", () => {
+  const note = (...kinds: SkyItem["kind"][]) => orderNote(kinds.map((k, i) => item(`${k}${i}`, k)));
+
+  it("says the whole ladder when the night is a word over its characters and their pieces", () => {
+    assert.equal(note("radical", "kanji", "word"), "Pieces first, then the character, then the word.");
+  });
+
+  it("says the half it really has", () => {
+    assert.equal(note("kanji", "word"), "The characters first, then the word.");
+    assert.equal(note("radical", "word"), "The pieces first, then the word.");
+    assert.equal(note("radical", "kanji"), "The pieces first, then the character they build.");
+  });
+
+  it("says nothing about a night of things that stand on their own", () => {
+    assert.equal(note("grammar", "grammar"), undefined, "a night of particles");
+    assert.equal(note("sentence"), undefined);
+    assert.equal(note("kana", "kana"), undefined);
+    assert.equal(note("word", "word"), undefined, "words with no kanji under them");
+    assert.equal(note("counter", "keigo", "verbPair"), undefined);
+    assert.equal(note(), undefined);
   });
 });

@@ -40,7 +40,7 @@ import { SkyPageShell } from "@/sky/components/sky-page-shell";
 import { SkyPanel } from "@/sky/components/sky-panel";
 import { buildGraph } from "@/sky/lib/graph";
 import { japaneseFont } from "@/sky/lib/japanese";
-import { isUnlocked, lessonSteps, starState, type LessonReference, type LessonTeach } from "@/sky/lib/lesson";
+import { isUnlocked, lessonSteps, orderNote, starState, type LessonReference, type LessonTeach } from "@/sky/lib/lesson";
 import { KIND_LABEL } from "@/sky/lib/tokens";
 import type { SkyItem } from "@/sky/lib/types";
 
@@ -143,6 +143,7 @@ export function SkyLesson({ data, drillHref, observatoryHref, written, hear, pit
   const graph = useMemo(() => buildGraph(data.items), [data.items]);
   const learned = useMemo(() => new Set(data.learned), [data.learned]);
   const steps = useMemo(() => lessonSteps(graph, data.picks, learned), [graph, data.picks, learned]);
+  const note = useMemo(() => orderNote(steps.map((s) => graph.itemOf(s.id)).filter((it): it is SkyItem => !!it)), [steps, graph]);
   const references = useMemo(() => data.references ?? [], [data.references]);
   const referenceOf = useMemo(() => new Map(references.map((r) => [r.id, r])), [references]);
   // Which step the lesson opens on: the one it was left on, when the order
@@ -368,7 +369,9 @@ export function SkyLesson({ data, drillHref, observatoryHref, written, hear, pit
             column. */}
         <div data-lesson-cell="order" className="flex min-h-0 shrink-0 lg:col-start-2 lg:row-start-2 lg:shrink">
           <SkyPanel title="Tonight, in order" className="flex h-full min-h-0 w-full flex-col !p-4">
-            <p className="mt-1 shrink-0 text-[12px] text-sky-muted">Pieces first, then the character, then the word.</p>
+            {/* why the order runs the way it does, when tonight has a shape
+                to explain; nothing at all when it does not (SAK-464) */}
+            {note && <p className="mt-1 shrink-0 text-[12px] text-sky-muted">{note}</p>}
             <ol ref={rail} className="mt-3 flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto lg:pr-1">
               {steps.map((s, i) => {
                 const it = graph.itemOf(s.id);

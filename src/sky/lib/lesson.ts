@@ -228,6 +228,36 @@ export function lessonSteps(graph: PrerequisiteGraph, picks: readonly string[], 
   return steps;
 }
 
+/**
+ * Why the order runs the way it does, when there is something true to say
+ * about it, and nothing at all otherwise (SAK-464).
+ *
+ * The line under "Tonight, in order" read "Pieces first, then the character,
+ * then the word." on every lesson, including a night of nothing but
+ * particles, which have no pieces and are not characters or words. Sam: make
+ * it describe the lesson it is on, or leave it out.
+ *
+ * The one thing the order really does is teach what something is built from
+ * before the thing itself, so the line is said only where the night has that
+ * shape: a word over its characters, or a character over its pieces. A night
+ * of things that stand on their own says nothing, because the order of them
+ * is the order they were picked in and there is no rule to explain.
+ */
+export function orderNote(items: readonly SkyItem[]): string | undefined {
+  const kinds = new Set(items.map((it) => it.kind));
+  const pieces = kinds.has("radical");
+  const characters = kinds.has("kanji");
+  if (kinds.has("word") && (characters || pieces)) {
+    return characters && pieces
+      ? "Pieces first, then the character, then the word."
+      : characters
+        ? "The characters first, then the word."
+        : "The pieces first, then the word.";
+  }
+  if (characters && pieces) return "The pieces first, then the character they build.";
+  return undefined;
+}
+
 /** The id a page is opened by. A page is not an item, so it needs one of
  * its own, and it has to be the same on both sides of the rail. */
 const pageId = (page: LessonPage) => `page:${page.item.id}`;
