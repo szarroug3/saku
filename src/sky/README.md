@@ -6746,3 +6746,5 @@ it is wide, drags it 160px, reloads for the width, and steps it with the arrow
 keys. `scripts/unreachable.mjs --list` at zero, `scripts/unused-exports.mjs` at
 zero on both lists, and `scripts/button-centering.mjs` at zero over 1px across
 7 pages.
+
+**The teaching page fills the panel it is in (2026-09-20, SAK-470).** Sam, on the は and が page in a widened Atlas panel: "when expanding this, the contents should fill the space". The title, the lead and the paragraphs were capped at 30ch and 64ch, so a wide panel showed a narrow column beside an empty half. The caps are gone from `teach-page.tsx`; the panel's width is the measure, and the learner sets it with the drag line.

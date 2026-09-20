@@ -171,14 +171,19 @@ export function Table({ table, onOpen }: { table: TeachTable; onOpen?: (id: stri
 
 /** One page of a star taught over several: the eyebrow, the title, the hook
  * to keep in mind, the prose, the formula and tables, the worked examples. */
+// NO WIDTH CAP ON THE PROSE (Sam, 2026-09-20, on the は and が page in a
+// widened Atlas panel: "when expanding this, the contents should fill the
+// space"). The title, the lead and the paragraphs used to stop at 30ch and
+// 64ch, so a panel dragged wide showed a narrow column beside an empty half.
+// The panel's own width is the measure now: the learner chose it.
 export function TeachPageView({ page, alone = false, onOpen }: { page: TeachPage; alone?: boolean; onOpen?: (id: string) => void }) {
   return (
     <div className={alone ? "" : "mt-4 border-t border-sky-line pt-4"}>
       {page.eyebrow && <Eyebrow>{page.eyebrow}</Eyebrow>}
-      {page.title && <h3 className={`max-w-[30ch] font-sky-display text-[20px] leading-tight ${japaneseFont(page.title)}`}>{page.title}</h3>}
-      {page.lead && <p className="mt-2 max-w-[64ch] text-[15.5px] font-semibold leading-relaxed">{page.lead}</p>}
+      {page.title && <h3 className={`font-sky-display text-[20px] leading-tight ${japaneseFont(page.title)}`}>{page.title}</h3>}
+      {page.lead && <p className="mt-2 text-[15.5px] font-semibold leading-relaxed">{page.lead}</p>}
       {page.hook && <p className="mt-2 text-[13px] font-semibold text-sky-accent">{page.hook}</p>}
-      <div className="mt-3 flex max-w-[64ch] flex-col gap-2 text-[14.5px] leading-relaxed">
+      <div className="mt-3 flex flex-col gap-2 text-[14.5px] leading-relaxed">
         {page.paragraphs.map((para, i) => <Paragraph key={i} para={para} />)}
       </div>
       {page.formula && <div className="mt-3"><Formula formula={page.formula} /></div>}
@@ -188,7 +193,7 @@ export function TeachPageView({ page, alone = false, onOpen }: { page: TeachPage
         </div>
       )}
       {page.after && page.after.length > 0 && (
-        <div className="mt-3 flex max-w-[64ch] flex-col gap-2 text-[14.5px] leading-relaxed">
+        <div className="mt-3 flex flex-col gap-2 text-[14.5px] leading-relaxed">
           {page.after.map((para, i) => <Paragraph key={i} para={para} />)}
         </div>
       )}
