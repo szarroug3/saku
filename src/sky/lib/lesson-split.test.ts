@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { detailsFloor, detailsPercent, dragSplit, lessonSplit, OLD_VIEW_KEY, pressedSplit, skyShown, splitLabel, splitStyle, stepSplit } from "./lesson-split";
+import { detailsFloor, detailsPercent, dragSplit, lessonSplit, OLD_VIEW_KEY, pressedSplit, skyShown, splitChevron, splitLabel, splitStyle, stepSplit } from "./lesson-split";
 
 /** The share the two by two opens at, read back through the module rather
  * than named again here, so a change to it cannot leave the test agreeing
@@ -115,6 +115,28 @@ describe("splitLabel", () => {
   it("says what the press will do rather than what is showing", () => {
     assert.equal(splitLabel(REST), "Pull the details all the way up");
     assert.equal(splitLabel(0), "Put the sky back");
+  });
+});
+
+describe("splitChevron", () => {
+  it("points where the press will send the card, not at what is open", () => {
+    assert.equal(splitChevron(REST), "up");
+    assert.equal(splitChevron(0.2), "up");
+    assert.equal(splitChevron(0), "down");
+  });
+
+  it("agrees with the label beside it in both states", () => {
+    assert.equal(splitChevron(REST) === "up", splitLabel(REST).includes("up"));
+    assert.equal(splitChevron(0) === "down", splitLabel(0).includes("back"));
+  });
+
+  it("is the opposite of what the card reports as expanded", () => {
+    // the details are SHUT while the press takes them up, which is why the
+    // chevron cannot be read off `aria-expanded` (SAK-471, third pass)
+    for (const share of [REST, 0.2, 0]) {
+      assert.equal(splitChevron(share) === "up", skyShown(share));
+      assert.notEqual(splitChevron(share) === "down", skyShown(share));
+    }
   });
 });
 

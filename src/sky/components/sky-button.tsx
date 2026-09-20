@@ -96,6 +96,9 @@ interface RoundButtonProps {
   onClick: () => void;
   pressed?: boolean;
   expanded?: boolean;
+  /** Which way the chevron points, for a button where the fold's own rule is
+   * the wrong answer. See `RoundButton`. */
+  chevron?: "up" | "down";
   /** The id of what this opens, for `aria-expanded` to point at. */
   controls?: string;
   className?: string;
@@ -151,20 +154,29 @@ const FLIPPED_CHEVRON = "rotate-180 translate-y-[-2.5px]";
  * (`FoldRow`), since one button cannot hold another. */
 const RING = "grid h-7 w-7 shrink-0 place-items-center rounded-full border border-sky-line text-[13px] leading-none text-sky-muted";
 
-/** Where the glyph's ink has to go, given which glyph it is and whether the
- * fold it belongs to is shut. */
-function inkShift(glyph: ReactNode, expanded?: boolean): string {
+/** Where the glyph's ink has to go, given which glyph it is and whether it is
+ * the chevron turned over. */
+function inkShift(glyph: ReactNode, down: boolean): string {
   if (typeof glyph !== "string") return "";
-  return glyph === CHEVRON && expanded === false ? FLIPPED_CHEVRON : INK_SHIFT[glyph] ?? "";
+  return glyph === CHEVRON && down ? FLIPPED_CHEVRON : INK_SHIFT[glyph] ?? "";
 }
 
 /** A small round control: a glyph in a hairline ring that takes the accent on
  * hover. Every fold in the Sky opens with one of these (SAK-412): ‹ › for a
  * panel that slides aside, and ⌃ for content that folds down, upright while it
- * is open and turned over while it is shut. A caller passes the chevron and
- * says whether the fold is open; which way it points is this file's business.
- * ‹ and › are already each other turned over, so they are left alone. */
-export function RoundButton({ label, onClick, pressed, expanded, controls, className = "", children }: RoundButtonProps) {
+ * is open and turned over while it is shut. ‹ and › are already each other
+ * turned over, so they are left alone.
+ *
+ * WHICH WAY THE CHEVRON POINTS (SAK-471). A fold's chevron reads as the state
+ * it is in: open is upright, shut is turned over, and a caller that passes
+ * `expanded` gets that for nothing. The lesson's button is not a fold, though.
+ * It moves the details card up the page and back down, and Sam read the
+ * chevron as the direction of the press: "it should face up when it expands
+ * upward and down when it collapses." Those two rules disagree, because the
+ * card is shut while the press takes it UP. So a caller that means the press
+ * rather than the state says so with `chevron`, and `aria-expanded` is left to
+ * say what is actually open. */
+export function RoundButton({ label, onClick, pressed, expanded, chevron, controls, className = "", children }: RoundButtonProps) {
   return (
     <button
       type="button"
@@ -175,7 +187,7 @@ export function RoundButton({ label, onClick, pressed, expanded, controls, class
       aria-controls={controls}
       className={`${RING} hover:border-sky-accent hover:text-sky-ink ${className}`}
     >
-      <span aria-hidden className={`block leading-none ${inkShift(children, expanded)}`}>{children}</span>
+      <span aria-hidden className={`block leading-none ${inkShift(children, chevron ? chevron === "down" : expanded === false)}`}>{children}</span>
       <span className="sr-only">{label}</span>
     </button>
   );
@@ -234,7 +246,7 @@ export function FoldRow({ label, open, controls, onClick, tail, inline = false, 
       <span className="flex items-center gap-3">
         {tail}
         <span aria-hidden className={`${RING} group-hover:border-sky-accent group-hover:text-sky-ink`}>
-          <span className={`block leading-none ${inkShift(CHEVRON, open)}`}>{CHEVRON}</span>
+          <span className={`block leading-none ${inkShift(CHEVRON, !open)}`}>{CHEVRON}</span>
         </span>
       </span>
     </button>

@@ -12,11 +12,12 @@
 // the start for reference, and a star opened stays lit. Order and locking
 // come from src/sky/lib/lesson.ts over the graph.
 //
-// THE DETAILS CARD IS DRAGGED TALLER (SAK-471). It has a handle on its top
-// edge, the one the Atlas entry panel has on its left edge, and a round button
-// beside the handle that does the whole way in one press. Dragging up shortens
-// the sky above the card; dragging down gives the sky its room back, to the
-// two by two and no further. References and "Tonight, in order" are drawn at
+// THE DETAILS CARD IS DRAGGED TALLER (SAK-471). It has a drag line on its top
+// edge, the one the Atlas entry panel has on its left edge (`DragGrip`, one
+// component for both), and a round button in the card's top right corner that
+// does the whole way in one press. Dragging up shortens the sky above the
+// card; dragging down gives the sky its room back, to the two by two and no
+// further. References and "Tonight, in order" are drawn at
 // their own heights in the right column and never move, whatever the handle
 // does. How far up the handle was left is this browser's own choice, read once
 // at the start and written on every drag by the route (lesson-client.tsx), and
@@ -39,9 +40,10 @@
 // lesson stands on step one the whole way through the lead, and the pages
 // are never steps.
 
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent as ReactKeyboardEvent, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 
 import type { StarLook } from "@/sky/components/constellation";
+import { DragGrip } from "@/sky/components/drag-grip";
 import { LessonCard, type HearComponent, type PitchComponent } from "@/sky/components/lesson-card";
 import { SkyField } from "@/sky/components/sky-field";
 import { RoundButton, SkyButton } from "@/sky/components/sky-button";
@@ -51,7 +53,7 @@ import { SkyPanel } from "@/sky/components/sky-panel";
 import { buildGraph } from "@/sky/lib/graph";
 import { japaneseFont } from "@/sky/lib/japanese";
 import { isUnlocked, lessonSteps, orderNote, starState, type LessonReference, type LessonTeach } from "@/sky/lib/lesson";
-import { detailsFloor, detailsPercent, dragSplit, lessonSplit, pressedSplit, skyShown, splitLabel, splitStyle, stepSplit } from "@/sky/lib/lesson-split";
+import { detailsFloor, detailsPercent, dragSplit, lessonSplit, pressedSplit, skyShown, splitChevron, splitLabel, splitStyle, stepSplit } from "@/sky/lib/lesson-split";
 import { KIND_LABEL } from "@/sky/lib/tokens";
 import type { SkyItem } from "@/sky/lib/types";
 
@@ -246,13 +248,8 @@ export function SkyLesson({ data, drillHref, observatoryHref, written, hear, pit
     e.preventDefault();
   };
   // the handle is focusable, and the arrow keys move it a line of text at a
-  // time; the round button beside it does the whole way in one press
+  // time; the round button in the card's corner does the whole way in one press
   const nudge = (up: boolean) => { const next = stepSplit(sky, up, columnHeight()); put(next); onSky?.(next); };
-  const pressHandle = (e: ReactKeyboardEvent<HTMLDivElement>) => {
-    if (e.key !== "ArrowUp" && e.key !== "ArrowDown") return;
-    e.preventDefault();
-    nudge(e.key === "ArrowUp");
-  };
   const flipSky = () => { const next = pressedSplit(sky); put(next); onSky?.(next); };
 
   // Where the lesson stands, written down the moment it opens and after every
@@ -433,34 +430,46 @@ export function SkyLesson({ data, drillHref, observatoryHref, written, hear, pit
         {/* Bottom left: the card, which scrolls inside its own cell beside the
             order. Below lg it is as tall as it is and the body scrolls.
 
-            The handle and the round button are drawn in the gap above it, out
-            of the layout, the way the Atlas panel's handle is drawn in the gap
-            to its left. With the sky put away there is no gap and no room
-            above the grid either (the page body clips what hangs over its
-            top), so the two of them move down onto the card's own top edge,
-            over its padding. Neither is offered below lg: there is no sky
-            above the card there to take room from. */}
+            The drag line is drawn in the gap above it, out of the layout, the
+            way the Atlas panel's is drawn in the gap to its left. With the sky
+            put away there is no gap and no room above the grid either (the
+            page body clips what hangs over its top), so the line moves down
+            onto the card's own top edge, over its padding. The round button
+            does not move at all: it is in the card's corner in both states.
+            Neither is offered below lg: there is no sky above the card there
+            to take room from. */}
         <div data-lesson-cell="card" className="relative min-h-0 shrink-0 lg:col-start-1 lg:row-start-2 lg:shrink">
-          <div
-            role="separator"
-            aria-orientation="horizontal"
-            aria-label="Drag to make the details taller"
-            aria-valuenow={detailsPercent(sky)}
-            aria-valuemin={detailsFloor()}
-            aria-valuemax={100}
-            aria-controls="lesson-details"
-            tabIndex={0}
-            title="Drag to resize"
-            onPointerDown={startDrag}
-            onKeyDown={pressHandle}
-            className={`group absolute right-0 left-0 z-10 hidden h-3 cursor-row-resize touch-none lg:flex lg:items-center lg:justify-center ${skyShown(sky) ? "-top-3" : "top-0"}`}
-          >
-            <span aria-hidden className="h-0.5 w-16 rounded-full bg-sky-line group-hover:bg-sky-accent group-focus:bg-sky-accent" />
-          </div>
-          <span className={`absolute z-20 hidden lg:block ${skyShown(sky) ? "-top-[22px] right-0" : "top-1 right-1"}`}>
-            <RoundButton label={splitLabel(sky)} expanded={!skyShown(sky)} controls="lesson-details" onClick={flipSky} className="bg-sky-panel">⌃</RoundButton>
-          </span>
+          <DragGrip
+            orientation="horizontal"
+            label="Drag to make the details taller"
+            controls="lesson-details"
+            now={detailsPercent(sky)}
+            min={detailsFloor()}
+            max={100}
+            onDrag={startDrag}
+            onNudge={nudge}
+            className={`absolute right-0 left-0 z-10 hidden lg:flex ${skyShown(sky) ? "-top-3" : "top-0"}`}
+          />
           <div id="lesson-details" ref={cardBox} className="min-h-0 lg:h-full lg:overflow-y-auto lg:pr-1">
+            {/* THE BUTTON SITS IN THE CARD'S OWN CORNER (SAK-471). Sam: "it's
+                also hanging outside the panel." It used to be placed against
+                the CELL, half over the card's rounded corner at rest and a
+                few pixels inside it with the sky away, which is two wrong
+                places rather than one right one.
+                It is placed against the card instead, by a strip of no height
+                that is the first thing in the scrolling box: a block child
+                there is exactly as wide as the card, so 21px in from its right
+                and down from its top is the card's own padding box, in every
+                state and whatever a scrollbar takes. The strip is `sticky`, so
+                the button stays in the corner while the card is read rather
+                than scrolling off the top of a long grammar page. Nothing is
+                covered: the heading row under it is a short eyebrow at the far
+                left, and the pager's "1 of 2" is further down the card again. */}
+            <div className="sticky top-0 z-20 hidden h-0 lg:block">
+              <span className="absolute top-[21px] right-[21px]">
+                <RoundButton label={splitLabel(sky)} expanded={!skyShown(sky)} chevron={splitChevron(sky)} controls="lesson-details" onClick={flipSky} className="bg-sky-panel">⌃</RoundButton>
+              </span>
+            </div>
             {openPage ? (
               // a page is the same card a star gets (Sam, 2026-09-05), with
               // nothing under it and nothing to hear of its own

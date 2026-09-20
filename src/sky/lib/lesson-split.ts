@@ -101,6 +101,17 @@ export function splitLabel(share: number): string {
   return share > 0 ? "Pull the details all the way up" : "Put the sky back";
 }
 
+/** Which way the round button's chevron points: where the PRESS will send the
+ * card, not what is open now (Sam, 2026-09-20: "it should face up when it
+ * expands upward and down when it collapses"). With the sky still there the
+ * press takes the card up, so the chevron points up; with the card already at
+ * the top the press brings it back down, so it points down. That is the
+ * opposite of what a fold's chevron does, which is why the button says it in
+ * so many words instead of leaving it to `aria-expanded`. */
+export function splitChevron(share: number): "up" | "down" {
+  return share > 0 ? "up" : "down";
+}
+
 /** How much of the left column the details have, as a whole number of
  * percent, for the handle to report to assistive tech. 58 in the two by two
  * and 100 with the sky put away, which are the handle's own two ends. */
