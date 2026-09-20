@@ -6579,3 +6579,75 @@ change to the suite. `scripts/unreachable.mjs --list` at zero,
 `npm run build:library-index` was rerun because the Godan/ichidan concept's
 one-line summary changed, and that one entry is the whole diff.
 `npm run build:catalogues` produced byte-identical files.
+
+## One page for は and が, with furigana on every sentence (2026-09-20, SAK-470)
+
+Sam read the two particle pages in the app and sent four changes back.
+
+**One page, printed on both cards.** The が page opened by comparing が with a
+は page the reader may never have opened: "makes it sound like the reader
+definitely read the wa page before this. they might not have ... i almost
+wonder if the 'what ga does' part should be 'wa vs ga' and then have all the
+page be the full set of information and have them both have the same page."
+So `ParticleNote` names `recipes` rather than one `recipe`, and は and が name
+one note between them. The pager on both cards reads `〜は | は and が | Family`
+and `〜が | は and が | Family`, with the same page under the middle pill, word
+for word. It runs from nothing a reader has to bring: what は does with its
+"wa" reading, what が does, が picking one out against は in the same paragraph
+with the 猫は/猫が pair, new information, the words that take が, questions and
+their answers, sentences with both, the second が, then the mistakes and the
+Read more. A test pins that the two cards' pages are deeply equal, and another
+one pins that every paragraph weighing the two names both of them itself. に
+and で get one page the same way when they are written; を stands alone.
+
+**Furigana.** Sam: "we should have furigana in example sentences." Nothing in
+the app drew a reading over a kanji before this. `SoundLine`'s runs take an
+optional `ruby`, `Sound` draws such a run as the browser's own `<ruby>` with the
+kana in an `<rt>` at 0.55em, and `exampleLine` in teach.ts splits a sentence
+into its runs of kanji and its kana, marking the particle in the kana and
+hanging the reading on the kanji. The readings are authored beside the
+sentences in `particle-notes.ts`, one per RUN rather than per character, so 今日
+reads きょう and 上手 reads じょうず. A test counts the runs against the
+readings, so a sentence added without them fails rather than printing bare
+kanji.
+
+**What still has none, and why.** The build page's "In a sentence", the Particle
+page's table and a word card's "In a sentence" all draw a sentence out of the
+grammar corpus or `authored.ts` through `SentenceExample`, which carries `jp`,
+`en` and a span and no readings. `scripts/ingest/sentence_readings.py` fills in
+per-kanji readings for `word-examples.json` alone, and the corpus rows never
+went through it. Giving those sentences readings means either a second pass of
+that script over the corpus or authoring readings for every `SentenceExample` in
+the app, which is a card of its own rather than part of this one.
+
+**The Family table's patterns are links.** Sam: "the family tables in the
+patterns should be links similar to how they are on the particle terms page."
+The Family table now carries `opens`, the same field the Particle page's rows
+use (SAK-466), so the first column is a button that opens that pattern's own
+card. The pattern the card is already on opens nothing, and neither does a
+member that shares its page, so a row is a link only where the click goes
+somewhere else. `atlasEntryFromHistory` already sends along everything a page's
+tables open, so the targets travel with the card and the click lands.
+
+**English punctuation.** "On Sunday I am at home." is "On Sunday, I am at home."
+Every English line on the page was read for the same kind of slip: "When it
+marks the topic of a sentence, it is read \"wa\"" and "In Japanese, the thing
+you like is what が marks" both gained the comma after the opening phrase.
+
+**Nothing of Tofugu's.** The check was rerun on the whole rewritten page against
+https://www.tofugu.com/japanese/wa-and-ga/: both sides to plain lowercase words,
+then every word run compared. With the citation line excluded the longest shared
+run is four words ("is doing or being", "as for me i", "can be a verb", "the
+person doing the", "part of the sentence", "of the sentence is"). The only run
+of five or more anywhere is the article's own title in the Read more line. None
+of the eighteen example sentences appears in the article.
+
+**The gates.** `npx tsc --noEmit` and `npx eslint src e2e scripts` clean. 4,212
+unit tests, 4,211 pass and 1 is skipped; seven are new or rewritten. 73 e2e
+pass. `scripts/unreachable.mjs --list` at zero, `scripts/unused-exports.mjs` at
+zero on both lists, `scripts/button-centering.mjs` at zero over 1px across 7
+pages. Screenshots in the scratchpad's `shots-470b`, each one opened: the page
+on the 〜は card and on the 〜が card with the furigana over the kanji, the は
+card's Family page with 〜が underlined and 〜は in the accent, が's card after
+that link is clicked, 〜ば's Family page with three of its four rows as links,
+and the 〜は build page whose "In a sentence" still has no readings.
