@@ -6651,3 +6651,98 @@ on the 〜は card and on the 〜が card with the furigana over the kanji, the 
 card's Family page with 〜が underlined and 〜は in the accent, が's card after
 that link is clicked, 〜ば's Family page with three of its four rows as links,
 and the 〜は build page whose "In a sentence" still has no readings.
+
+## One drag line for both pages, and a chevron that points where the press goes (SAK-471, third pass)
+
+Sam, 2026-09-20: "on the lesson page, the drag line is perfect. add it to the
+atlas too since that's missing it. the button however is wrong. it's facing the
+wrong way. it should face up when it expands upward and down when it collapses.
+it's also hanging outside the panel."
+
+**The line is a component now: `src/sky/components/drag-grip.tsx`.** The lesson's
+line moved into it without a class changing, and the Atlas entry panel draws the
+same one turned on its side. What `DragGrip` owns is the look and the way it is
+driven: a 12px strip you can hit, a short line down the middle of it, the accent
+on hover and while the keyboard is on it, the "Drag to resize" tooltip, and two
+arrow keys. What it does not own is where it goes or what it resizes, because how
+far a line can travel is each page's own arithmetic. `orientation` decides the
+cursor, the shape of the line, the `aria-orientation` a separator reports, and
+which two keys are read: up and down across the top of something, left and right
+down its side. `onNudge(back)` is the one handler for both, where `back` is
+ArrowUp on a horizontal line and ArrowLeft on a vertical one.
+
+**One thing the line does that it did not before.** The strip takes focus on
+pointer down. Without that, the line was only bright while the pointer stayed
+inside the 12px it started in, and a drag that went anywhere dropped back to
+gray while it was still resizing. It also leaves the keyboard on the grip
+afterwards, so the arrow keys carry on from where the drag stopped.
+
+**The Atlas panel had a strip and nothing to see.** Its left edge was a bare
+`div` with a col-resize cursor, so the only way to find out the panel could be
+dragged was to try. It is `DragGrip` now, with the same tooltip, the same arrow
+keys and a line that turns pink under the pointer.
+
+**And the Atlas remembers its width.** One key in this browser,
+`sky:atlas:panel`, read and written in `atlas-client.tsx` the way
+`sky:lesson:sky` is read and written in `lesson-client.tsx`, at the end of a
+drag rather than on every move. The arithmetic is `src/sky/lib/atlas-panel.ts`,
+beside `lesson-split.ts` and pure for the same reason.
+
+**Two numbers, not one, and this is the part worth remembering.** `panelWidth`
+is what the browser holds, kept as the learner left it and never cut down to the
+window. `panelFit` is what is drawn: that width brought inside the window in
+front of them, which is 70% of it at most. The first cut had one function doing
+both, and it was wrong twice over. The window's width is not known during
+hydration (`useWindowWidth` answers 0 there, for the reason `useNarrow` answers
+false), so a stored 520 was clamped to the 360 floor at mount and the e2e caught
+a reload that did not hold. Keeping the two apart also means a laptop cannot
+write its own narrowness over a width chosen on a bigger screen: widen the
+window again and the panel is back where it was.
+
+**The chevron reads as the press, not as the state.** `RoundButton` turns `⌃`
+over when `expanded` is false, which is right for a fold: open is upright, shut
+is turned over. The lesson's button is not a fold. It moves the details card up
+the page and back down, and the card is SHUT while the press takes it up, so the
+fold's rule drew exactly the wrong arrow in both states. A caller that means the
+press says so with the new `chevron` prop, and `aria-expanded` is left alone to
+report what is actually open. `splitChevron` in `lesson-split.ts` is the rule
+for the lesson, with a unit test that pins it against `skyShown` in both
+directions. Nothing else in the Sky passes `chevron`, so every fold reads as it
+did.
+
+**The button is in the card's own corner, at the card's own padding.** It used
+to be placed against the cell: half over the card's rounded corner at rest, and
+a few pixels inside it with the sky away. Two wrong places rather than one right
+one. It is placed against the card now, by a strip of no height that is the
+first thing inside the scrolling box. A block child there is exactly as wide as
+the card whatever a scrollbar takes, so 21px in from its right and down from its
+top is the card's padding box, measured at 21.00 and 21.00 in both states at
+1440 by 900. The strip is `sticky`, so the button stays in the corner while a
+long grammar page is read instead of scrolling off the top. Nothing is covered:
+the e2e walks every leaf element with text inside `#lesson-details` and checks
+that none of their boxes overlaps the button's, which covers the heading row,
+the pager's "1 of 2" and every word of the card.
+
+**Nothing in `lesson-card.tsx` or `teach.ts` was touched**, which SAK-470 is
+changing at the same time. The room for the button comes from where the button
+is drawn, not from the card's heading row.
+
+**What was looked at.** Screenshots at 1440 by 900 in the scratchpad's
+`shots-471c`, each one opened: `lesson-rest.png` and `lesson-rest-corner.png`
+(the two by two, the chevron upright in the card's corner with "1 of 2" well
+below it), `lesson-up.png` and `lesson-up-corner.png` (the card with the whole
+left column, the chevron turned over in the same corner at the same inset),
+`atlas-rest.png` and `atlas-grip-rest.png` (the panel at 360 with the line down
+its left edge), `atlas-grip-hover.png` (the same line pink under the pointer),
+`atlas-dragging.png` (the panel 220px wider mid-drag, the shelf reflowed to
+seven columns), and `lesson-grip-hover.png` (the lesson's own line, unchanged).
+
+**The gates.** `npx tsc --noEmit` and `npx eslint src e2e scripts` clean. 4,226
+unit tests, 4,225 pass and 1 is skipped, with 16 new ones on `atlas-panel.ts`
+and 3 on `splitChevron`. 74 e2e pass on port 3551. The SAK-471 lesson test now
+reads the chevron's own `rotate` in both states and checks the button's box
+against the card's; the new Atlas test checks the line is drawn and taller than
+it is wide, drags it 160px, reloads for the width, and steps it with the arrow
+keys. `scripts/unreachable.mjs --list` at zero, `scripts/unused-exports.mjs` at
+zero on both lists, and `scripts/button-centering.mjs` at zero over 1px across
+7 pages.
