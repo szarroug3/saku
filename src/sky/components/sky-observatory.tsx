@@ -224,8 +224,8 @@ export function SkyObservatory({ data, cap = COMFORTABLE_PIECES, lessonHref, ini
 
         <aside className="flex min-h-0 flex-col gap-4 self-stretch lg:pb-6">
           <SkyPanel title="Your sky tonight" className="shrink-0 !p-4">
-            <div className="mt-3 overflow-hidden rounded-xl border border-sky-line">
-              <SkyField items={data.items} roots={picks} tonight={new Set(picks)} graph={graph} width={340} height={230} pad={16} baseSize={40} seed="planetarium" label="Tonight's picks, as the constellations they will be" />
+            <div data-sky="tonight" className="mt-3 overflow-hidden rounded-xl border border-sky-line">
+              <SkyField items={data.items} roots={picks} tonight={new Set(picks)} graph={graph} width={340} height={230} pad={16} baseSize={40} contain seed="planetarium" label="Tonight's picks, as the constellations they will be" />
             </div>
           </SkyPanel>
 

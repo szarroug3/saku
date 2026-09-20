@@ -4,7 +4,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { asteroidShape, BODY_ORDER, bodyOfItem, bodyRadius, COMET, cometAway, cometTail, cometTurn, hashUnit, layoutConstellation, linePaintFor, paintFor, placeConstellation, roleOf, sizeFor, STAR_RADIUS, TONIGHT_HALO, type StarLook } from "@/sky/lib/constellation";
+import { asteroidShape, BODY_ORDER, bodyOfItem, bodyRadius, COMET, cometAway, cometTail, cometTurn, boxFor, hashUnit, layoutConstellation, linePaintFor, paintFor, placeConstellation, roleOf, STAR_RADIUS, TONIGHT_HALO, unitFor, type StarLook } from "@/sky/lib/constellation";
 import { buildGraph } from "@/sky/lib/graph";
 import type { Standing } from "@/sky/lib/standing";
 import type { SkyItem, SkyKind } from "@/sky/lib/types";
@@ -223,8 +223,22 @@ describe("the constellation layout", () => {
     assert.deepEqual(a, b);
     assert.notDeepEqual(a, asteroidShape("counter:y"));
     for (const [x, y] of a) { const r = Math.hypot(x, y); assert.ok(r >= 0.72 && r <= 1.17, `${r}`); }
-    assert.equal(sizeFor(6, 48), 48 + 45);
-    assert.equal(sizeFor(1, 48), 48);
+  });
+
+  it("gives a constellation a box by its stars, and never one its own body spills out of", () => {
+    // nine units a star past the base, which is the prototype's sizing
+    assert.equal(boxFor(6, "star", "word", 48), 48 + 45);
+    assert.equal(boxFor(1, "star", "word", 48), 48);
+    // and a planet's ring is thirty units wide, so a one-star box grows to
+    // hold it rather than drawing it over its own edges (SAK-474)
+    const planet = boxFor(1, "planet", "word", 48);
+    assert.ok(planet > 48, `a lone planet gets more than the base, got ${planet}`);
+    assert.ok(2 * bodyRadius("planet", "word") * unitFor(planet) <= planet, "the ring is inside the box");
+    // the scale a box is drawn at, clamped so one star and twenty are drawn
+    // with strokes of about the same weight
+    assert.equal(unitFor(70), 1);
+    assert.equal(unitFor(7), 0.7);
+    assert.equal(unitFor(700), 1.8);
   });
 });
 

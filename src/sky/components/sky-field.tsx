@@ -22,6 +22,16 @@
 // The home uses it at full size with pan and zoom; the Planetarium's preview
 // and the lesson use the same field smaller or larger, with their own looks
 // (tonight's picks faint; the lesson's own clickable stars on top).
+//
+// A SKY THAT CANNOT BE PANNED SHOWS EVERYTHING (SAK-474). The window is a
+// crop of the world, which is what lets the home hold fifteen thousand
+// constellations, and on the home what falls outside it is a pan away. The
+// lesson's band and the Observatory's preview are never panned, so what falls
+// outside them is gone: a comet at the edge was drawn with its head in the
+// band and its tail past it, and a second pick further down was not drawn at
+// all. Those two set `contain`, and the field then measures the box round
+// every body it will draw and hands it to the canvas, which opens far enough
+// out to hold it. See src/sky/lib/sky-fit.ts.
 
 import { useCallback, useMemo, useRef, useState, type ReactNode } from "react";
 
@@ -29,9 +39,10 @@ import { ConstellationFigure, type StarLook } from "@/sky/components/constellati
 import { SkyCanvas, type SkyView } from "@/sky/components/sky-canvas";
 import { Floating, pointerAnchor, type Anchor } from "@/sky/components/sky-card";
 import { SkyTooltip } from "@/sky/components/sky-tooltip";
-import { bodyOfItem, bodyRadius, layoutConstellation, placeConstellation, roleOf, sizeFor } from "@/sky/lib/constellation";
+import { bodyOfItem, bodyRadius, bodyRoom, boxFor, layoutConstellation, placeConstellation, roleOf, unitFor } from "@/sky/lib/constellation";
 import { buildGraph, type PrerequisiteGraph } from "@/sky/lib/graph";
 import { scatterInWorld, type Placed } from "@/sky/lib/scatter";
+import { boxAround } from "@/sky/lib/sky-fit";
 import type { SkyItem } from "@/sky/lib/types";
 
 interface SkyFieldProps {
@@ -63,6 +74,15 @@ interface SkyFieldProps {
   /** The constellation the sky opens on, in the middle of the window; the
    * top left otherwise. */
   openOn?: string;
+  /** Show every body whole (SAK-474). For a sky that is never panned: the box
+   * is a window onto a world larger than itself, so without this a body near
+   * the window's edge is drawn half outside the panel and a constellation
+   * beyond it is not drawn at all. The window opens far enough out, and sits
+   * where it has to, for every body and the room its marks need to be inside
+   * the box. Off on the home, which is panned and zoomed to what it leaves
+   * out, and which would pay for the measuring over fifteen thousand
+   * constellations. */
+  contain?: boolean;
   /** Override how a star looks; the default is its standing. */
   lookOf?: (id: string, base: StarLook) => StarLook;
   /** Draw lines only; the caller puts its own stars on the positions. */
@@ -121,7 +141,7 @@ const HIT_CIRCLES_UP_TO = 2000;
  * pixel wide, so without this there would be nothing to hover at all. */
 const HIT_SLOP = 8;
 
-export function SkyField({ items, roots, width = 1120, height = 900, pad = 26, baseSize = 48, interactive = false, tonight, firmament = [], firmamentBase = 14, focus, openOn, lookOf, dots = true, fog = false, briefTooltip = false, onStarClick, starDisabled, graph: given, fill = false, label, seed = "sky", className = "", children }: SkyFieldProps) {
+export function SkyField({ items, roots, width = 1120, height = 900, pad = 26, baseSize = 48, interactive = false, tonight, firmament = [], firmamentBase = 14, focus, openOn, contain = false, lookOf, dots = true, fog = false, briefTooltip = false, onStarClick, starDisabled, graph: given, fill = false, label, seed = "sky", className = "", children }: SkyFieldProps) {
   const graph = useMemo(() => given ?? buildGraph(items), [given, items]);
   const fieldRef = useRef<HTMLDivElement>(null);
   const rootSet = useMemo(() => new Set(roots), [roots]);
@@ -151,15 +171,10 @@ export function SkyField({ items, roots, width = 1120, height = 900, pad = 26, b
   }), [all, layouts, baseLook]);
   const { placed, world } = useMemo(() => {
     // a box by star count, and never smaller than the root's body: a planet's
-    // ring must fit inside it (the body scales with the box, so settle twice)
-    const unit = (size: number) => Math.max(0.7, Math.min(1.8, size / 70));
+    // ring must fit inside it (see `boxFor`)
     const boxes = drawn.map((root) => {
-      const l = layouts.get(root)!;
       const it = graph.itemOf(root);
-      const reach = bodyRadius(bodyOfItem(it), roleOf(it?.kind ?? "word"));
-      let size = sizeFor(l.stars.length, rootSet.has(root) ? baseSize : firmamentBase);
-      for (let i = 0; i < 2; i++) size = Math.max(size, Math.ceil(2 * reach * unit(size) + 10));
-      return { key: root, size };
+      return { key: root, size: boxFor(layouts.get(root)!.stars.length, bodyOfItem(it), roleOf(it?.kind ?? "word"), rootSet.has(root) ? baseSize : firmamentBase) };
     });
     const gap = firmament.length ? Math.min(pad, 18) : pad;
     const { placed: laid, world } = scatterInWorld(boxes, { width, height }, gap);
@@ -171,6 +186,26 @@ export function SkyField({ items, roots, width = 1120, height = 900, pad = 26, b
     const on = openOn ? placed.find((p) => p.root === openOn) : undefined;
     return on ? { x: on.cx, y: on.cy } : undefined;
   }, [openOn, placed]);
+
+  // The box round everything this sky draws, for a sky that is never panned
+  // (SAK-474). Every body it will draw, at the place and the scale it will
+  // draw it, grown by the room its widest mark needs, so the canvas can open
+  // far enough out to hold the lot. Over `placed` rather than `seen`, because
+  // a sky that must show everything is the one sky that culls nothing; it is
+  // only asked for when the caller sets `contain`, so the home does not walk
+  // fifteen thousand constellations to work out a number it never reads.
+  const content = useMemo(() => {
+    if (!contain) return undefined;
+    return boxAround(placed.flatMap((p) => {
+      const u = unitFor(p.size);
+      return placeConstellation(layouts.get(p.root)!, p.cx, p.cy, p.r)
+        .filter((s) => !s.group && !baseLook(p.root, s.id).hidden)
+        .map((s) => {
+          const it = graph.itemOf(s.id);
+          return { x: s.px, y: s.py, room: bodyRoom(bodyOfItem(it), roleOf(it?.kind ?? "word")) * u };
+        });
+    })) ?? undefined;
+  }, [contain, placed, layouts, baseLook, graph]);
 
   // ---- what the window can show ----
   //
@@ -213,7 +248,7 @@ export function SkyField({ items, roots, width = 1120, height = 900, pad = 26, b
   // Memoized because it is the same walk over every drawn constellation
   // that the drawing itself does, and hovering a star must not set that
   // walk going again (SAK-411).
-  const hits = useMemo(() => seen.flatMap((p) => placeConstellation(layouts.get(p.root)!, p.cx, p.cy, p.r).filter((s) => !s.group && !baseLook(p.root, s.id).hidden).map((s) => ({ key: `${p.root}/${s.id}`, id: s.id, root: p.root, x: s.px, y: s.py, r: bodyRadius(bodyOfItem(graph.itemOf(s.id)), roleOf(graph.itemOf(s.id)?.kind ?? "word")) * Math.max(0.7, Math.min(1.8, p.size / 70)) + 5 }))), [seen, layouts, baseLook, graph]);
+  const hits = useMemo(() => seen.flatMap((p) => placeConstellation(layouts.get(p.root)!, p.cx, p.cy, p.r).filter((s) => !s.group && !baseLook(p.root, s.id).hidden).map((s) => ({ key: `${p.root}/${s.id}`, id: s.id, root: p.root, x: s.px, y: s.py, r: bodyRadius(bodyOfItem(graph.itemOf(s.id)), roleOf(graph.itemOf(s.id)?.kind ?? "word")) * unitFor(p.size) + 5 }))), [seen, layouts, baseLook, graph]);
   // one hit circle per star, up to the point where that is absurd
   const circles = hittable && hits.length <= HIT_CIRCLES_UP_TO ? hits : [];
 
@@ -271,12 +306,12 @@ export function SkyField({ items, roots, width = 1120, height = 900, pad = 26, b
   // whole sky that was 175,000 elements reconciled for one tooltip, and
   // measured at 217ms with not a single DOM change to show for it.
   const drawing = useMemo(() => seen.map((p) => (
-    <ConstellationFigure key={p.root} layout={layouts.get(p.root)!} cx={p.cx} cy={p.cy} r={p.r} unit={p.size / 70} lookOf={(id) => baseLook(p.root, id)} dots={dots} fog={fog} />
+    <ConstellationFigure key={p.root} layout={layouts.get(p.root)!} cx={p.cx} cy={p.cy} r={p.r} unit={unitFor(p.size)} lookOf={(id) => baseLook(p.root, id)} dots={dots} fog={fog} />
   )), [seen, layouts, baseLook, dots, fog]);
 
   return (
     <div ref={fieldRef} className={`${fill ? "absolute inset-0" : "relative"} ${className}`} onPointerLeave={() => setHover(null)} onPointerDown={onFieldDown} onPointerMove={onFieldMove} onClick={onFieldClick}>
-      <SkyCanvas width={world.width} height={world.height} interactive={interactive} label={label} seed={seed} fill={fill} focus={focus} center={opening} onView={culling ? onView : undefined} dust={firmament.length ? 0 : Math.round((90 * world.height) / 460)}>
+      <SkyCanvas width={world.width} height={world.height} interactive={interactive} label={label} seed={seed} fill={fill} focus={focus} center={opening} contain={content} onView={culling ? onView : undefined} dust={firmament.length ? 0 : Math.round((90 * world.height) / 460)}>
         {drawing}
         {children?.(placed)}
         {/* hit areas last, so they sit above the stars: one per star */}

@@ -33,12 +33,22 @@
 // long drag at the very smallest zoom can reach past its slack and show sky
 // that has not been drawn yet, which fills in on release.
 //
+// A SKY THAT IS NEVER PANNED SHOWS EVERYTHING (SAK-474). A window onto a
+// larger world is right for the home, where what it leaves out is a drag away,
+// and wrong for the lesson's band and the Observatory's preview, where what it
+// leaves out is simply gone. Those two hand over a `contain`: a rectangle of
+// the world that must be on screen whole. It sets the opening zoom, it is the
+// floor the zoom never goes below, and it moves the sky as little as it takes
+// to hold it, which is why the world's own edges may leave the frame on such a
+// sky and never on the home's. The maths is src/sky/lib/sky-fit.ts.
+//
 // The wash behind it is the page's, not the canvas's: this is transparent.
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 
 import { SkyDefs } from "@/sky/components/constellation";
 import { hashUnit } from "@/sky/lib/constellation";
+import { EDGE, placeSky, zoomToShow, type SkyBox } from "@/sky/lib/sky-fit";
 
 interface SkyCanvasProps {
   /** The world, in sky units; children draw in these. */
@@ -59,6 +69,11 @@ interface SkyCanvasProps {
   /** Where the sky opens, in world units: this point sits in the middle of
    * the window (as near as the edges allow). The top left otherwise. */
   center?: { x: number; y: number };
+  /** A rectangle of the world the window must show WHOLE (SAK-474): the box
+   * round every body drawn, for a sky that is never panned and so has nowhere
+   * else to put what it leaves out. The sky opens as far out as it takes, and
+   * slides as little as it takes, to hold it. See src/sky/lib/sky-fit.ts. */
+  contain?: SkyBox;
   label: string;
   className?: string;
   /** What the window shows, in sky units, whenever it changes: the world
@@ -89,7 +104,7 @@ const WHEEL_SETTLE = 140;
 /** Where the sky is: the zoom, and the world's top left in window pixels. */
 interface View { k: number; x: number; y: number }
 
-export function SkyCanvas({ width, height, interactive = false, dust = 90, seed = "sky", fill = false, focus, center, label, className = "", onView, children }: SkyCanvasProps) {
+export function SkyCanvas({ width, height, interactive = false, dust = 90, seed = "sky", fill = false, focus, center, contain, label, className = "", onView, children }: SkyCanvasProps) {
   const svgRef = useRef<SVGSVGElement>(null);
   const groupRef = useRef<SVGGElement>(null);
   // opens at the home zoom: k of 0 means "the home zoom", resolved by the clamp
@@ -123,8 +138,17 @@ export function SkyCanvas({ width, height, interactive = false, dust = 90, seed 
    * the world narrower than the box and bunch everything to the left. What
    * does not fit below is reached by panning, and the top stays put. */
   const fit = Math.min(1, win.w / width);
+  /** How much of the window the panel's rounded corners take at each end, in
+   * sky units (see `EDGE`). Zero until the box has a size, and zero for a sky
+   * with no `contain`, which has never kept one. */
+  const edge = contain && scale > 0 ? EDGE / scale : 0;
+  /** The furthest out a sky that has to show everything goes: far enough for
+   * `contain` to be in the window less that edge, and never closer in than it
+   * would be anyway. It is the floor AND the opening zoom, because a sky with
+   * a `contain` is one that cannot be panned to what it leaves out. */
+  const floor = contain ? zoomToShow({ w: win.w - 2 * edge, h: win.h }, contain, fit) : fit;
   /** The zoom the sky opens at and resets to: `focus` units across the window. */
-  const home = focus ? Math.max(fit, Math.min(MAX_ZOOM, win.w / focus)) : fit;
+  const home = contain ? floor : focus ? Math.max(floor, Math.min(MAX_ZOOM, win.w / focus)) : floor;
 
   // The world's edges never leave the window, and the world is anchored to
   // the top left when it is smaller than the window. Applied to the stored
@@ -135,12 +159,11 @@ export function SkyCanvas({ width, height, interactive = false, dust = 90, seed 
   // on `center` when there is one.
   const clamp = useCallback((v: View) => {
     const opening = v.k === 0;
-    const k = opening ? home : Math.max(fit, Math.min(MAX_ZOOM, v.k));
+    const k = opening ? home : Math.max(floor, Math.min(MAX_ZOOM, v.k));
     const x = opening && center ? win.w / 2 - center.x * k : v.x;
     const y = opening && center ? win.h / 2 - center.y * k : v.y;
-    const axis = (w: number, world: number, at: number) => (world * k <= w ? 0 : Math.min(0, Math.max(w - world * k, at)));
-    return { k, x: axis(win.w, width, x), y: axis(win.h, height, y) };
-  }, [win.w, win.h, width, height, fit, home, center]);
+    return { k, ...placeSky({ w: win.w, h: win.h }, { width, height }, k, { x, y }, contain, edge) };
+  }, [win.w, win.h, width, height, floor, home, center, contain, edge]);
   const shown = clamp(view);
   const transform = (v: View) => `translate(${v.x} ${v.y}) scale(${v.k})`;
 
@@ -184,12 +207,12 @@ export function SkyCanvas({ width, height, interactive = false, dust = 90, seed 
 
   /** The view `factor` more zoomed than `from`, holding `on` still. */
   const zoomed = useCallback((from: View, factor: number, on?: { x: number; y: number }) => {
-    const was = from.k === 0 ? home : Math.max(fit, Math.min(MAX_ZOOM, from.k));
-    const k = Math.min(MAX_ZOOM, Math.max(fit, was * factor));
+    const was = from.k === 0 ? home : Math.max(floor, Math.min(MAX_ZOOM, from.k));
+    const k = Math.min(MAX_ZOOM, Math.max(floor, was * factor));
     const ratio = k / was;
     const px = on?.x ?? win.w / 2, py = on?.y ?? win.h / 2;
     return clamp({ k, x: px - (px - from.x) * ratio, y: py - (py - from.y) * ratio });
-  }, [clamp, win.w, win.h, fit, home]);
+  }, [clamp, win.w, win.h, floor, home]);
   /** The buttons: one step, one render, which is what a click is. */
   const zoom = useCallback((factor: number) => {
     const next = zoomed(at.current, factor);

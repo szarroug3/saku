@@ -2064,3 +2064,93 @@ test("a grammar pattern is a comet in the lesson sky, tail and all", async ({ pa
   await expect(gradients.locator("stop").last()).toHaveAttribute("stop-opacity", "0");
   await expect(comet.locator("circle").last()).toBeVisible();
 });
+
+test("every body a sky draws is inside the panel, at every height the band is dragged to (SAK-474)", async ({ page }) => {
+  // SAK-474. A sky panel is a WINDOW onto a world larger than itself, so a
+  // body near its edge used to be drawn half outside it and a pick further
+  // down was not drawn at all: a lesson of 〜は and 〜てから drew the comet
+  // thirty pixels below the band, behind the details card. SAK-471's centering
+  // put the constellation the lesson was standing in inside the band and left
+  // every other one where it fell, so it moved the case rather than fixing it.
+  //
+  // What is measured is the rule itself: every body's box inside the panel's,
+  // and clear of the rounded corners, which are 16px squares at each end.
+  const CORNER = 16;
+  const bodies = (panel: string) => page.evaluate(([sel, corner]) => {
+    const box = document.querySelector(sel as string);
+    if (!box) return { error: `no ${sel}`, bodies: [] as Array<{ id: string; body: string; over: number; inCorner: boolean }> };
+    const p = box.getBoundingClientRect();
+    const c = corner as number;
+    const out: Array<{ id: string; body: string; over: number; inCorner: boolean }> = [];
+    for (const el of box.querySelectorAll("[data-star]")) {
+      const r = el.getBoundingClientRect();
+      if (r.width === 0 && r.height === 0) continue;
+      out.push({
+        id: el.getAttribute("data-star") ?? "?",
+        body: el.getAttribute("data-body") ?? "?",
+        // how far past the panel's edge it reaches, on its worst side
+        over: Math.round(Math.max(p.left - r.left, p.top - r.top, r.right - p.right, r.bottom - p.bottom) * 10) / 10,
+        // and whether any of it is in one of the four corner squares, where
+        // the panel's own curve would take a bite out of it
+        inCorner: (r.left < p.left + c || r.right > p.right - c) && (r.top < p.top + c || r.bottom > p.bottom - c),
+      });
+    }
+    return { error: "", bodies: out };
+  }, [panel, CORNER] as [string, number]);
+  /** Every body that is not wholly inside, said in full so a failure names it. */
+  const spilling = async (panel: string) => {
+    const seen = await bodies(panel);
+    if (seen.error) throw new Error(seen.error);
+    expect(seen.bodies.length, `${panel} draws nothing`).toBeGreaterThan(0);
+    return seen.bodies.filter((b) => b.over > 0 || b.inCorner).map((b) => `${b.id} (${b.body}) is ${b.over}px past the panel${b.inCorner ? " and in a corner" : ""}`);
+  };
+
+  await page.setViewportSize({ width: 1440, height: 900 });
+
+  // ---- the lesson, one pick and two, at 1440 and narrow ----
+  const lesson = (picks: string) => `/lesson?sample&picks=${encodeURIComponent(picks)}`;
+  const band = '[data-lesson-cell="sky"]';
+  const handle = page.getByRole("separator", { name: "Drag to make the details taller" });
+  // the band dragged to a height: the drag stops at 48px, which is `MIN_SKY`
+  // in src/sky/lib/lesson-split.ts
+  const dragTo = async (height: number) => {
+    const grip = await handle.boundingBox();
+    const was = await page.locator(band).boundingBox();
+    if (!grip || !was) throw new Error("no handle or no band");
+    await page.mouse.move(grip.x + grip.width / 2, grip.y + grip.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(grip.x + grip.width / 2, grip.y + grip.height / 2 - (was.height - height), { steps: 8 });
+    await page.mouse.up();
+    const now = await page.locator(band).boundingBox();
+    expect(Math.abs((now?.height ?? 0) - height)).toBeLessThanOrEqual(1);
+  };
+
+  // a particle (a moon), a grammar pattern (a comet), a lone piece (a star),
+  // and the two picks together, which is the case the card was filed on
+  for (const picks of ["grammar:wa", "grammar:te-kara", "radical:丨", "grammar:wa,grammar:te-kara"]) {
+    await page.goto(lesson(picks));
+    await expect(page.getByRole("heading", { name: "Tonight, in order" })).toBeVisible();
+    expect(await spilling(band), `${picks}, the band at rest`).toEqual([]);
+    for (const height of [200, 120, 48]) {
+      await dragTo(height);
+      expect(await spilling(band), `${picks}, the band at ${height}px`).toEqual([]);
+    }
+  }
+
+  // narrow, where the four cells are a stack and the band is a share of the
+  // window rather than of the column
+  await page.setViewportSize({ width: 760, height: 900 });
+  for (const picks of ["grammar:wa", "grammar:wa,grammar:te-kara"]) {
+    await page.goto(lesson(picks));
+    await expect(page.getByRole("heading", { name: "Tonight, in order" })).toBeVisible();
+    expect(await spilling(band), `${picks}, narrow`).toEqual([]);
+  }
+
+  // ---- "Your sky tonight" on the Observatory, one pick and two ----
+  await page.setViewportSize({ width: 1440, height: 900 });
+  for (const picks of ["grammar:wa", "grammar:wa,grammar:te-kara"]) {
+    await page.goto(`/observatory?sample&picks=${encodeURIComponent(picks)}`);
+    await expect(page.getByRole("heading", { name: "Your sky tonight" })).toBeVisible();
+    expect(await spilling('[data-sky="tonight"]'), `${picks}, your sky tonight`).toEqual([]);
+  }
+});

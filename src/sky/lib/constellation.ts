@@ -313,9 +313,31 @@ export function placeConstellation(layout: ConstellationLayout, cx: number, cy: 
 export const STAR_RADIUS: Record<StarRole, number> = { word: 3.2, kanji: 2.5, piece: 1.9 };
 
 /** How large to draw a constellation, from how many stars it has: the
- * prototype's sizing, so the home sky's scatter and the tiles agree. */
-export function sizeFor(starCount: number, base: number): number {
+ * prototype's sizing, so the home sky's scatter and the tiles agree. What the
+ * sky asks for is `boxFor`, which is this and the room the body at the middle
+ * needs. */
+function sizeFor(starCount: number, base: number): number {
   return base + 9 * Math.max(0, starCount - 1);
+}
+
+/** The stroke and dot scale a constellation of this box is drawn at: 1 at 70
+ * sky units, and never far from it, so a constellation of one star and one of
+ * twenty are drawn with strokes of about the same weight. One clamp, asked by
+ * the field that scatters the boxes, the figure that draws them and the fit
+ * that measures them, so all three agree on how big a body is. */
+export function unitFor(size: number): number {
+  return Math.max(0.7, Math.min(1.8, size / 70));
+}
+
+/** The box a constellation is scattered in, in sky units: big enough for its
+ * stars, and never smaller than the body at its middle. A planet's ring is
+ * thirty units wide at unit scale and a one-star box is forty-eight, so
+ * without this a planet was drawn over the edges of its own box; the body
+ * scales with the box, so the answer is settled twice. */
+export function boxFor(starCount: number, body: Body, role: StarRole, base: number): number {
+  let size = sizeFor(starCount, base);
+  for (let i = 0; i < 2; i++) size = Math.max(size, Math.ceil(2 * bodyRadius(body, role) * unitFor(size) + 10));
+  return size;
 }
 
 // ---------------------------------------------------------------------------
@@ -399,6 +421,25 @@ export function paintFor(look: StarLook): Paint {
   if (look.lit) return LIT;
   const base = BY_STANDING[look.standing];
   return look.tonight ? { ...base, halo: TONIGHT_HALO } : base;
+}
+
+/** How far past a body's own reach the widest mark any look can put on it
+ * goes, at unit scale: a solid star's glow and the accent's are four, the
+ * halo tonight's picks wear is three, and a claimed star's is two. Worked out
+ * from the paints themselves rather than written down again, so a mark that
+ * grows is a mark the packing and the window make room for (SAK-474). */
+const WIDEST_MARK = Math.max(
+  ...[...Object.values(BY_STANDING), LIT, EMPHASIS, { glow: 0, halo: TONIGHT_HALO, ring: undefined }].map((p) =>
+    Math.max(p.glow, p.halo?.grow ?? 0, p.ring?.grow ?? 0),
+  ),
+);
+
+/** How much room a body needs round its center at unit scale: how far it is
+ * ever drawn, plus the widest mark it can wear. The reach alone is the hit
+ * area; this is the room, and it is what a packing keeps between two bodies
+ * and what a window keeps between a body and the panel's edge (SAK-474). */
+export function bodyRoom(body: Body, role: StarRole): number {
+  return bodyRadius(body, role) + WIDEST_MARK;
 }
 
 /** Nothing has been opened or claimed here, and the lesson is not showing

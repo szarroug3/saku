@@ -290,6 +290,14 @@ export function SkyLesson({ data, drillHref, observatoryHref, written, hear, pit
   // A star that is not a step (a reference under tonight's items) is drawn
   // inside the same constellation, so the step's own root is the right answer
   // for it too.
+  //
+  // The centering alone was not enough (SAK-474). It put the constellation the
+  // lesson is standing in inside the band and left every other pick wherever
+  // it fell, so a lesson of two picks drew one of them half under the card or
+  // not at all, and a band dragged down to 48 pixels is shorter than a single
+  // constellation. `contain` is the rest of the answer: the band opens far
+  // enough out for every body to be in it, and this still says where in the
+  // band to look first.
   const openOn = useMemo(() => {
     const rootOf = (id: string | null) => (id ? steps.find((s) => s.id === id)?.pick : undefined);
     return rootOf(selected) ?? rootOf(stepAt) ?? taught[0];
@@ -412,6 +420,7 @@ export function SkyLesson({ data, drillHref, observatoryHref, written, hear, pit
             items={data.items}
             roots={taught}
             openOn={openOn}
+            contain
             graph={graph}
             width={1120}
             height={400}
