@@ -396,7 +396,7 @@ export const TERMS: readonly Term[] = [
     name: "Keigo",
     summary: "Polite Japanese, split into honorific language and humble language.",
     body: [
-      "Keigo is the polite speech used to show respect. It comes in two kinds: honorific language, which raises the person you are speaking about, and humble language, which lowers yourself to the same effect.",
+      "Keigo is the polite speech used to show respect. It comes in two kinds: honorific language, which raises the person you are speaking about, and humble language, which lowers you to the same effect.",
       "Choosing between them depends on who is doing the action, you or the other person.",
     ],
     searchAlso: ["keigo", "honorific", "humble", "sonkeigo", "kenjougo", "kenjogo", "polite speech", "politeness"],

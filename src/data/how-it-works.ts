@@ -83,8 +83,8 @@ export const HOW_IT_WORKS_SECTIONS: readonly HowItWorksSection[] = [
       "Saku doesn't ask you something once and file it away. This is spaced repetition (SRS): once you've learned something, it keeps coming back, with the gaps getting longer as you get it right.",
       "It starts inside the lesson. A lesson's quiz runs in three rounds, and each round goes through the whole set of cards. A card you got right last time comes back too. Between rounds, Saku schedules a break: 5 minutes before round 2, 10 minutes before round 3 by default. The length is adjustable on the break screen itself, and Saku remembers what you set. A quiz of what's due runs once. So does a practice deck.",
       "During a break, Saku shows you no cards and no answers, because a rest with the material still in front of you isn't a rest. You learn it by coming back and trying to recall it. You can leave the page; the clock keeps counting.",
-      "After the lesson the gaps grow to days and then weeks. There is no fixed schedule behind it. Saku tracks how confident it currently is that you'd still get it right, and re-asks the things it's least sure about. What it is confident about, it leaves alone.",
-      "And if something's clearly slipped, Saku doesn't send you back through its lesson. It shows up as Slipping, in your sky, in the Atlas and in Practice, so you can drill it when you choose. A missed card still opens its page under the quiz, so the explanation is right there.",
+      "After the lesson, the gaps grow to days and then weeks. There is no fixed schedule behind it. Saku tracks how confident it currently is that you'd still get it right, and re-asks the things it's least sure about. What it is confident about, it leaves alone.",
+      "And if something's clearly slipped, Saku doesn't send you back through its lesson. It shows up as Slipping in your sky, in the Atlas and in Practice, so you can drill it when you choose. A missed card still opens its page under the quiz, so the explanation is right there.",
     ],
     paragraphAccents: [
       ["spaced repetition (SRS)"],

@@ -149,7 +149,7 @@ export const WHY_WRITING_EARLY: Why = {
     strong: "We don’t recommend learning to write early.",
   },
   paras: [
-    "People don’t do much handwriting these days with so much technology around. Japanese is a difficult language to learn coming from a western language that doesn’t use the same writing system. We think your time is better spent learning how to read, speak, and understand what you hear.",
+    "People don’t do much handwriting these days with so much technology around. Japanese is a difficult language to learn if you are coming from a Western language that doesn’t use the same writing system. We think your time is better spent learning how to read, speak, and understand what you hear.",
   ],
 };
 
@@ -187,7 +187,7 @@ export const WHY_TRACK: Record<string, Why> = {
   },
   kanji: {
     lede: {
-      strong: "Kanji are used as both words and as building blocks for other words.",
+      strong: "Kanji are used both as words and as building blocks for other words.",
       rest: "Radicals, the smaller shapes kanji are built from, are taught right here too, each one just before the first kanji that uses it.",
     },
     paras: [
@@ -231,7 +231,7 @@ export const WHY_TRACK: Record<string, Why> = {
     paras: [
       "Grammar is the patterns that turn 食べる (“eat”) into “after eating”, “want to eat”, “please eat”. A pattern is a rule for putting words together, so it is a different kind of thing from a word or a kanji.",
       "You don’t need a big vocabulary before you start because a pattern is taught with words you already know. Kanji unlocks words; grammar is what you do with those words once you know them.",
-      "Patterns are taught starting with the easiest ones first so early grammar uses the simple verbs and words you’re already learning in the other tracks.",
+      "Patterns are taught starting with the easiest ones, so early grammar uses the simple verbs and words you’re already learning in the other tracks.",
     ],
   },
   // DRAFT COPY, to be rewritten in the owner's voice — the same status as the
@@ -244,7 +244,7 @@ export const WHY_TRACK: Record<string, Why> = {
       rest: "A counter is a short word you add to a number, and the number and counter are said together as one word.",
     },
     paras: [
-      "To count things you pair a number with a counter: 本 for long thin objects, 人 for people, 枚 for flat things. 三本 is three long thin objects, 三人 is three people. The counter depends on the shape or kind of what you are counting, and a few of them change sound as the number in front of them changes.",
+      "To count things, you pair a number with a counter: 本 for long thin objects, 人 for people, 枚 for flat things. 三本 is three long thin objects, 三人 is three people. The counter depends on the shape or kind of what you are counting, and a few of them change sound as the number in front of them changes.",
       "〜つ is taught first because it is the one to use when you do not know the right counter. ひとつ, ふたつ, みっつ count almost anything up to ten, and you will still be understood.",
       "The first counters need only kana, so they open right after hiragana. The ones written with a number kanji wait until that kanji is learned, the same way a word waits for its kanji.",
     ],

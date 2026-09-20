@@ -156,10 +156,10 @@ export const GRAMMAR_CONCEPTS: readonly GrammarConcept[] = [
     id: "verb-classes",
     name: "Godan/ichidan",
     summary:
-      "Every verb is one of two groups (with some exceptions), and the group decides how every form is built.",
+      "Every verb is in one of two groups (with some exceptions), and the group decides how every form is built.",
     body: [
       "Japanese verbs fall into two groups, う-verbs and る-verbs, plus the two irregular verbs する and くる. A verb's group decides how every one of its forms is conjugated.",
-      "An う-verb drops its last kana and adds the ending. An る-verb drops its final る and adds the ending. A verb ending in る can be either group, so you learn each verb's group along with the verb.",
+      "An う-verb drops its last kana and adds the ending. An る-verb drops its final る and adds the ending. A verb ending in る can be in either group, so you learn each verb's group along with the verb.",
     ],
     searchAlso: [
       "verb types",
