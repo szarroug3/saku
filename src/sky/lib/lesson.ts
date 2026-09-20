@@ -19,8 +19,14 @@
 import type { SkyItem } from "./types";
 import type { Learned, PrerequisiteGraph } from "./graph";
 
-/** A line of prose with the runs spoken as the sound marked. */
-export type SoundLine = ReadonlyArray<{ text: string; accent?: boolean }>;
+/** A line of prose with the runs spoken as the sound marked.
+ *
+ * `ruby` is the reading printed over a run of kanji (SAK-470). The Sky cannot
+ * read `@/data`, so a reading is authored beside the sentence it belongs to and
+ * travels here on the run itself: a run carrying one is a run of kanji and the
+ * string is its kana. A run without one is printed as it is, which covers every
+ * line that is already kana and every sentence whose readings nothing knows. */
+export type SoundLine = ReadonlyArray<{ text: string; accent?: boolean; ruby?: string }>;
 
 /** What the card teaches for one star, in plain data from whatever the
  * route's adapter can find: nothing is required, and a sparse item stays

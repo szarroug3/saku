@@ -15,9 +15,24 @@ import type { PartedSentence, SoundLine, TeachExample, TeachFormula, TeachPage, 
  *
  * Each run is drawn run by run itself (SAK-443): a table cell reading
  * "きて → きって (kite → kitte)" is one string with both faces in it, and the
- * one class its cell used to carry drew the romaji as Japanese. */
+ * one class its cell used to carry drew the romaji as Japanese.
+ *
+ * A run carrying a reading is a run of kanji with its kana over it (SAK-470),
+ * drawn with the browser's own `ruby`, so the reading keeps its place over the
+ * characters when the line wraps and a reader who selects the sentence copies
+ * the kanji. The size is set here rather than left to the browser's half-size
+ * default, which is too small to read over a 16px line. */
 export function Sound({ line }: { line: SoundLine }) {
-  return <>{line.map((s, i) => (s.accent ? <span key={i} className="font-semibold text-sky-accent"><Mixed text={s.text} /></span> : <Mixed key={i} text={s.text} />))}</>;
+  return (
+    <>
+      {line.map((s, i) => {
+        const run = s.ruby
+          ? <ruby><Mixed text={s.text} /><rt className="font-kana text-[0.55em] font-normal leading-none tracking-normal">{s.ruby}</rt></ruby>
+          : <Mixed text={s.text} />;
+        return <span key={i} className={s.accent ? "font-semibold text-sky-accent" : ""}>{run}</span>;
+      })}
+    </>
+  );
 }
 
 /** A sentence with its parts colored: the part being taught in the accent,
