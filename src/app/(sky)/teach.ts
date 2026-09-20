@@ -23,9 +23,9 @@ import { patternEntry } from "@/data/grammar";
 import { autoPatternPage } from "@/data/grammar/auto-page";
 import { cluster as clusterById, membersOf } from "@/data/grammar/clusters";
 import { formLibraryPages } from "@/data/grammar/lessons";
-import { PARTICLE_NOTES, type ParticleNotePara } from "@/data/grammar/particle-notes";
+import { kanjiRuns, PARTICLE_NOTES, type ParticleNoteExample, type ParticleNotePara } from "@/data/grammar/particle-notes";
 import { PARTICLE_ROWS } from "@/data/grammar/particles";
-import { RECIPES, type Recipe } from "@/data/grammar/recipes";
+import { primaryPatternRecipe, RECIPES, type Recipe } from "@/data/grammar/recipes";
 import { PARTICLE_RULE, type BuildHeads, type CountBuildPiece, type IntroBuildRule, type IntroCountGroup, type IntroDeriveRow, type IntroPara, type PhaseIntro } from "@/data/phase-intros";
 import { buildRow } from "@/lib/grammar/build";
 import { CHUNK_ROLE_LABELS, SENTENCE_ORDERING_GUIDES, type SentenceOrderingTierId } from "@/data/sentence-ordering-guides";
@@ -487,15 +487,39 @@ function particleListPage(): TeachPage {
   };
 }
 
-/** A written particle marked wherever it appears, for the sentence under a
- * paragraph of the particle's own page. Every occurrence, not the first, so the
- * two は of 夏は暑いですが、冬は寒いです are both picked out, which is the whole
- * point of the sentence being there. */
-function withEveryMark(jp: string, mark: string): SkySoundLine {
-  return jp
+/** A written particle marked wherever it appears in a stretch of kana. Every
+ * occurrence, not the first, so the two は of 夏は暑いですが、冬は寒いです are both
+ * picked out, which is the whole point of the sentence being there. */
+function withEveryMark(text: string, mark: string): SkySoundLine {
+  return text
     .split(mark)
     .flatMap((piece, i) => (i === 0 ? [{ text: piece }] : [{ text: mark, accent: true }, { text: piece }]))
     .filter((r) => r.text);
+}
+
+/** An example sentence from a particle's page: the particle picked out, and
+ * each run of kanji carrying the reading written for it (SAK-470).
+ *
+ * The readings are authored beside the sentence, one per run, because the
+ * grammar corpus has none and these sentences are written rather than drawn
+ * from it. A run with no reading written for it is printed as plain kanji,
+ * which is what a sentence added without its readings looks like until the
+ * test catches it. A particle is kana, so it never falls inside a kanji run
+ * and the two passes cannot collide. */
+function exampleLine(ex: ParticleNoteExample): SkySoundLine {
+  const readings = ex.readings ?? [];
+  const runs: Array<{ text: string; accent?: boolean; ruby?: string }> = [];
+  let at = 0;
+  let n = 0;
+  for (const run of kanjiRuns(ex.jp)) {
+    const from = ex.jp.indexOf(run, at);
+    if (from > at) runs.push(...withEveryMark(ex.jp.slice(at, from), ex.mark));
+    const reading = readings[n++];
+    runs.push(reading ? { text: run, ruby: reading } : { text: run });
+    at = from + run.length;
+  }
+  if (at < ex.jp.length) runs.push(...withEveryMark(ex.jp.slice(at), ex.mark));
+  return runs;
 }
 
 /** One paragraph of a particle's page, with its sentences. */
@@ -504,7 +528,7 @@ function notePara(para: ParticleNotePara): TeachParagraph {
     ...(para.heading ? { heading: para.heading } : {}),
     text: para.text,
     ...(para.examples
-      ? { examples: para.examples.map((ex) => ({ jp: withEveryMark(ex.jp, ex.mark), en: ex.en })) }
+      ? { examples: para.examples.map((ex) => ({ jp: exampleLine(ex), en: ex.en })) }
       : {}),
   };
 }
@@ -515,24 +539,46 @@ function notePara(para: ParticleNotePara): TeachParagraph {
  *
  * It goes between the build page and Family: the build page says how to attach
  * the particle, this says what it means, and Family puts it beside the ones it
- * is confused with. は and が end with the same shared section, whose first
- * paragraph takes the section's heading, and each page names the article it
- * drew on once, which is why the wa-ga cluster no longer links it again on the
- * Family page right after.
+ * is confused with. Two particles can name one note between them, and は and が
+ * do: both cards print the same page, word for word, because a page about one
+ * of them that leans on the other's page is a page a learner can open first and
+ * not follow. The page names the article it drew on once, which is why the
+ * wa-ga cluster no longer links it again on the Family page right after.
  */
 function particleNotePage(recipeId: string): TeachPage | undefined {
-  const note = PARTICLE_NOTES.find((n) => n.recipe === recipeId);
+  const note = PARTICLE_NOTES.find((n) => n.recipes.includes(recipeId));
   if (!note) return undefined;
-  const shared = note.shared;
   return {
     eyebrow: note.eyebrow,
     title: note.title,
-    paragraphs: [
-      ...note.body.map(notePara),
-      ...(shared ? shared.body.map((para, i) => notePara(i === 0 ? { ...para, heading: shared.heading } : para)) : []),
-    ],
+    paragraphs: note.body.map(notePara),
     link: { href: note.link.url, label: note.link.label },
   };
+}
+
+/** The entry a recipe's card is, which is the page its written pattern has:
+ * 〜から is one page holding "because" and "from", the same rule the Particle
+ * page's rows follow. */
+function patternEntryOf(r: Recipe): EntryId | undefined {
+  const page = primaryPatternRecipe(r.id);
+  return page ? patternEntry(page.id) : undefined;
+}
+
+/**
+ * What each row of a Family table opens: that pattern's own page (SAK-470,
+ * Sam: "the family tables in the patterns should be links similar to how they
+ * are on the particle terms page").
+ *
+ * The pattern the card is already on opens nothing, and neither does a member
+ * that shares its page, so a row is a link only where the click takes a reader
+ * somewhere they are not.
+ */
+function familyOpens(recipe: Recipe, members: readonly Recipe[]): ReadonlyArray<string | undefined> {
+  const here = patternEntryOf(recipe);
+  return members.map((m) => {
+    const entry = patternEntryOf(m);
+    return entry && entry !== here ? entry : undefined;
+  });
 }
 
 /** A grammar pattern's pages: the app's own teaching (a form's authored
@@ -558,7 +604,7 @@ function grammarPages(recipe: Recipe): TeachPage[] {
       eyebrow: "Family",
       title: "Ways to say this",
       paragraphs: [{ text: "Japanese often has more than one pattern for the same idea. These are the closest ones, and how each is built." }],
-      tables: [{ heads: ["Pattern", "Meaning", "Built"], rows, ...(family.feel ? { note: family.feel } : {}) }],
+      tables: [{ heads: ["Pattern", "Meaning", "Built"], rows, opens: familyOpens(recipe, members), ...(family.feel ? { note: family.feel } : {}) }],
       ...(family.link ? { link: { href: family.link.url, label: family.link.label } } : {}),
     });
   }

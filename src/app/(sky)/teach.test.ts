@@ -14,7 +14,7 @@ import { patternEntry } from "@/data/grammar";
 import { grammarConceptEntry } from "@/data/grammar-concepts";
 import { cluster } from "@/data/grammar/clusters";
 import { CURRICULUM_LESSONS } from "@/data/grammar/lessons";
-import { PARTICLE_NOTES, type ParticleNote } from "@/data/grammar/particle-notes";
+import { kanjiRuns, PARTICLE_NOTES, type ParticleNote } from "@/data/grammar/particle-notes";
 import { PARTICLE_ROWS } from "@/data/grammar/particles";
 import { PARTICLE_RULE } from "@/data/phase-intros";
 import { termEntry } from "@/data/terms";
@@ -422,64 +422,78 @@ describe("a sentence type's page shows the examples the learner can read", () =>
 
 // A particle's page of prose (SAK-470). The app taught は by saying "take a
 // noun, add は", which is the build and not the idea. Each particle in scope
-// now has a page of its own between the build page and Family, and は and が
-// share the section that compares them. These pin the shape: that the page is
-// there, where it sits in the pager, that it names its source once, and that
-// the two pages carry the same shared words.
+// now has a page of prose between the build page and Family, and は and が name
+// one page between them: Sam read the two pages in the app and found the second
+// one talking about the first ("makes it sound like the reader definitely read
+// the wa page before this. they might not have"). These pin the shape: that the
+// page is there, where it is in the pager, that it names its source once, that
+// both cards print the same words, and that every sentence on it carries its
+// readings.
 describe("a particle's page says what the particle means", () => {
   const pagesOf = (recipe: string) => atlasEntryFromHistory(emptyHistory(), `grammar:${recipe}` as EntryId, NOW)?.teach?.pages ?? [];
   const noteOf = (recipe: string): ParticleNote => {
-    const note = PARTICLE_NOTES.find((n) => n.recipe === recipe);
+    const note = PARTICLE_NOTES.find((n) => n.recipes.includes(recipe));
     assert.ok(note, `no note is written for ${recipe}`);
     return note;
   };
+  const pageOf = (recipe: string) => pagesOf(recipe).find((p) => p.eyebrow === noteOf(recipe).eyebrow);
+  const recipesInScope = PARTICLE_NOTES.flatMap((n) => n.recipes);
 
   it("gives every particle in scope its page, with a Read more link that names the article", () => {
-    assert.ok(PARTICLE_NOTES.length >= 2, "the notes went missing");
-    for (const note of PARTICLE_NOTES) {
-      const page = pagesOf(note.recipe).find((p) => p.eyebrow === note.eyebrow);
-      assert.ok(page, `${note.recipe} has no page of prose`);
+    assert.ok(recipesInScope.length >= 2, "the notes went missing");
+    for (const recipe of recipesInScope) {
+      const note = noteOf(recipe);
+      const page = pageOf(recipe);
+      assert.ok(page, `${recipe} has no page of prose`);
       assert.equal(page.title, note.title);
-      assert.ok(page.paragraphs.length >= note.body.length, `${note.recipe}'s page lost paragraphs`);
+      assert.equal(page.paragraphs.length, note.body.length, `${recipe}'s page lost paragraphs`);
       // the source is named, once, by its own title rather than by a bare URL
-      assert.ok(page.link, `${note.recipe}'s page names no source`);
+      assert.ok(page.link, `${recipe}'s page names no source`);
       assert.match(page.link.href, /^https:\/\//);
       assert.match(page.link.label, /^Read more: .+\(Tofugu\)$/);
-      assert.ok(page.link.label.length > "Read more: (Tofugu)".length + 10, `${note.recipe}'s link has no title in it`);
+      assert.ok(page.link.label.length > "Read more: (Tofugu)".length + 10, `${recipe}'s link has no title in it`);
     }
   });
 
   it("puts it after the build and before Family", () => {
-    for (const note of PARTICLE_NOTES) {
-      const pages = pagesOf(note.recipe);
-      const at = pages.findIndex((p) => p.eyebrow === note.eyebrow);
+    for (const recipe of recipesInScope) {
+      const pages = pagesOf(recipe);
+      const at = pages.findIndex((p) => p.eyebrow === noteOf(recipe).eyebrow);
       const family = pages.findIndex((p) => p.eyebrow === "Family");
-      assert.ok(at > 0, `${note.recipe}'s page is not after the build page`);
-      assert.ok(family < 0 || at < family, `${note.recipe}'s page is not before Family`);
+      assert.ok(at > 0, `${recipe}'s page is not after the build page`);
+      assert.ok(family < 0 || at < family, `${recipe}'s page is not before Family`);
     }
   });
 
-  it("ends は and が with the same shared section, under its own heading", () => {
-    const shared = noteOf("wa").shared;
-    assert.ok(shared, "は has no shared section");
-    assert.equal(noteOf("ga").shared, shared, "が ends with some other section");
-    const heading = shared.heading;
-    for (const recipe of ["wa", "ga"]) {
-      const page = pagesOf(recipe).find((p) => p.eyebrow === noteOf(recipe).eyebrow);
-      const from: number = page?.paragraphs.findIndex((p) => p.heading === heading) ?? -1;
-      assert.ok(from > 0, `${recipe}'s page does not reach ${heading}`);
-      assert.deepEqual(
-        page?.paragraphs.slice(from).map((p) => p.text),
-        shared.body.map((p) => p.text),
-        `${recipe} ends with something other than the shared section`,
-      );
+  it("prints one page word for word on the 〜は card and the 〜が card", () => {
+    const note = noteOf("wa");
+    assert.deepEqual(note.recipes, ["wa", "ga"], "は and が no longer name one page between them");
+    assert.equal(noteOf("ga"), note, "が reads some other page");
+    const wa = pageOf("wa"), ga = pageOf("ga");
+    assert.ok(wa && ga, "one of the two cards has no page");
+    assert.deepEqual(ga, wa, "the two cards print different pages");
+    // it starts from nothing: both particles are named and told apart before
+    // any paragraph compares them
+    assert.match(wa.paragraphs[0]?.text ?? "", /は marks the topic/);
+    assert.match(wa.paragraphs[0]?.text ?? "", /が marks[\s\S]*the subject/);
+  });
+
+  it("names both particles in every paragraph that compares them", () => {
+    const page = pageOf("wa");
+    // the words a paragraph weighing the two uses, kept tight: "both" and "the
+    // other" turn up in "the bread you are both looking at" and "every other
+    // day", which compare nothing
+    const compares = (page?.paragraphs ?? []).filter((p) => /\bswaps?\b|\binstead of\b|\beither one\b/i.test(p.text));
+    assert.ok(compares.length >= 2, "nothing on the page compares the two");
+    for (const para of compares) {
+      assert.ok(para.text.includes("は") && para.text.includes("が"), `"${para.text}" compares them without naming both`);
     }
   });
 
   it("says how は is read, in the words the kana cards use", () => {
-    const page = pagesOf("wa").find((p) => p.eyebrow === noteOf("wa").eyebrow);
+    const page = pageOf("wa");
     const said = page?.paragraphs.find((p) => p.text.includes('read "wa"'));
-    assert.ok(said, "the は page does not say it is read wa");
+    assert.ok(said, "the page does not say は is read wa");
     // the kana card's own rule, so a learner reads it the same way twice
     assert.match(PARTICLE_RULE.body[0]?.text ?? "", /read .wa./);
     assert.ok(said.text.includes('read "ha"'), "it does not say what the character is read elsewhere");
@@ -489,10 +503,10 @@ describe("a particle's page says what the particle means", () => {
   });
 
   it("marks the particle in every sentence it shows, everywhere it appears", () => {
-    for (const note of PARTICLE_NOTES) {
-      const page = pagesOf(note.recipe).find((p) => p.eyebrow === note.eyebrow);
-      const shown = page?.paragraphs.flatMap((p) => p.examples ?? []) ?? [];
-      assert.ok(shown.length >= note.body.length - 2, `${note.recipe}'s page shows almost no sentences`);
+    for (const recipe of recipesInScope) {
+      const note = noteOf(recipe);
+      const shown = pageOf(recipe)?.paragraphs.flatMap((p) => p.examples ?? []) ?? [];
+      assert.ok(shown.length >= note.body.length - 6, `${recipe}'s page shows almost no sentences`);
       for (const ex of shown) {
         const plain = ex.jp.map((r) => r.text).join("");
         const marked = ex.jp.filter((r) => r.accent);
@@ -504,10 +518,73 @@ describe("a particle's page says what the particle means", () => {
     }
   });
 
+  // Sam: "we should have furigana in example sentences." The readings are
+  // authored beside the sentence, so the guard is that none of them is missing:
+  // every run of kanji on the page reaches the page with its kana on it.
+  it("puts a reading over every run of kanji in the sentences it shows", () => {
+    for (const note of PARTICLE_NOTES) {
+      for (const para of note.body) {
+        for (const ex of para.examples ?? []) {
+          const runs = kanjiRuns(ex.jp);
+          assert.equal(
+            (ex.readings ?? []).length, runs.length,
+            `${ex.jp} has ${(ex.readings ?? []).length} readings for ${runs.length} runs of kanji`,
+          );
+          for (const reading of ex.readings ?? []) assert.match(reading, /^[぀-ゟ]+$/, `"${reading}" is not kana`);
+        }
+      }
+    }
+  });
+
+  it("carries the readings through to the page, over the kanji and nothing else", () => {
+    const shown = pageOf("wa")?.paragraphs.flatMap((p) => p.examples ?? []) ?? [];
+    const withRuby = shown.flatMap((ex) => ex.jp.filter((run) => run.ruby));
+    assert.ok(withRuby.length >= 20, `only ${withRuby.length} runs of kanji reached the page with a reading`);
+    for (const run of withRuby) {
+      assert.match(run.text, /^[一-龯㐀-䶿]+$/, `"${run.text}" is not kanji and has a reading over it`);
+      assert.ok(!run.accent, `"${run.text}" is both the particle and a run of kanji`);
+    }
+    // 今日 is one run read きょう, not two kanji read one at a time
+    const kyou = withRuby.find((run) => run.text === "今日");
+    assert.equal(kyou?.ruby, "きょう");
+  });
+
   it("leaves the wa-ga family page to link nothing, so the article is named once a page", () => {
     const family = cluster("wa-ga");
     assert.equal(family?.link, null, "the Family page links the article a second time");
     assert.ok(family?.noLinkReason, "an empty link slot must say why");
     assert.ok(!/no rule for choosing/.test(family?.feel ?? ""), "the Family note still says there is no rule");
+    assert.ok((family?.feel ?? "").includes(noteOf("wa").eyebrow), "the Family note does not name the page before it");
+  });
+});
+
+// SAK-470, Sam: "the family tables in the patterns should be links similar to
+// how they are on the particle terms page." A Family table's Pattern column is
+// the row's link, the same `opens` the Particle page's rows use.
+describe("a Family table opens the pattern a row names", () => {
+  const familyOf = (recipe: string) =>
+    (atlasEntryFromHistory(emptyHistory(), `grammar:${recipe}` as EntryId, NOW)?.teach?.pages ?? [])
+      .find((p) => p.eyebrow === "Family")?.tables?.[0];
+
+  it("opens a page that exists, on every row but the one the card is already on", () => {
+    const table = familyOf("wa");
+    assert.ok(table, "は has no Family table");
+    assert.ok(table.opens, "no row of it opens anything");
+    assert.equal(table.opens.length, table.rows.length, "some rows open nothing");
+    const here = table.rows.findIndex((row) => row[0]?.some((run) => run.accent));
+    assert.ok(here >= 0, "no row is the pattern the card is on");
+    assert.equal(table.opens[here], undefined, "the card links to itself");
+    for (const [i, id] of table.opens.entries()) {
+      if (i === here) continue;
+      assert.ok(id && libEntry(id as EntryId), `a row opens '${id}', which is not an entry`);
+    }
+    assert.equal(table.opens.filter(Boolean).length, table.rows.length - 1, "some other row opens nothing");
+  });
+
+  it("sends every page a row opens along with the pattern", () => {
+    const sent = new Set((atlasEntryFromHistory(emptyHistory(), "grammar:wa", NOW)?.items ?? []).map((x) => x.id));
+    for (const id of familyOf("wa")?.opens ?? []) {
+      if (id) assert.ok(sent.has(id), `${id} did not travel with は, so its row would open nothing`);
+    }
   });
 });

@@ -292,14 +292,14 @@ export const CLUSTERS: readonly Cluster[] = [
     // note points at it instead of standing in for it.
     feel:
       "は marks what the sentence is about. が marks who or what is doing the " +
-      "verb. The page before this one goes through both and shows what changes " +
-      "when you swap them.",
+      "verb. The は and が page before this one goes through both and shows " +
+      "what changes when you swap them.",
     // The article is linked from that page, under its own title, so linking it
     // again here would put two links to one article on pages a learner turns
     // between.
     link: null,
     noLinkReason:
-      "The は or が? page links the Tofugu article under its own title, so the " +
+      "The は and が page links the Tofugu article under its own title, so the " +
       "cluster does not link it a second time.",
   },
   {
