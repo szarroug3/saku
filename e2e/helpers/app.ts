@@ -1,4 +1,4 @@
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect, type Locator, type Page } from "@playwright/test";
 
 /**
  * The Sky suite's one import.
@@ -16,4 +16,4 @@ import { test, expect, type Page } from "@playwright/test";
  */
 
 export { test, expect };
-export type { Page };
+export type { Locator, Page };

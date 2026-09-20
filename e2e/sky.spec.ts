@@ -3,7 +3,7 @@
 // that each page opens, its one main action works, and what it says it
 // keeps, it keeps.
 
-import { test, expect, type Page } from "./helpers/app";
+import { test, expect, type Locator, type Page } from "./helpers/app";
 
 /**
  * Kana is the gate: every other track on the Observatory is behind it, so a
@@ -529,6 +529,45 @@ test("the lesson's details card is dragged taller and nothing else moves (SAK-47
   const handle = page.getByRole("separator", { name: "Drag to make the details taller" });
   const up = page.getByRole("button", { name: "Pull the details all the way up" });
   const back = page.getByRole("button", { name: "Put the sky back" });
+  // Which way the chevron points: "none" is upright and "180deg" is turned
+  // over, since the ring rotates one glyph rather than drawing two (SAK-414).
+  const turn = (button: Locator) =>
+    button.locator("span[aria-hidden='true']").evaluate((el) => getComputedStyle(el).rotate);
+  // The button is inside the card, in its top right corner, at the card's own
+  // padding, and it covers nothing the card is showing. Sam, 2026-09-20: "it's
+  // also hanging outside the panel."
+  const inCorner = async () => {
+    const card = await page.locator("#lesson-details > section").boundingBox();
+    const button = await page.locator('#lesson-details button[aria-controls="lesson-details"]').boundingBox();
+    if (!card || !button) throw new Error("no card or no button");
+    // inside the card's box on every side
+    expect(button.x).toBeGreaterThanOrEqual(card.x);
+    expect(button.y).toBeGreaterThanOrEqual(card.y);
+    expect(button.x + button.width).toBeLessThanOrEqual(card.x + card.width);
+    expect(button.y + button.height).toBeLessThanOrEqual(card.y + card.height);
+    // and at the corner of the card's padding box: 20px of padding inside a
+    // 1px border, the same inset down from the top and in from the right
+    expect(Math.abs(button.y - (card.y + 21))).toBeLessThanOrEqual(1);
+    expect(Math.abs(button.x + button.width - (card.x + card.width - 21))).toBeLessThanOrEqual(1);
+    // nothing the card draws is under it: not the heading row, not the
+    // pager's "1 of 2", not a word of the lesson
+    const under = await page.evaluate(() => {
+      const button = document.querySelector<HTMLElement>('#lesson-details button[aria-controls="lesson-details"]');
+      if (!button) return ["no button"];
+      const b = button.getBoundingClientRect();
+      const hit: string[] = [];
+      for (const el of document.querySelectorAll<HTMLElement>("#lesson-details *")) {
+        if (button.contains(el) || el.contains(button) || el.childElementCount > 0) continue;
+        const text = (el.textContent ?? "").trim();
+        if (!text) continue;
+        const r = el.getBoundingClientRect();
+        if (r.width === 0 || r.height === 0) continue;
+        if (r.left < b.right && r.right > b.left && r.top < b.bottom && r.bottom > b.top) hit.push(text.slice(0, 24));
+      }
+      return hit;
+    });
+    expect(under).toEqual([]);
+  };
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto(lesson);
   await expect(page.getByRole("heading", { name: "References", exact: true })).toBeVisible();
@@ -541,6 +580,13 @@ test("the lesson's details card is dragged taller and nothing else moves (SAK-47
   expect(Math.abs(wasOrder.height - wasCard.height)).toBeLessThanOrEqual(1);
   await expect(handle).toHaveAttribute("aria-valuenow", "58");
   await expect(up).toHaveAttribute("aria-expanded", "false");
+  // the chevron says where the press will send the card, so at rest it points
+  // UP (Sam, 2026-09-20: "it should face up when it expands upward and down
+  // when it collapses"). It was the other way round, read off `aria-expanded`.
+  expect(await turn(up)).toBe("none");
+  // and the button is in the card's own top right corner, inset by the card's
+  // padding, rather than hanging over the panel's edge
+  await inCorner();
 
   // dragging the handle up takes 150px from the sky and gives them to the card
   const grip = await handle.boundingBox();
@@ -586,6 +632,10 @@ test("the lesson's details card is dragged taller and nothing else moves (SAK-47
   expect(await cell("order")).toEqual(wasOrder);
   await expect(handle).toHaveAttribute("aria-valuenow", "100");
   await expect(back).toHaveAttribute("aria-expanded", "true");
+  // all the way up, the press brings the card back down, so the chevron is
+  // turned over. The button has not left the card's corner to do it.
+  expect(await turn(back)).toBe("180deg");
+  await inCorner();
   // the step and the buttons that walk it are still in reach, unscrolled
   await expect(page.getByText(/^Step \d+ of \d+$/)).toBeVisible();
   const next = await page.getByRole("button", { name: "Next", exact: true }).boundingBox();
@@ -793,6 +843,58 @@ test("the atlas opens on the shelf that holds what you asked for", async ({ page
   // the rail lights the shelf the entry is on
   const kanji = page.getByRole("button", { name: /^Kanji/ }).first();
   await expect(kanji).toHaveAttribute("aria-pressed", "true");
+});
+
+test("the atlas panel has the lesson's drag line, and the width it is left at holds (SAK-471)", async ({ page }) => {
+  // Sam, 2026-09-20: "on the lesson page, the drag line is perfect. add it to
+  // the atlas too since that's missing it." The panel's left edge was a bare
+  // strip with a resize cursor and nothing to see, and the width was plain
+  // state, so a reload was back at 360px.
+  const entry = `/atlas?sample&entry=${encodeURIComponent("kanji:日")}`;
+  const grip = page.getByRole("separator", { name: "Drag to make this panel wider" });
+  const width = async () => {
+    const box = await page.locator("[data-atlas-panel]").boundingBox();
+    if (!box) throw new Error("no panel");
+    return box.width;
+  };
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto(entry);
+  await expect(page.getByRole("heading", { name: "What would you like to know?" })).toBeVisible();
+  await expect(grip).toBeVisible();
+  // the same tooltip the lesson's line has, and a line to see rather than an
+  // invisible strip
+  await expect(grip).toHaveAttribute("title", "Drag to resize");
+  const line = grip.locator("span");
+  const drawn = await line.boundingBox();
+  expect(drawn && drawn.width).toBeGreaterThan(0);
+  expect(drawn && drawn.height).toBeGreaterThan(0);
+  // it lies down the panel's edge, so it is taller than it is wide
+  expect(drawn && drawn.height).toBeGreaterThan(drawn!.width);
+  const was = await width();
+  expect(Math.round(was)).toBe(360);
+
+  // dragging it left makes the panel 160px wider
+  const box = await grip.boundingBox();
+  if (!box) throw new Error("no grip");
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width / 2 - 160, box.y + box.height / 2, { steps: 10 });
+  await page.mouse.up();
+  const dragged = await width();
+  expect(Math.abs(dragged - (was + 160))).toBeLessThanOrEqual(1);
+
+  // and the width is this browser's, so the panel opens at it again
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "What would you like to know?" })).toBeVisible();
+  await expect(grip).toBeVisible();
+  expect(Math.abs((await width()) - dragged)).toBeLessThanOrEqual(1);
+
+  // the arrow keys move it too, for anyone who cannot drag a line
+  await grip.focus();
+  await page.keyboard.press("ArrowLeft");
+  expect(Math.abs((await width()) - (dragged + 32))).toBeLessThanOrEqual(1);
+  await page.keyboard.press("ArrowRight");
+  expect(Math.abs((await width()) - dragged)).toBeLessThanOrEqual(1);
 });
 
 test("a word's page says what kind of word it is, and the chip opens the page that explains it", async ({ page }) => {
