@@ -18,13 +18,14 @@
 // nothing selected there is no panel. Selection is `useSelection`; the
 // entries fetched are `useEntries`.
 
-import { useCallback, useDeferredValue, useEffect, useMemo, useState, type ComponentType, type PointerEvent as ReactPointerEvent } from "react";
+import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ComponentType, type PointerEvent as ReactPointerEvent } from "react";
 
 import { LazyTileGrid, TileGrid } from "@/sky/components/atlas-grid";
 import { Glyph, GlyphName } from "@/sky/components/glyph";
 import { AtlasRail } from "@/sky/components/atlas-rail";
 import { CoverageBar } from "@/sky/components/coverage-bar";
 import { DetailFrame } from "@/sky/components/detail-frame";
+import { DragGrip } from "@/sky/components/drag-grip";
 import { LessonCard, type HearComponent, type PitchComponent, type RelatedGroup } from "@/sky/components/lesson-card";
 import { RoundButton, SkyButton, SkyChip } from "@/sky/components/sky-button";
 import { Eyebrow } from "@/sky/components/sky-card";
@@ -34,6 +35,7 @@ import { SkyPageShell } from "@/sky/components/sky-page-shell";
 import { useEntries } from "@/sky/components/use-entries";
 import { useNarrow } from "@/sky/components/use-narrow";
 import { useSelection } from "@/sky/components/use-selection";
+import { dragPanel, panelFit, panelFloor, panelRoom, panelWidth, stepPanel } from "@/sky/lib/atlas-panel";
 import type { CoverageCounts } from "@/sky/lib/coverage";
 import { buildGraph } from "@/sky/lib/graph";
 import { japaneseFont } from "@/sky/lib/japanese";
@@ -129,6 +131,12 @@ interface SkyAtlasProps {
   onClaim?: (ids: readonly string[]) => Promise<void>;
   /** "I don't know this": the mirror of the claim, back to brand new. */
   onUnclaim?: (ids: readonly string[]) => Promise<void>;
+  /** How wide the entry panel was left (SAK-471), read live from the browser
+   * by the route. Nothing in the Atlas depends on it but the layout, so a
+   * second tab changing it is no trouble. */
+  startWidth?: number;
+  /** A width the learner dragged to, for whoever keeps it between visits. */
+  onWidth?: (width: number) => void;
   height?: string;
 }
 
@@ -137,8 +145,19 @@ const SEARCH_DELAY = 180;
  * Known". A standing is not a unit: it is a word the app speaks, so it gets
  * its first letter only, "43 Getting there" (SAK-363). */
 const titleCase = (s: string) => s.replace(/\b\w/g, (c) => c.toUpperCase());
-/** The panel's width to start, and the narrowest it can be dragged. */
-const PANEL_WIDTH = 360;
+
+/** How wide the window is, for the widest the entry panel may be dragged.
+ * Zero on the server and on the first client render, which is the same reason
+ * `useNarrow` answers false there: what is drawn has to match the HTML before
+ * it follows the real width. `panelRoom` reads zero as "no room beyond the
+ * narrowest", so the panel opens at a width the server could have drawn. */
+function useWindowWidth(): number {
+  return useSyncExternalStore(
+    (onChange) => { window.addEventListener("resize", onChange); return () => window.removeEventListener("resize", onChange); },
+    () => window.innerWidth,
+    () => 0,
+  );
+}
 
 /** The learner's standings over a shelf, with the untouched remainder as
  * "undiscovered", for the status list and the coverage line. */
@@ -166,7 +185,7 @@ function shelfHolding(data: SkyAtlasData, entry: string | undefined): string | u
   return kind ? data.shelves.find((s) => s.kind === kind)?.id : undefined;
 }
 
-export function SkyAtlas({ data, lookup, picksHref, quizHref, written: Written, hear, pitch, initialEntry, onClaim, onUnclaim, height }: SkyAtlasProps) {
+export function SkyAtlas({ data, lookup, picksHref, quizHref, written: Written, hear, pitch, initialEntry, onClaim, onUnclaim, startWidth, onWidth, height }: SkyAtlasProps) {
   // what is drawn: the shelves' items, plus whatever search and the open
   // entries brought with them, so every tile and card has its parts
   const [extra, setExtra] = useState<readonly SkyItem[]>([]);
@@ -318,23 +337,42 @@ export function SkyAtlas({ data, lookup, picksHref, quizHref, written: Written, 
     }
   };
 
-  // the right panel: widened over the rail and the grid, or dragged wider
-  // by its left edge (Sam's ask, 2026-09-05)
+  // The right panel: widened over the rail and the grid, or dragged wider by
+  // its left edge (Sam's ask, 2026-09-05). The drag line on that edge is the
+  // lesson's own, turned on its side (`DragGrip`, SAK-471), and the width it
+  // is left at is remembered in the browser the way the lesson's height is.
+  //
+  // The share the learner is left with goes to the route on pointerup rather
+  // than on every move, so one drag writes to the browser once. `held` is what
+  // the writer reads, because `setWidth` does not hand the new value back.
   const [wide, setWide] = useState(false);
-  const [panelWidth, setPanelWidth] = useState(PANEL_WIDTH);
+  const room = useWindowWidth();
+  const [width, setWidth] = useState(() => panelWidth(startWidth));
+  const held = useRef(width);
+  const put = (next: number) => { held.current = next; setWidth(next); };
+  // A window narrower than the one the width was written in, or a window
+  // resized under an open panel, cannot be given what the browser holds: the
+  // panel would take more than `panelRoom` allows. What is drawn is clamped to
+  // the window in front of the learner; what is stored is left alone, so
+  // widening the window again brings the width back.
+  const shown = panelFit(width, room);
   const showPanel = selection.ids.length > 0;
   // an open panel on a narrow screen takes the whole width, as "widen" does
   const shelvesShown = !((wide || narrow) && showPanel);
-  const columns = !shelvesShown ? "minmax(0, 1fr)" : `${railOpen ? "200px " : ""}minmax(0, 1fr)${showPanel ? ` ${panelWidth}px` : ""}`;
+  const columns = !shelvesShown ? "minmax(0, 1fr)" : `${railOpen ? "200px " : ""}minmax(0, 1fr)${showPanel ? ` ${shown}px` : ""}`;
   const startResize = (e: ReactPointerEvent<HTMLDivElement>) => {
-    const from = e.clientX, was = panelWidth;
-    const max = Math.max(PANEL_WIDTH, Math.floor(window.innerWidth * 0.7));
-    const move = (ev: PointerEvent) => setPanelWidth(Math.min(max, Math.max(PANEL_WIDTH, was + (from - ev.clientX))));
-    const stop = () => { window.removeEventListener("pointermove", move); window.removeEventListener("pointerup", stop); };
+    const from = e.clientX, was = shown;
+    const move = (ev: PointerEvent) => put(dragPanel(was, ev.clientX - from, room));
+    const stop = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", stop);
+      onWidth?.(held.current);
+    };
     window.addEventListener("pointermove", move);
     window.addEventListener("pointerup", stop);
     e.preventDefault();
   };
+  const nudgeResize = (wider: boolean) => { const next = stepPanel(shown, wider, room); put(next); onWidth?.(next); };
   const toolbar = (
     <>
       <RoundButton label={wide ? "Bring the shelves back" : "Widen this panel"} pressed={wide} onClick={() => setWide(!wide)}>{wide ? "›" : "‹"}</RoundButton>
@@ -428,15 +466,25 @@ export function SkyAtlas({ data, lookup, picksHref, quizHref, written: Written, 
           )}
 
           {showPanel && (
-            <div className="relative min-h-0 self-stretch">
+            <div data-atlas-panel="" className="relative min-h-0 self-stretch">
+              {/* The drag line, in the gap to the panel's left. It was a bare
+                  strip with a cursor and nothing to see, so the panel did not
+                  look draggable at all (Sam, 2026-09-20: "add it to the atlas
+                  too since that's missing it"); it is the lesson's line now,
+                  turned on its side, with the same tooltip and the same arrow
+                  keys. Only when the shelves are there to take room from: a
+                  widened panel and a narrow window both give it the whole
+                  width, and there is nothing to drag against. */}
               {shelvesShown && (
-                <div
-                  role="separator"
-                  aria-orientation="vertical"
-                  aria-label="Resize the panel"
-                  title="Drag to resize"
-                  onPointerDown={startResize}
-                  className="absolute -left-3 top-0 z-10 h-full w-3 cursor-col-resize touch-none"
+                <DragGrip
+                  orientation="vertical"
+                  label="Drag to make this panel wider"
+                  now={shown}
+                  min={panelFloor()}
+                  max={panelRoom(room)}
+                  onDrag={startResize}
+                  onNudge={nudgeResize}
+                  className="absolute -left-3 top-0 z-10"
                 />
               )}
               {selection.ids.length > 1 ? (
