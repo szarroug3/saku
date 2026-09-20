@@ -199,7 +199,7 @@ const AUTHORED_MNEMONICS: Record<MnemonicKey, Omit<Mnemonic, "image">> = {
     mnemonic: [
       { text: "An acrobat tumbles through her aerials while her f" },
       { text: "a", accent: true },
-      { text: "ther watches, mouth open, and claps saying “ooooh, " },
+      { text: "ther watches, mouth open, and claps, saying “ooooh, " },
       { text: "ahhh", accent: true },
       { text: "!”" },
     ],
@@ -286,7 +286,7 @@ const AUTHORED_MNEMONICS: Record<MnemonicKey, Omit<Mnemonic, "image">> = {
       { text: ".”" },
     ],
     example: { word: "うみ", reading: "umi", gloss: "sea", hitIndex: 0 },
-    approximate: "Japanese う is flatter than English “oo”. Don’t purse your lips.",
+    approximate: "Japanese う is flatter than English “oo.” Don’t purse your lips.",
   },
 
   え: {
@@ -409,7 +409,7 @@ const AUTHORED_MNEMONICS: Record<MnemonicKey, Omit<Mnemonic, "image">> = {
     glyph: "エ",
     romaji: "e",
     sound: "eh",
-    object: "engineer's I-beam",
+    object: "engineer’s I-beam",
     analogy: [
       { text: "Say “" },
       { text: "eh", accent: true },
@@ -550,7 +550,7 @@ const AUTHORED_MNEMONICS: Record<MnemonicKey, Omit<Mnemonic, "image">> = {
       { text: "cu", accent: true },
       { text: "c" },
       { text: "koo", accent: true },
-      { text: " explodes from the clock, beak open wide yelling “" },
+      { text: " explodes from the clock, beak open wide, yelling “" },
       { text: "ku", accent: true },
       { text: "! " },
       { text: "ku", accent: true },
@@ -620,7 +620,7 @@ const AUTHORED_MNEMONICS: Record<MnemonicKey, Omit<Mnemonic, "image">> = {
       { text: "co", accent: true },
       { text: "habitating worms enjoying the warm, " },
       { text: "co", accent: true },
-      { text: "zy sunny day in each other's company." },
+      { text: "zy sunny day in each other’s company." },
     ],
     example: { word: "こえ", reading: "koe", gloss: "voice", hitIndex: 0 },
   },
@@ -731,7 +731,7 @@ const AUTHORED_MNEMONICS: Record<MnemonicKey, Omit<Mnemonic, "image">> = {
     mnemonic: [
       { text: "A bowl of " },
       { text: "sou", accent: true },
-      { text: "p sits steaming ready to be eaten, a curl of steam rising off the top." },
+      { text: "p sits steaming, ready to be eaten, a curl of steam rising off the top." },
     ],
     example: { word: "すし", reading: "sushi", gloss: "sushi", hitIndex: 0 },
   },
@@ -1062,7 +1062,7 @@ const AUTHORED_MNEMONICS: Record<MnemonicKey, Omit<Mnemonic, "image">> = {
     mnemonic: [
       { text: "A plate of " },
       { text: "na", accent: true },
-      { text: "chos, piled high with ingredients sits on a nun's lap. She prays a quick blessing before digging in." },
+      { text: "chos, piled high with ingredients, sits on a nun’s lap. She prays a quick blessing before digging in." },
     ],
     example: { word: "なつ", reading: "natsu", gloss: "summer", hitIndex: 0 },
   },
@@ -1251,7 +1251,7 @@ const AUTHORED_MNEMONICS: Record<MnemonicKey, Omit<Mnemonic, "image">> = {
       { text: "no", accent: true },
       { text: "pe! " },
       { text: "no", accent: true },
-      { text: "pe!“" }
+      { text: "pe!”" }
     ],
     example: { word: "ノート", reading: "nooto", gloss: "notebook", hitIndex: 0 },
   },
@@ -1437,7 +1437,7 @@ const AUTHORED_MNEMONICS: Record<MnemonicKey, Omit<Mnemonic, "image">> = {
     mnemonic: [
       { text: "A little " },
       { text: "ho", accent: true },
-      { text: "me with a wall and a snowy chimney. Santa is climbing out merrily cheering " },
+      { text: "me with a wall and a snowy chimney. Santa is climbing out, merrily cheering " },
       { text: "ho! ho! ho!", accent: true },
     ],
     example: { word: "ほし", reading: "hoshi", gloss: "star", hitIndex: 0 },
@@ -1480,7 +1480,7 @@ const AUTHORED_MNEMONICS: Record<MnemonicKey, Omit<Mnemonic, "image">> = {
     ],
     mnemonic: [
       { text: "Mama", accent: true },
-      { text: " standing arms out wide, baby running towards her, arms out wide running into " },
+      { text: " standing, arms out wide, baby running toward her, arms out wide, running into " },
       { text: "mama", accent: true },
       { text: "’s arms." },
     ],
@@ -1524,7 +1524,7 @@ const AUTHORED_MNEMONICS: Record<MnemonicKey, Omit<Mnemonic, "image">> = {
     mnemonic: [
       { text: "A musician belts out a strong " },
       { text: "mi", accent: true },
-      { text: "rthy,  tune: Do, re, " },
+      { text: "rthy tune: Do, re, " },
       { text: "miiiiii", accent: true },
       { text: "!" },
     ],
@@ -1546,7 +1546,7 @@ const AUTHORED_MNEMONICS: Record<MnemonicKey, Omit<Mnemonic, "image">> = {
     mnemonic: [
       { text: "Three grilled strips of " },
       { text: "mea", accent: true },
-      { text: "t lie in parallel ready to melt in your mouth." },
+      { text: "t lie in parallel, ready to melt in your mouth." },
     ],
     example: { word: "ミルク", reading: "miruku", gloss: "milk", hitIndex: 0 },
   },
@@ -1735,7 +1735,7 @@ const AUTHORED_MNEMONICS: Record<MnemonicKey, Omit<Mnemonic, "image">> = {
       { text: "eu", accent: true },
       { text: "lachon fish named " },
       { text: "Yu", accent: true },
-      { text: "ni, swims freely in the ocean, its long tail swaying in the water." },
+      { text: "ni swims freely in the ocean, its long tail swaying in the water." },
     ],
     example: { word: "ゆき", reading: "yuki", gloss: "snow", hitIndex: 0 },
   },
@@ -1750,7 +1750,7 @@ const AUTHORED_MNEMONICS: Record<MnemonicKey, Omit<Mnemonic, "image">> = {
       { text: "yoo", accent: true },
       { text: "” like “" },
       { text: "you", accent: true },
-      { text: "." },
+      { text: ".”" },
     ],
     mnemonic: [
       { text: "You", accent: true },
