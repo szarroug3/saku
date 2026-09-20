@@ -6748,3 +6748,93 @@ zero on both lists, and `scripts/button-centering.mjs` at zero over 1px across
 7 pages.
 
 **The teaching page fills the panel it is in (2026-09-20, SAK-470).** Sam, on the は and が page in a widened Atlas panel: "when expanding this, the contents should fill the space". The title, the lead and the paragraphs were capped at 30ch and 64ch, so a wide panel showed a narrow column beside an empty half. The caps are gone from `teach-page.tsx`; the panel's width is the measure, and the learner sets it with the drag line.
+
+## A sky that cannot be panned shows everything on it (2026-09-20, SAK-474)
+
+A sky panel is a WINDOW onto a world bigger than itself. That is what lets the
+home hold fifteen thousand constellations in one box, and on the home whatever
+falls outside the window is a drag away. The lesson's band and the Observatory's
+"Your sky tonight" are never panned, so whatever falls outside them is not
+somewhere else, it is gone.
+
+**What it looked like.** A lesson of 〜は and 〜てから, at 1440 by 900, with the
+details card dragged down to the 48px floor: the moon was in the band and the
+comet was 29.6 pixels below it, drawn behind the card. The same lesson at rest
+was a 1392 by 310 band with the moon 110 pixels from its left edge and the comet
+1215 pixels along, and nothing in between.
+
+**SAK-471's centering moved the case rather than fixing it.** Telling the band
+to open on the constellation the lesson is standing in puts THAT one in the
+strip and leaves every other pick wherever the scatter dropped it, so a lesson
+of one pick was fixed and a lesson of two was half fixed. And a strip 48 pixels
+tall is shorter than some single constellations, so the centering alone cannot
+hold even one of them.
+
+**The rule now**, in `src/sky/lib/sky-fit.ts`: a sky that sets `contain` opens
+far enough out, and moves as little as it takes, for the box round every body it
+draws to be inside the panel. Three pieces, each pure and each tested on its
+own.
+
+- `bodyRoom` is how much room one body needs round its center: how far it is
+  ever drawn (`bodyRadius`, which for a comet is the tip of its tail) plus the
+  widest mark any look can put on it. That last number is worked out from the
+  paints themselves rather than written down a second time, so a glow that grows
+  is a glow the packing makes room for.
+- `boxAround` is the box round every body a sky draws, each grown by its own
+  room. `SkyField` builds it from the placed constellations, and only when the
+  caller asks, so the home does not walk fifteen thousand constellations for a
+  number it never reads.
+- `zoomToShow` and `placeSky` are what `SkyCanvas` opens with. The zoom never
+  goes ABOVE what the sky would open at anyway: showing everything is a reason
+  to draw the sky smaller, never a reason to blow one constellation up to fill a
+  band it used to share. The move is the smallest one that holds the box, so the
+  band still opens as near as it can to the constellation the lesson is standing
+  in, which is SAK-471 kept rather than undone.
+
+**The rounded corners are kept clear across, not up and down.** A panel's corner
+curve eats the square of its own radius at each end of each edge (16px,
+`rounded-2xl`, on the band), so a body whose box stands a radius in from the left
+and from the right is clear of all four corners whatever its height. Keeping the
+same margin above and below would have cost a great deal for nothing: the band
+is 48 pixels at its floor, and taking 16 off the top and bottom of that halved
+every body in it, measured at 12.6 pixels across for a moon that is 27.8 when it
+is left alone.
+
+**Nothing moved at rest.** The band at rest is taller than one night's picks
+need, so the zoom stays at 100% and the slide has nothing to do. The rest
+screenshots before and after are the same picture, pixel for pixel, at 1440 and
+at 760; the Observatory's preview is the same picture too, at one, two and five
+picks, because it fits its whole world in its box already and never had this
+bug. The home sky passes no `contain` at all and takes the untouched branch of
+`placeSky`.
+
+**What was measured.** Every body's own box against the panel's, in a production
+build, signed out, on the sample learner. Before: the comet 29.6px below the
+band on two picks at the floor, and margins of 6.1px and 10.1px on the one-pick
+lessons, which is less than the glow those bodies gain when they are hovered.
+After: nothing past the panel anywhere, the worst margin 0.9px of drawn ink with
+the room behind it intact, and every body clear of the corners.
+
+**Screenshots** in the scratchpad's `shots-474`, each one opened. Paired
+`before-` and `after-`: `lesson-2picks-1440-minband.png` is the one the card was
+filed on, a 48px band holding a moon alone before and a moon and a comet after;
+`lesson-1pick-pattern-tekara-1440-minband.png` and
+`lesson-1pick-particle-wa-1440-minband.png` show the comet and the moon whole in
+the same 48px band, each moved up into it rather than shrunk;
+`lesson-1pick-radical-1440-minband.png` is a lone piece, which was never cut and
+is unchanged. The `-rest` pairs at 1440, the `-760` narrow shots and the three
+`observatory-*` shots are all the same picture before and after. The two
+`before-*-760-*.png` were thrown away: the page had scrolled past the band when
+they were taken, and the numbers say that case is unchanged to the tenth of a
+pixel anyway.
+
+**The tests.** `src/sky/lib/sky-fit.test.ts` builds the scene the way `SkyField`
+does and the window the way `SkyCanvas` does, and asserts that every body's box
+is inside the window for one, two and five picks, at seven band heights from the
+48px floor up, at three widths, opened on each pick in turn, and one pick at a
+time for every kind of body there is: a moon, a comet, a planet, an asteroid, a
+binary, a lone piece and a word with its pieces under it. The e2e measures the
+same rule in the browser, on the real panels: every `[data-star]` box against
+the panel's box and against its four corner squares, on a one-pick lesson and a
+two-pick one, at rest and dragged to 200, 120 and 48 pixels, at 1440 and narrow,
+and on "Your sky tonight" with one pick and two.
