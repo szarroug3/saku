@@ -219,7 +219,7 @@ export const SENTENCE_ORDERING_GUIDES: Record<SentenceOrderingTierId, SentenceOr
       },
       {
         lead: "The ending changes how the action is understood.",
-        text: "It can show that the action is ongoing, being tried, or happened completely or unintentionally.",
+        text: "It can show that the action is ongoing, is being tried, or happened completely or unintentionally.",
       },
       {
         lead: "Other information still comes first.",

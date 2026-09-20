@@ -498,7 +498,7 @@ const COUNTER_SPECS: readonly CounterSpec[] = [
     sound: [
       {
         lead: "It never shifts.",
-        text: "枚 begins with ま, not an h-sound, so it stays まい after every number: 一枚 is いちまい and 三枚 is さんまい. When a counter starts with an h-sound expect a change; otherwise, like this one, read it straight.",
+        text: "枚 begins with ま, not an h-sound, so it stays まい after every number: 一枚 is いちまい and 三枚 is さんまい. When a counter starts with an h-sound, expect a change; otherwise, like this one, read it straight.",
       },
     ],
   },
@@ -593,7 +593,7 @@ const COUNTER_SPECS: readonly CounterSpec[] = [
     sound: [
       {
         lead: "It never shifts.",
-        text: "割 begins with わ, not an h-sound, so it stays わり after every number: 一割 is いちわり and 三割 is さんわり. Read every count as the plain number plus わり: 1 割 is 10%, so 3割 is 30%.",
+        text: "割 begins with わ, not an h-sound, so it stays わり after every number: 一割 is いちわり and 三割 is さんわり. Read every count as the plain number plus わり: 1割 is 10%, so 3割 is 30%.",
       },
     ],
   },

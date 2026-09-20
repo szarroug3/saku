@@ -120,7 +120,7 @@ describe("mixedRuns (SAK-443)", () => {
 
   it("loses nothing: the runs joined are the sentence", () => {
     for (const text of [
-      "いいえ and いや both mean “no” but they aren't interchangeable.",
+      "いいえ and いや both mean “no,” but they aren't interchangeable.",
       "演じる and 演ずる are the same verb, written two ways.",
       "The forms are the じ ones either way: 演じます, 演じられる, 演じれば.",
       "ひらがな",

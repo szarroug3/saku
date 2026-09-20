@@ -118,7 +118,7 @@ export const WORD_CONTRAST_PAIRS: readonly WordContrastPair[] = [
     // already demonstrates the reluctance sense; this note is what makes that
     // connection explicit rather than leaving it for the learner to infer.
     note:
-      "いいえ and いや both mean “no” but they aren't interchangeable. いいえ is the neutral, all-purpose no. It's plain and safe in any setting, including polite conversation, and it's also how you wave off a compliment (“not at all”). いや is casual and has feeling in it. It usually means “I don't want to” or “I'd rather not,” which makes it a personal refusal, so it can sound blunt or childish somewhere formal.",
+      "いいえ and いや both mean “no,” but they aren't interchangeable. いいえ is the neutral, all-purpose no. It's plain and safe in any setting, including polite conversation, and it's also how you wave off a compliment (“not at all”). いや is casual and has feeling in it. It usually means “I don't want to” or “I'd rather not,” which makes it a personal refusal, so it can sound blunt or childish somewhere formal.",
   },
 ];
 
