@@ -6503,3 +6503,79 @@ on both lists, and `scripts/button-centering.mjs` at zero over 1px across 7
 pages.
 
 **One more tell: "job" (2026-09-20, SAK-472).** Sam, on the は page: "'job' seems like more ai-ey words." A word, a mark or a piece does not have a job. Fourteen sentences now say what the thing does ("は tells you nothing about what the word in front of it does", "when they are used as particles", "works the same way", "a second, unrelated use", the punctuation table's heading "Works like"), and `jobs?` is in the jargon test's banned list.
+
+**A grammar and punctuation pass over the same copy (2026-09-20, SAK-472).**
+Sam: "'On Sunday I am at home.' > 'On Sunday, I am at home.' sweep for
+grammatical errors like that." Same COVERED set as the jargon and rhythm
+rounds, read sentence by sentence off the TypeScript walk in
+`no-jargon-in-learner-copy.test.ts` that prints every string, template part and
+JSX text a file can put on screen. 42 strings changed across 13 files. No
+sentence was reworded for how it sounds: the voice pass is done, and this round
+only fixes what is wrong.
+
+**What the reading found.** Seven sentences were missing the comma after an
+opening phrase or clause, which is the error Sam named: "After the lesson the
+gaps grow", "With both sets in hand you can read", "To count things you pair a
+number with a counter", "After まん there is no fresh word", "Instead the voice
+is high", and, on the two kanji-reading pages, "Joined into a borrowed compound
+it usually swaps" and "Standing alone as a word it takes". Two more were
+agreement: "their kanji was added" over a plural, and "humble language, which
+lowers yourself", where the reflexive has no "you" to attach to. Two said a
+verb is a group ("Every verb is one of two groups", "can be either group") and
+now say it is in one. "Kanji are used as both words and as building blocks" had
+its "both" in the wrong place. "Japanese is a difficult language to learn
+coming from a western language" had a dangling opener and a lowercase Western.
+"There are no new words the way English does" left "does" with nothing to stand
+for. "Patterns are taught starting with the easiest ones first" said first
+twice. Two commas made their sentence harder to read: "It shows up as Slipping,
+in your sky, in the Atlas and in Practice" read as a four-item list, and "Word
+order, and the small words that mark who did what, both work differently" cut a
+compound subject in half.
+
+**The kana mnemonics had the typos.** ノ's story closed its quote with a left
+curly quote (`pe!“`). ユ's analogy never closed its second quote at all, so it
+rendered `Say “yoo” like “you.`. み's musician belted out a "mirthy,  tune",
+with a stray comma and a doubled space. ユ's eulachon fish had a comma between
+its subject and its verb. な's plate of nachos opened a parenthetical it never
+closed ("piled high with ingredients sits on a nun's lap"). Five more were a
+participial phrase with no comma in front of it, and three possessives were
+straight apostrophes in a file whose learner-facing strings are curly
+everywhere else (`cook’s hat`, `pig’s nose`). う's pronunciation note put its
+period outside the quotes, which the other twenty `approximate` strings do not.
+
+**What was left alone, and why.** The mnemonics are captions for a drawing, and
+many are a noun phrase with no finite verb: "A windy road climbing up the peak
+of Mount Fuji, clouds drifting all around it", "Nelly the cat stretching her
+back up high", "A tall threaded needle standing upright". Turning those into
+sentences is a rewrite, and it would leave them out of step with the forty
+others written the same way. The file is also split on whether a comma goes
+before a short quoted shout (`shouts “ka!”` against `bellows, “mooooo!”`), nine
+without against three with; both are allowed and the majority has no comma, so
+the report flags it instead of churning twelve strings. The paired-example
+pattern that runs through every teaching file ("か is “ka”, き is “ki”", "三本
+is three long thin objects, 三人 is three people") is the house shape in a
+dozen files, and it reads as a parallel enumeration that a copy editor would
+allow.
+`phase-intros.ts` puts a period outside the quotes when it quotes a word as a
+word, consistently, so that stayed; `mnemonics.ts` puts it inside,
+consistently, so the one place it did not was fixed. The button labels "Back to
+the observatory", "Back to practice" and "Back to your sessions" are one
+internally consistent set, so only the prose sentence next to them ("Go to the
+observatory to explore") took the capital the Observatory gets everywhere else
+in prose. `particle-notes.ts` and the は/が pages belong to SAK-470.
+
+**Tatoeba.** None of the changed lines is a corpus translation, and a read of
+the authored English in `transitivity.ts`, `counters.ts` and
+`sentence-ordering-guides.ts` found no corpus sentence in them at all. Nothing
+plainly wrong turned up in the translations that the walk does reach.
+
+**The gates.** `npx tsc --noEmit` and `npx eslint src e2e scripts` clean. 4,207
+unit tests, 4,206 pass and 1 is skipped, with no new ones: this round changed
+sentences and no behavior. `japanese.test.ts` quotes いいえ's contrast note as a
+sample for `mixedRuns`, so it follows the note's new comma. 73 e2e pass with no
+change to the suite. `scripts/unreachable.mjs --list` at zero,
+`scripts/unused-exports.mjs` at zero on both lists, and
+`scripts/button-centering.mjs` at zero over 1px across 7 pages.
+`npm run build:library-index` was rerun because the Godan/ichidan concept's
+one-line summary changed, and that one entry is the whole diff.
+`npm run build:catalogues` produced byte-identical files.
