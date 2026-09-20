@@ -6399,3 +6399,105 @@ presses back; steps the handle with the arrow keys; and checks that neither
 control is offered at 760. `scripts/unreachable.mjs --list` at
 zero, `scripts/unused-exports.mjs` at zero on both lists, and
 `scripts/button-centering.mjs` at zero over 1px across 7 pages.
+
+## The comet looks like a comet (SAK-473)
+
+Sam, looking at a close-up of one: "the comets could look better". What she was
+looking at was a lavender disc with a flat gray triangle behind it. The triangle
+started as wide as the head, came to a point, and had a hard edge all the way
+round, so it read as a wedge stuck onto a disc rather than as anything moving.
+
+**Six drawings were put side by side before one was written into the app.** The
+sheet is in the scratchpad, not in the repo: `comet-candidates-2.png` with
+`comet-sheet-2.mjs` beside it, drawn on the sky's own baked wash, at the three
+scales the sky uses (0.7, 1 and 1.8), in two standing colors, with the halo and
+without. An earlier round of six was thrown away first. Every tail in it
+widened at about 45 degrees and stopped at a cut edge, and a tail like that
+reads as a megaphone. What fixed it was a gentle spread, a tail long against
+its width, and an end that is a round nose instead of a straight cut.
+
+**Sam picked F, one gradient.** One shape, filled with a gradient that takes it
+to nothing along its length. It is the only one of the six with no hard edge
+anywhere: the tail simply stops being there. The other five all end in a
+silhouette, and at 0.7 that silhouette is two or three pixels of solid gray,
+which the eye reads as a second small object out on the end.
+
+**The numbers.** `COMET` in `src/sky/lib/constellation.ts` now holds the head,
+the reach and the plume's outline:
+
+    head 3.4     was 5.5, so the tail is the shape you notice
+    tail 18      the reach: the hit area and the packing box, unchanged
+    plume        a0 0.3  w0 1.5   where it leaves the head
+                 ac 8    wc 3     the waist the long sides bend through
+                 a1 14   w1 3.9   where the round nose closes it
+
+`a` is how far along the tail and `w` how far to the side of it, in star units.
+The spread from the head to the nose is 19.9 degrees all in. `cometTail` writes
+the outline: two quadratics for the long sides and a cubic for the nose, whose
+control points stand 1.33 widths out because that is what draws a half circle.
+The curve itself only reaches three quarters of that, so the farthest point
+drawn is 17.89 of the reach of 18. The unit test does not take that on trust:
+it parses the path's own sixteen numbers and walks both quadratics and the
+cubic, because the control points are outside the shape and would have said
+19.19.
+
+**The gradient is a fill, not a filter, and there is one of it per SVG.**
+Nothing is blurred and nothing is rasterized off screen, which matters when the
+whole sky is fifteen thousand constellations. Every tail is drawn along +x
+inside a group that turns it the way `cometAway` points, so in the tail's own
+frame every comet in the sky points the same way and one
+`gradientUnits="objectBoundingBox"` gradient running from x1 0 to x2 1 lines up
+with all of them. `SkyDefs` in `constellation.tsx` declares it and hands the id
+down through a context. `SkyCanvas` wraps its view group in one, which covers
+the home sky, the lesson sky, "Your sky tonight" and the Atlas rail, since all
+four are a `SkyField` inside a `SkyCanvas`. `StarGlyph` declares its own, and
+only when the glyph it draws is a comet, because a legend is a row of small
+glyphs and all but one of them are flat shapes. The id comes from `useId`, so
+two skies on one page declare two gradients and each fills its own comets
+rather than both reaching for whichever `<defs>` the document holds first.
+`useId` spells its ids with punctuation that has no business inside a
+`url(#...)`, so only the letters and digits are kept: the id on the page reads
+`sky-tail-r0`.
+
+**A comet's halo is an ellipse lying along it.** Every other body wears a circle
+of its own reach. A comet's reach is the tip of a long thin tail whose far half
+has faded out, so that circle was a big empty bubble with the comet down in one
+corner of it, which is visible in the screenshot Sam was looking at. The ellipse
+follows the comet's length and leaves no dead space. Its middle is 6 units down
+the tail and it is 11 by 6.5 plus the halo's own `grow`, which is 14 by 9.5 for
+tonight's halo and 13 by 8.5 for the fainter one the claimed standing draws for
+itself. Both were opened at 1440 and both still read as light around a thing
+rather than as a shape of their own. The hit area is untouched: a circle of 18,
+as SAK-465 set it, and the packing box with it.
+
+**What it costs, measured rather than guessed.** The same page, `/?sample`, with
+the same two comets on it, built and served both ways:
+
+    before   4 elements   path+circle+circle   and   circle+path+circle
+    after    5 elements   g+path+circle+circle and   ellipse+g+path+circle
+    once per SVG   5 more: defs, linearGradient and three stops
+
+So one comet costs one more element than it did, the turning group, and a sky
+costs five more however many comets are in it. The whole home SVG went from 817
+elements to 824, which is the two comets and the one `<defs>`. Comets are only
+grammar patterns, and the sky is mostly stars.
+
+**What was looked at.** Screenshots at 1440 in the scratchpad's `shots-473`,
+each one opened: `app-home.png` (three comets in the home sky, all at the
+smallest scale), `app-home-comet.png` and `app-home-comet-halo.png` (the
+smallest scale blown up seven times with no smoothing, without the halo and
+with it), `app-tonight.png` and `app-tonight-close.png` ("Your sky tonight" with
+two grammar patterns picked), `app-lesson.png`, `app-lesson-comet.png` and
+`app-lesson-hover.png`. At 0.7 the head is five screen pixels across and the
+tail about fourteen long, and it still reads as a bright point with something
+streaming off it.
+
+**The gates.** `npx tsc --noEmit` and `npx eslint src e2e scripts` clean. 4,197
+unit tests, 4,196 pass and 1 is skipped; two are new, the tail's outline walked
+against the reach, and the turn with the halo's ellipse. 73 e2e pass. The comet
+one, "a grammar pattern is a comet in the lesson sky, tail and all", now reads
+the tail's fill as the gradient's url, checks that the group above it turns, and
+checks that the gradient it names is declared once for the whole sky.
+`scripts/unreachable.mjs --list` at zero, `scripts/unused-exports.mjs` at zero
+on both lists, and `scripts/button-centering.mjs` at zero over 1px across 7
+pages.
