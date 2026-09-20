@@ -181,7 +181,7 @@ function kanjiReadingRule(row: ReadingRow): QuizRule {
       // NOT "the character standing alone", flatly: 一 is ひと in 一人, which
       // is a compound and still native. Kun'yomi go with native words, and
       // that is the line the sentence has to draw.
-      prose: `${row.base} is a kun'yomi, the native Japanese word ${row.k} was assigned to. A kun'yomi is what the character takes standing alone, with okurigana after it, or inside a word built out of native words. Joined into a borrowed compound it usually swaps to an on'yomi instead. Same character, and the word it is in decides.${rest}`,
+      prose: `${row.base} is a kun'yomi, the native Japanese word ${row.k} was assigned to. A kun'yomi is what the character takes standing alone, with okurigana after it, or inside a word built out of native words. Joined into a borrowed compound, it usually swaps to an on'yomi instead. Same character, and the word it is in decides.${rest}`,
       readings,
     };
   }
@@ -194,7 +194,7 @@ function kanjiReadingRule(row: ReadingRow): QuizRule {
   }
   return {
     title: "On'yomi: the borrowed reading",
-    prose: `${row.base} is an on'yomi, a pronunciation borrowed from Chinese along with the character. An on'yomi is what ${row.k} usually takes once it is joined to other kanji. Standing alone as a word it takes a kun'yomi instead. Same character, and the word it is in decides.${rest}`,
+    prose: `${row.base} is an on'yomi, a pronunciation borrowed from Chinese along with the character. An on'yomi is what ${row.k} usually takes once it is joined to other kanji. Standing alone as a word, it takes a kun'yomi instead. Same character, and the word it is in decides.${rest}`,
     readings,
   };
 }

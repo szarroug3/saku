@@ -128,7 +128,7 @@ export function SkyHome({ data, observatoryHref = "/observatory", onClearMixUp, 
         {empty && (
           <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-3 p-8 text-center">
             <p className="font-sky-display text-2xl">You haven&apos;t discovered anything yet.</p>
-            <p className="text-[14px] text-sky-muted">Go to the observatory to explore.</p>
+            <p className="text-[14px] text-sky-muted">Go to the Observatory to explore.</p>
             <SkyButton href={observatoryHref} className="pointer-events-auto mt-1">Explore</SkyButton>
           </div>
         )}
