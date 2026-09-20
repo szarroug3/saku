@@ -158,7 +158,7 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
         text:
           "Put は after a word and you have said what the sentence is about. " +
           "Everything after it is the news about that thing. English has no " +
-          "small word that does only this job, so a word-for-word translation " +
+          "small word that does only this, so a word-for-word translation " +
           "usually starts with \"as for\".",
         examples: [{ jp: "私は学生です。", mark: "は", en: "As for me, I am a student." }],
       },
@@ -170,7 +170,7 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
       },
       {
         text:
-          "は tells you nothing about the job the word in front of it does. That " +
+          "は tells you nothing about what the word in front of it does. That " +
           "word can be the one acting, the thing acted on, or a day of the week.",
         examples: [{ jp: "日曜日は家にいます。", mark: "は", en: "On Sunday I am at home." }],
       },

@@ -662,7 +662,7 @@ export const DAKUTEN_H: PhaseIntro = {
     },
     {
       mark: "゜",
-      text: "A small circle in the same spot does the same job on the は row only, turning h into p: は ha becomes ぱ pa.",
+      text: "A small circle in the same spot works the same way on the は row only, turning h into p: は ha becomes ぱ pa.",
     },
     // TAGGED ゛, AND THE TAG IS THE FIX. The count and the worked pair are both
     // about the two dashes: か → が is dakuten, and 25 is dakuten plus handakuten
@@ -897,7 +897,7 @@ export const SOKUON_K: PhaseIntro = {
   ],
 };
 
-// PARTICLE READING — three base kana that change sound when they do a job.
+// PARTICLE READING — three base kana that change sound when they are used as particles.
 // ========================================================================
 // は, へ and を are read one way as ordinary kana and another way when they act
 // as a particle: は ha/wa, へ he/e, を always o. This is a READING rule about
@@ -927,7 +927,7 @@ export const PARTICLE_RULE: PhaseIntro = {
   id: "intro-particle-reading",
   name: "Particles は, へ, を",
   setId: "hiragana",
-  title: "Three kana change their sound when they do a job.",
+  title: "Three kana change their sound when they are used as particles.",
   body: [
     {
       text: "は is normally “ha”, but when it marks the topic of a sentence it is read “wa”: 私は is “watashi wa”.",
@@ -936,7 +936,7 @@ export const PARTICLE_RULE: PhaseIntro = {
       text: "へ is normally “he”, but when it points somewhere it is read “e”: 学校へ is “gakkou e”.",
     },
     {
-      text: "を is only ever used for this job, and it is always read “o”.",
+      text: "を is only ever used as a particle, and it is always read “o”.",
     },
     {
       text: "Everywhere else, they keep their usual sound. You will learn 私は on your first day, so this one is worth knowing early.",
@@ -1155,7 +1155,7 @@ export const TRANSITIVITY_INTRO: PhaseIntro = {
       text: "Japanese often has two verbs for the same happening: one for when it happens on its own, and one for when someone makes it happen. English reuses one word for both: 'The door opened' and 'I opened the door' are both 'open'. Japanese uses 開く and 開ける.",
     },
     {
-      text: "You will get these backwards for a while. English gives you no help here, because 'open' does both jobs. That sorts itself out with time.",
+      text: "You will get these backwards for a while. English gives you no help here, because 'open' covers both. That sorts itself out with time.",
     },
     {
       lead: "The endings often shift in familiar ways.",
@@ -1436,7 +1436,7 @@ export const BUILT_FROM_INTRO: PhaseIntro = {
   name: "How a kanji is built",
   setId: NO_SCRIPT,
   eyebrow: "How a kanji is built",
-  title: "A kanji's pieces do one of two jobs: give the meaning, or give the sound.",
+  title: "A kanji's pieces do one of two things: give the meaning, or give the sound.",
   body: [
     {
       lead: "Some pieces are a clue to the meaning.",
@@ -1452,7 +1452,7 @@ export const BUILT_FROM_INTRO: PhaseIntro = {
     },
     {
       lead: "Some pieces are there for the shape alone.",
-      text: "A few strokes are only there to make the character look the way it does, with no meaning and no sound worth learning. The box leaves those out, so what it shows you is always doing one of the two real jobs.",
+      text: "A few strokes are only there to make the character look the way it does, with no meaning and no sound worth learning. The box leaves those out, so what it shows you always gives the meaning or the sound.",
     },
   ],
 };

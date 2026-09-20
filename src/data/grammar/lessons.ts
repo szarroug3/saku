@@ -255,7 +255,7 @@ const TE_FORM_PAGES: PhaseIntro[] = [
         text: "the form doesn't indicate the sentence's tense or politeness. The final predicate does. That final predicate may be a verb or an adjective, and the earlier て/で-forms stay the same when it changes.",
       },
       {
-        text: "In たべて、のんで、はなしている, the final predicate, はなしている, is where the tense and politeness are indicated. In たかくて、べんりです, the final predicate, べんりです, does that job. Don't worry about how either ending is built yet; the earlier connector forms do not change with it.",
+        text: "In たべて、のんで、はなしている, the final predicate, はなしている, is where the tense and politeness are indicated. In たかくて、べんりです, the final predicate, べんりです, does the same. Don't worry about how either ending is built yet; the earlier connector forms do not change with it.",
       },
     ],
     buildSections: [{

@@ -6501,3 +6501,5 @@ checks that the gradient it names is declared once for the whole sky.
 `scripts/unreachable.mjs --list` at zero, `scripts/unused-exports.mjs` at zero
 on both lists, and `scripts/button-centering.mjs` at zero over 1px across 7
 pages.
+
+**One more tell: "job" (2026-09-20, SAK-472).** Sam, on the は page: "'job' seems like more ai-ey words." A word, a mark or a piece does not have a job. Fourteen sentences now say what the thing does ("は tells you nothing about what the word in front of it does", "when they are used as particles", "works the same way", "a second, unrelated use", the punctuation table's heading "Works like"), and `jobs?` is in the jargon test's banned list.

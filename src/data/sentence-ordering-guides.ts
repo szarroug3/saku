@@ -298,7 +298,7 @@ export const SENTENCE_ORDERING_GUIDES: Record<SentenceOrderingTierId, SentenceOr
         text: "The rest of the sentence tells you who did what after that setup.",
       },
       {
-        lead: "The two endings do different jobs.",
+        lead: "The two endings do different things.",
         text: "のに shows an unexpected contrast. ないで says one action happened without another action.",
       },
     ],

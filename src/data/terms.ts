@@ -384,9 +384,9 @@ export const TERMS: readonly Term[] = [
   {
     id: "particle",
     name: "Particle",
-    summary: "A small word that marks another word's job in the sentence, like は, を or へ.",
+    summary: "A small word that shows what another word is doing in the sentence, like は, を or へ.",
     body: [
-      "A particle is a short word placed after another word to show what job it is doing. は marks the topic, を marks the object, and へ points toward a direction.",
+      "A particle is a short word placed after another word to show what that word is doing in the sentence. は marks the topic, を marks the object, and へ points toward a direction.",
       "They are how Japanese keeps track of who did what, where English relies on word order.",
     ],
     searchAlso: ["particle", "particles", "joshi"],

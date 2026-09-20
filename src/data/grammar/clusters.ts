@@ -203,7 +203,7 @@ export const CLUSTERS: readonly Cluster[] = [
       "ので is softer and more deferential; から states a reason more bluntly " +
       "and reads as more final when it ends the sentence, though ので can " +
       "end a sentence the same way, less sharply. から also has a second, " +
-      "unrelated job, 東京から, 'from Tokyo', which has nothing to do with " +
+      "unrelated use, 東京から, 'from Tokyo', which has nothing to do with " +
       "reasons.",
     link: {
       url: "https://www.tofugu.com/japanese-grammar/conjunctive-particle-node/",

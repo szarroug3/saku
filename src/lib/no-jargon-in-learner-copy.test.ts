@@ -93,6 +93,9 @@ const BANNED: ReadonlyArray<{ readonly word: RegExp; readonly say: string }> = [
   // "It comes in two registers" (SAK-452), on the keigo term page
   { word: /\bregisters?\b/i, say: 'say "levels", "kinds" or "forms"' },
   { word: /\bdistractors?\b/i, say: 'say "the other choices"' },
+  // "'job' seems like more ai-ey words" (Sam, 2026-09-20, on the は page): a
+  // word, a mark or a piece does not have a job; say what it does
+  { word: /\bjobs?\b/i, say: 'say what it does: "what the word does", "is used as", "works like"' },
   // "'reaches for' and 'reach for' are another one of those jargon phrases" (Sam, SAK-470's draft)
   { word: /\breach(es|ed|ing)? for\b/i, say: 'say what happens: "uses", "starts with"' },
 ];

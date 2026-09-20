@@ -650,7 +650,7 @@ const paragraphs = (body: readonly IntroPara[] | undefined): TeachParagraph[] =>
 export function pageFromIntro(intro: PhaseIntro, mark?: string): TeachPage {
   const tables: TeachTable[] = [];
   // a punctuation catalogue: the marks, their names and their English jobs
-  if (intro.punctuation?.length) tables.push({ title: "The marks", heads: ["Mark", "Name", "Does the job of", "Note"], rows: intro.punctuation.map((r) => [[{ text: r.mark }], [{ text: r.name }], [{ text: r.english }], [{ text: r.note }]]) });
+  if (intro.punctuation?.length) tables.push({ title: "The marks", heads: ["Mark", "Name", "Works like", "Note"], rows: intro.punctuation.map((r) => [[{ text: r.mark }], [{ text: r.name }], [{ text: r.english }], [{ text: r.note }]]) });
   for (const section of intro.buildSections ?? []) {
     const title = section.hideTitle ? undefined : section.title;
     const instruction = section.body.map((p) => p.text).join(" ");

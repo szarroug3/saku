@@ -336,7 +336,7 @@ describe("the particle reading rule — は/へ/を change sound as particles", 
     const prose = (card?.body ?? []).map((p) => p.text).join(" ");
     assert.match(prose, /は is normally “ha”.*read “wa”/);
     assert.match(prose, /へ is normally “he”.*read “e”/);
-    assert.match(prose, /を is only ever used for this job.*read “o”/);
+    assert.match(prose, /を is only ever used as a particle.*read “o”/);
     assert.match(prose, /私は/);
     // The reading rule is not an em-dash sentence, and never teaches "wo".
     assert.ok(!prose.includes("—"), "no em dashes in learner copy");

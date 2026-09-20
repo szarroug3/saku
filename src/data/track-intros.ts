@@ -174,7 +174,7 @@ export const RADICAL_TRACK: PhaseIntro = {
       // filters lessonOnly paragraphs; the teach walk keeps them.
       lessonOnly: true,
       lead: "Each piece turns up just before the character that needs it.",
-      text: "So a kanji is never broken into a shape you have not seen. When a piece is a kanji too, learning that kanji is where you get the shape, and its card tells you every job it does.",
+      text: "So a kanji is never broken into a shape you have not seen. When a piece is a kanji too, learning that kanji is where you get the shape, and its card tells you everything it is used for.",
     },
   ],
 };
