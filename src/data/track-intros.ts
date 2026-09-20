@@ -122,8 +122,8 @@ export const KATAKANA_TRACK: PhaseIntro = {
       text: "Borrowed words are written in it: コーヒー is “coffee”, パン is “bread”. So are names and sound effects. You'll run into it constantly.",
     },
     {
-      lead: "It’s taught now because you already know the sounds and you'll need it soon.",
-      text: "It is about the same size as hiragana. With both sets in hand you can read any Japanese word out loud.",
+      lead: "It's taught now because you already know the sounds and you'll need it soon.",
+      text: "It is about the same size as hiragana. With both sets in hand, you can read any Japanese word out loud.",
     },
   ],
 };
@@ -271,7 +271,7 @@ export const GRAMMAR_TRACK: PhaseIntro = {
     },
     {
       lead: "Knowing words is not the same as knowing how to join them.",
-      text: "A sentence needs the pattern as much as it needs the vocabulary. This is where Japanese and English differ the most. Word order, and the small words that mark who did what, both work differently.",
+      text: "A sentence needs the pattern as much as it needs the vocabulary. This is where Japanese and English differ the most. Word order and the small words that mark who did what both work differently.",
     },
     {
       lead: "You do not need a large vocabulary to start.",

@@ -1152,10 +1152,10 @@ export const TRANSITIVITY_INTRO: PhaseIntro = {
   body: [
     {
       lead: "Two verbs, one event.",
-      text: "Japanese often has two verbs for the same happening: one for when it happens on its own, and one for when someone makes it happen. English reuses one word for both: 'The door opened' and 'I opened the door' are both 'open'. Japanese uses 開く and 開ける.",
+      text: "Japanese often has two verbs for the same happening: one for when it happens on its own, and one for when someone makes it happen. English reuses one word for both: “The door opened” and “I opened the door” are both “open”. Japanese uses 開く and 開ける.",
     },
     {
-      text: "You will get these backwards for a while. English gives you no help here, because 'open' covers both. That sorts itself out with time.",
+      text: "You will get these backwards for a while. English gives you no help here, because “open” covers both. That sorts itself out with time.",
     },
     {
       lead: "The endings often shift in familiar ways.",
@@ -1246,7 +1246,7 @@ export const NUMBERS_COMPOSE: PhaseIntro = {
   body: [
     {
       lead: "The tens are a digit in front of じゅう.",
-      text: "じゅう is ten, にじゅう is two tens (20), さんじゅう is 30. There are no new words the way English does with “twenty” and “thirty”: every ten is a digit you already know, plus じゅう.",
+      text: "じゅう is ten, にじゅう is two tens (20), さんじゅう is 30. Japanese has no new words for these the way English does with “twenty” and “thirty”: every ten is a digit you already know, plus じゅう.",
     },
     {
       lead: "For the numbers between, add a ones digit on the end.",
@@ -1254,7 +1254,7 @@ export const NUMBERS_COMPOSE: PhaseIntro = {
     },
     {
       lead: "Three of the digits read two ways.",
-      text: "4 is よん or し, 7 is なな or しち, and 9 is きゅう or く. Counting mostly uses the first of each (よん, なな, きゅう), but the other reading turns up in fixed words and telling the time, so both are worth knowing.",
+      text: "4 is よん or し, 7 is なな or しち, and 9 is きゅう or く. Counting mostly uses the first of each (よん, なな, きゅう), but the other reading turns up in fixed words and in telling the time, so both are worth knowing.",
     },
   ],
   examples: [
@@ -1291,7 +1291,7 @@ export const NUMBERS_BIG: PhaseIntro = {
     },
     {
       lead: "Japanese groups big numbers by ten-thousands.",
-      text: "After まん there is no fresh word for “million”. 100,000 is 十万 じゅうまん, ten of the ten-thousands, and 1,000,000 is 百万, a hundred of them. You keep grouping by 万 instead of a bigger single word.",
+      text: "After まん, there is no fresh word for “million”. 100,000 is 十万 じゅうまん, ten of the ten-thousands, and 1,000,000 is 百万, a hundred of them. You keep grouping by 万 instead of a bigger single word.",
     },
   ],
   examples: [
@@ -1341,7 +1341,7 @@ export const PITCH_INTRO: PhaseIntro = {
   body: [
     {
       lead: "Pitch accent is the rise and fall across a word.",
-      text: "Japanese does not stress a syllable the way English does. Instead the voice is high on some beats of a word and low on others, and where it drops is fixed for each word. From now on, a thin line is drawn over the reading to show it: the line runs over the high beats and turns down where the voice falls.",
+      text: "Japanese does not stress a syllable the way English does. Instead, the voice is high on some beats of a word and low on others, and where it drops is fixed for each word. From now on, a thin line is drawn over the reading to show it: the line runs over the high beats and turns down where the voice falls.",
     },
     {
       lead: "A flat line means the pitch never drops.",
@@ -1410,7 +1410,7 @@ export const ONYOMI_INTRO: PhaseIntro = {
   body: [
     {
       lead: "Kun’yomi is the native Japanese reading.",
-      text: "Japanese already had words such as ひと (person) and くるま (car) before their kanji was added. Those native words were matched to 人 and 車. If a kanji is used by itself, or has hiragana attached to its tail, you usually read it using kun’yomi.",
+      text: "Japanese already had words such as ひと (person) and くるま (car) before their kanji were added. Those native words were matched to 人 and 車. If a kanji is used by itself, or has hiragana attached to its tail, you usually read it using kun’yomi.",
     },
     {
       lead: "On’yomi is the reading borrowed from Chinese.",
@@ -1444,7 +1444,7 @@ export const BUILT_FROM_INTRO: PhaseIntro = {
     },
     {
       lead: "Some pieces are only there for the sound.",
-      text: "The 可 in 河 says nothing about rivers. It is there because it gives 河 its on'yomi, か: the reading 河 takes in a word like 河川 (かせん, a river). The box tags a piece like this “phonetic” and shows the reading it gives, with a word where you can hear it.",
+      text: "The 可 in 河 says nothing about rivers. It is there because it gives 河 its on’yomi, か: the reading 河 takes in a word like 河川 (かせん, a river). The box tags a piece like this “phonetic” and shows the reading it gives, with a word where you can hear it.",
     },
     {
       lead: "A kanji can be all meaning, too.",
