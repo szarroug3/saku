@@ -164,25 +164,24 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
       {
         heading: "が picks one out",
         text:
-          "が also leaves the others out. Saying that this one did it says that " +
-          "the rest did not. は does not do that. A sentence with は is about " +
-          "the word in front of it and leaves everything else alone.",
+          "が picks one out and leaves the others out. Saying that this one did " +
+          "it says that the rest did not. は does not do that. A sentence with は " +
+          "is about the word in front of it and leaves everything else alone.",
       },
       {
         text:
           "Swap は for が in one sentence and you can hear the difference. " +
           "猫は好きです is about cats and says nothing about dogs. 猫が好きです " +
           "picks cats out and leaves dogs out.",
-        examples: [{ jp: "猫は好きです。", mark: "は", en: "I like cats.", readings: ["ねこ", "す"] }],
-      },
-      {
-        text: "",
-        examples: [{ jp: "猫が好きです。", mark: "が", en: "Cats are the ones I like.", readings: ["ねこ", "す"] }],
+        examples: [
+          { jp: "猫は好きです。", mark: "は", en: "I like cats.", readings: ["ねこ", "す"] },
+          { jp: "猫が好きです。", mark: "が", en: "Cats are the ones I like.", readings: ["ねこ", "す"] },
+        ],
       },
       {
         text:
           "The same swap works on 私は学生です. With は it answers \"what about " +
-          "you?\", and nobody else in the room comes into it. With が it answers " +
+          "you?\". Nobody else in the room comes into it. With が it answers " +
           "\"which one of you is the student?\". It picks you out of the group, " +
           "so it sounds like an answer to a question. An introduction would use " +
           "は.",
@@ -200,8 +199,8 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
         heading: "The words that take が",
         text:
           "A few words take が where English would use an object: 好き, きらい, " +
-          "ほしい, わかる, できる. In Japanese, the thing you like is what が " +
-          "marks. The person doing the liking often goes unsaid.",
+          "ほしい, わかる, できる. In Japanese, the thing you like or want " +
+          "is what が marks. The person who likes or wants it often goes unsaid.",
         examples: [{ jp: "水がほしいです。", mark: "が", en: "I want some water.", readings: ["みず"] }],
       },
       {
@@ -238,7 +237,7 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
       {
         heading: "Where beginners go wrong",
         text:
-          "Beginners look for a rule that makes は right and が wrong. Most " +
+          "Beginners look for a rule that makes は right and が wrong. Many " +
           "sentences take either one. What changes is which part of the " +
           "sentence is being picked out.",
       },
@@ -251,8 +250,8 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
       },
       {
         text:
-          "は does not go next to が, を or も. It replaces whichever one the " +
-          "word would have had.",
+          "は does not go next to が or を. It takes the place of whichever one " +
+          "the word would have had.",
         examples: [{ jp: "本は読みます。", mark: "は", en: "I do read books.", readings: ["ほん", "よ"] }],
       },
       {
