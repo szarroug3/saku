@@ -6894,3 +6894,64 @@ is the same search with Grammar, Kana and Words drawn under it;
 `after-opened.png` is the 〜を tile clicked, with "marks the direct object", the
 noun table and the example sentence in the panel; `after-has-matches.png` is
 "because" in Sentences, unchanged.
+
+## The rest of the particles get a page that says what they mean (2026-09-20, SAK-470)
+
+Sam, after reading the は and が page in the app: "go ahead and build all of
+them. the wa vs ga card looks good so i think as long as you do as well on the
+others they should be fine." So every particle on the Particle page now has a
+page of prose between its build page and Family, written the same way: one idea,
+its example under it, furigana over every run of kanji, one Read more link.
+
+**Which particles share a page.** は and が set the rule: two particles share one
+page, word for word on both cards, where a learner confuses them with each
+other. That is に and で, まで and までに, だけ and しか, ね and よ. を, から, と,
+も, か and って stand alone. へ gets a short page of its own, because に against
+へ is already said on the に and で page and a second answer is one more thing to
+keep in step; へ's page names that page rather than repeating it. は against も
+is on も's page, and it names は itself, for the reason a shared page names both:
+a reader can open either card first.
+
+**から and と land on the card their row opens.** Each is one written pattern
+holding two senses, and `primaryPatternRecipe` decides which entry the Particle
+page's row opens: 〜から opens `kara-reason`, 〜と opens `to-conditional`. So the
+notes name those two, and each page covers both senses with a paragraph saying
+what tells them apart (a single word in front of it, or a whole sentence). A
+test asserts both senses are on both pages.
+
+**A page with no Read more.** `ParticleNote.link` is optional now, with
+`noLinkReason` beside it, which is the rule `clusters.ts` has followed all
+along. って is the one page with no link: Tofugu has no page for it, their と
+page covers it in two lines, and 〜と already links that article. Writing the
+reason down beats pointing at an approximate source.
+
+**The に and で cluster note.** It said "There is no rule for choosing between
+them", which stopped being true the moment the shared page said the verb
+decides. It now says what に and で each mark and names the page one turn back,
+the same change the wa-ga note took, and it drops its Tofugu link because that
+page carries it.
+
+**The tests.** The four that were written for は and が read every shared page
+now: both cards print a deeply equal page, the opening paragraph names every
+particle the page is about, and any paragraph weighing them ("swap", "instead
+of", "either one", "either way") names them itself. Two more are new: every
+particle the Particle page lists has a page (with the pairing pinned as a list,
+so a change to who shares with whom is deliberate), and から and と cover both
+senses. The furigana and particle-marking tests already ran over every note, so
+they cover the new pages without a line changing.
+
+**Nothing of Tofugu's.** Each page was checked against the article or articles
+it drew on: both sides to plain lowercase words, then every word run compared,
+longest first, with the Read more label excluded because it is the article's own
+title and is the citation. **The longest shared run on every page is four words
+or fewer**, and no example sentence of theirs appears on any page. Per page:
+を 3, に and で 4 ("where something is or"), へ 3, まで and までに 3, から 3, と 2,
+も 4 ("in a negative sentence"), だけ and しか 3, か 3, ね and よ 4 ("hot isn't
+it", "don't you think", "at the same time", "isn't it right"), って 4 ("the end
+of a"). Example sentences are written fresh out of beginner words.
+
+**Screenshots** in the scratchpad's `shots-470c`, each one opened and read: one
+per new page (`wo`, `ni`, `e`, `made`, `kara`, `to`, `mo`, `dake`, `ka`, `ne`,
+`tte`), the four `-same-page` shots showing a shared page printed word for word
+on its second card (`de`, `made-ni`, `shika`, `yo`), and `ni-family-note` with
+the rewritten note and no link under it.
