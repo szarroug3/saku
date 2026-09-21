@@ -31,8 +31,15 @@ interface TileGridProps {
 const isName = (glyph: string) => /^[\p{Script=Latin}\p{N} /().'’-]+$/u.test(glyph) && glyph.length > 2;
 
 /** Whether a thing is shown by its name rather than a glyph: its glyph is
- * its name (a term, a concept, a rule with no mark), or reads as one. */
-const named = (item: SkyItem) => item.glyph === item.english || isName(item.glyph);
+ * its name (a term, a concept, a rule with no mark), or reads as one.
+ *
+ * A grammar pattern always is. Sam, 2026-09-21, with the two shelves side by
+ * side: "these look so different. why?" On Sentences 〜を was a wide tile
+ * reading "marks the direct ...", because its cut opens with a sentence type
+ * and a cut of names is one size. On Grammar the same 〜を was a small square
+ * reading "marks the ...", and 〜ている was "〜て…". A pattern is known by what
+ * it means, and the square has no room for that. */
+const named = (item: SkyItem) => item.glyph === item.english || isName(item.glyph) || item.kind === "grammar";
 
 function Tile({ item, selected, onPick, onPeek, asName = false }: { item: SkyItem; selected: boolean; onPick: OnPick; onPeek?: (id: string) => void; asName?: boolean }) {
   // in a cut of names every tile takes the name shape, so they stay one size

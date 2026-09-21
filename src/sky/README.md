@@ -6957,3 +6957,13 @@ on its second card (`de`, `made-ni`, `shika`, `yo`), and `ni-family-note` with
 the rewritten note and no link under it.
 
 **One list of particles (2026-09-20, SAK-470).** `grammar-shelf.ts` wrote out eleven particle ids while the Particle page listed seventeen from `src/data/grammar/particles.ts`, so も, ね, よ and って were on the Particle page while their own cards said "Grammar pattern" and drew a comet. The shelf's set is built from the page's list now: those four say "Particle", draw a moon, and sit in the Atlas's Particles section. The noun senses of から and と have no tile of their own (each shares its written pattern's page), so the shelf holds fifteen.
+
+## Search finds a pattern on both of its shelves, and a pattern's tile is one size (SAK-475, second round)
+
+Sam, 2026-09-21, searched を with Sentences open and asked "this search should show the sentence result, right?" It should. A pattern is on two shelves, Grammar and Sentences, and the search filed it under Grammar alone. `atlasSearchFromHistory` now adds a Sentences section holding every match the Sentences shelf draws. When the open collection has no match and the others' tiles are drawn, `alsoFound` draws a tile once, under the first collection that holds it.
+
+Three more things from the same sitting:
+
+- The "What を does" pill and a page's title drew their English in the Japanese font. Both are drawn run by run now (`Mixed`), inside one span so the spaces around the kana survive the chip's flex layout.
+- A pattern's tile was wide on Sentences and a small square on Grammar, where 〜ている read "〜て…". `named` in `atlas-grid.tsx` counts every grammar pattern as a name, so both shelves draw the wide tile.
+- The Kanji shelf's "Built from" row was a `<p>` holding a `<div>`, which React reports as a hydration error in development. It is a `<div>`.

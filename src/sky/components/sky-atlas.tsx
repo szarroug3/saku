@@ -457,7 +457,7 @@ export function SkyAtlas({ data, lookup, picksHref, quizHref, written: Written, 
                 <>
                   <p className="mt-4 text-[12.5px] text-sky-muted"><span className="font-semibold text-sky-ink">{shownOnShelf.toLocaleString()}</span> {shownWord}{pickedList.length > 0 && <> · built from {pickedList.map((p, i) => <span key={p}>{i > 0 && " or "}<GlyphName glyph={p} cut={false} className="font-semibold" /></span>)}</>}</p>
                   {shelf.id === "kanji" && parts.length > 0 && (
-                    <p className="mt-2 flex items-center gap-2">
+                    <div className="mt-2 flex items-center gap-2">
                       <Eyebrow tight>Built from</Eyebrow>
                       <SkyMultiSelect
                         label="Choose the parts a kanji is built from"
@@ -468,7 +468,7 @@ export function SkyAtlas({ data, lookup, picksHref, quizHref, written: Written, 
                         onToggle={toggleComponent}
                         onClear={clearComponents}
                       />
-                    </p>
+                    </div>
                   )}
                   {cuts.length === 0 ? (
                     <p className="mt-3 text-[13.5px] text-sky-muted">{pickedList.length > 0 ? `Nothing here built from ${pickedList.join(" or ")}${filter ? " with that status" : ""}. Try another, or clear the filter.` : "Nothing here with that status. Try another, or clear the filter."}</p>

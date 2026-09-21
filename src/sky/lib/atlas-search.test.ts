@@ -74,6 +74,12 @@ describe("the other collections' matches", () => {
     assert.deepEqual(names(alsoFound(odd, ["kana", "grammar"], "あ")), ["kana", "verbPair"]);
   });
 
+  it("draws a pattern once when two collections hold it", () => {
+    // 〜を is on Grammar and on Sentences, and it is one page
+    const both = [...wo, { kind: "sentence" as const, items: [item("grammar:wo", "〜を", "grammar")] }];
+    assert.deepEqual(names(alsoFound(both, SHELVES, "を")), ["grammar", "kana", "word"]);
+  });
+
   it("answers nothing for nothing", () => {
     assert.deepEqual(alsoFound([], SHELVES, "を"), []);
   });

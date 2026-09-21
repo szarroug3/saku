@@ -180,7 +180,7 @@ export function TeachPageView({ page, alone = false, onOpen }: { page: TeachPage
   return (
     <div className={alone ? "" : "mt-4 border-t border-sky-line pt-4"}>
       {page.eyebrow && <Eyebrow>{page.eyebrow}</Eyebrow>}
-      {page.title && <h3 className={`font-sky-display text-[20px] leading-tight ${japaneseFont(page.title)}`}>{page.title}</h3>}
+      {page.title && <h3 className="font-sky-display text-[20px] leading-tight"><Mixed text={page.title} /></h3>}
       {page.lead && <p className="mt-2 text-[15.5px] font-semibold leading-relaxed">{page.lead}</p>}
       {page.hook && <p className="mt-2 text-[13px] font-semibold text-sky-accent">{page.hook}</p>}
       <div className="mt-3 flex flex-col gap-2 text-[14.5px] leading-relaxed">
@@ -217,8 +217,8 @@ export function Pager({ pages, page, onPage }: { pages: readonly TeachPage[]; pa
   return (
     <nav aria-label="Pages" className="mt-3 flex flex-wrap items-center gap-1.5">
       {pages.map((p, i) => (
-        <SkyChip key={i} on={i === page} current="page" onClick={() => onPage(i)} title={p.title} className={`max-w-[22ch] truncate ${japaneseFont(p.eyebrow ?? "")}`}>
-          {p.eyebrow ?? `Page ${i + 1}`}
+        <SkyChip key={i} on={i === page} current="page" onClick={() => onPage(i)} title={p.title} className="max-w-[22ch] truncate">
+          {p.eyebrow ? <span className="truncate"><Mixed text={p.eyebrow} /></span> : `Page ${i + 1}`}
         </SkyChip>
       ))}
       <span className="ml-auto text-[12px] tabular-nums text-sky-muted">{page + 1} of {pages.length}</span>

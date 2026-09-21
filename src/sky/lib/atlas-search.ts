@@ -58,7 +58,13 @@ export function alsoFound<G extends FoundOnShelf>(groups: readonly G[], shelves:
     const at = shelves.indexOf(kind);
     return at < 0 ? shelves.length : at;
   };
+  // ONE TILE, ONCE. A pattern is on two shelves, Grammar and Sentences, so the
+  // search can bring it back under both. Drawn here it is one page, so the
+  // first group to hold it keeps it and a group left with nothing is dropped.
+  const drawn = new Set<string>();
   return groups
     .map((g) => ({ ...g, items: [...g.items].sort((a, b) => Number(written(b.glyph) === q) - Number(written(a.glyph) === q)) }))
-    .sort((a, b) => rank(a.kind) - rank(b.kind));
+    .sort((a, b) => rank(a.kind) - rank(b.kind))
+    .map((g) => ({ ...g, items: g.items.filter((it) => !drawn.has(it.id) && !!drawn.add(it.id)) }))
+    .filter((g) => g.items.length > 0);
 }

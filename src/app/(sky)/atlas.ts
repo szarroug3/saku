@@ -195,6 +195,12 @@ export function atlasSectionsFromHistory(history: HistoryFile, shelfId: string, 
   return out;
 }
 
+/** The id of every tile the Sentences shelf holds. Worked out once: it
+ * depends on the shipped tables alone. */
+let sentencesIds: ReadonlySet<string> | undefined;
+const sentencesShelfIds = (): ReadonlySet<string> =>
+  (sentencesIds ??= new Set(shelfSections(SENTENCE_RULE_KIND, "everyday").flatMap((c) => c.entries.map((e) => e.id as string))));
+
 /** The app's search, by kind, as Atlas sections. */
 export function atlasSearchFromHistory(history: HistoryFile, query: string, now = Date.now()): AtlasSearchResult {
   const o = offerPicker(history, now);
@@ -208,6 +214,19 @@ export function atlasSearchFromHistory(history: HistoryFile, query: string, now 
     const have = sections.find((x) => x.id === (shelf?.id ?? s.kind));
     if (have) { have.items = [...have.items, ...items]; if (s.more) have.more = (have.more ?? 0) + s.more; continue; }
     sections.push({ id: shelf?.id ?? s.kind, label: shelf?.title ?? s.label, items, ...(s.more ? { more: s.more } : {}) });
+  }
+  // A pattern is on two shelves, Grammar and Sentences, and the search files
+  // it by its kind, which is Grammar's. Sam searched を with Sentences open
+  // and was told nothing there matched while 〜を was a tile on that very
+  // shelf. So a match that the Sentences shelf holds is a Sentences match too.
+  const sentences = SHELVES.find((sh) => sh.id === "sentences");
+  if (sentences) {
+    const onShelf = sentencesShelfIds();
+    const found = sections.flatMap((x) => x.items).filter((id) => onShelf.has(id));
+    const have = sections.find((x) => x.id === sentences.id);
+    const items = [...new Set([...(have?.items ?? []), ...found])];
+    if (have) have.items = items;
+    else if (items.length) sections.push({ id: sentences.id, label: sentences.title, items });
   }
   return { items: closure(o, sections.flatMap((s) => s.items)), sections };
 }

@@ -844,8 +844,15 @@ test("a search the open collection has none of draws the other collections' matc
   await page.getByRole("button", { name: /^Sentences/ }).first().click();
   await page.getByRole("searchbox").fill("を");
 
-  // the line and the chips are still what they were
-  await expect(page.getByText("Nothing in Sentences matches.")).toBeVisible();
+  // Sam, 2026-09-21: "this search should show the sentence result, right?"
+  // 〜を is a tile on the Sentences shelf, so Sentences finds it
+  await expect(page.getByText(/^\d+ Shown · Matching/)).toBeVisible();
+  await expect(page.getByRole("button", { name: /^〜を/ }).first()).toBeVisible();
+  await expect(page.getByText("Nothing in Sentences matches.")).toHaveCount(0);
+
+  // a collection with no を in it: the line and the chips are what they were
+  await page.getByRole("button", { name: /^Radicals/ }).first().click();
+  await expect(page.getByText("Nothing in Radicals matches.")).toBeVisible();
   await expect(page.getByRole("button", { name: "1 Grammar" })).toBeVisible();
 
   // the other collections' tiles are drawn under their names, Grammar first
@@ -865,8 +872,9 @@ test("a search the open collection has none of draws the other collections' matc
 
   // a search this collection DOES have keeps today's view: its own tile, the
   // chips, and no other collection's tiles
+  await page.getByRole("button", { name: /^Sentences/ }).first().click();
   await page.getByRole("searchbox").fill("because");
-  await expect(page.getByText(/^1 Shown · Matching/)).toBeVisible();
+  await expect(page.getByText(/^\d+ Shown · Matching/)).toBeVisible();
   await expect(page.getByRole("button", { name: "Because / so" })).toBeVisible();
   await expect(names).toHaveCount(0);
 });
