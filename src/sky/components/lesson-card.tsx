@@ -99,7 +99,10 @@ export type HearComponent = ComponentType<{ glyph: string; word?: string; downst
 function StarButton({ item, note, onSelect }: { item: SkyItem; note?: string; onSelect: (id: string) => void }) {
   return (
     <button type="button" onClick={() => onSelect(item.id)} className="inline-flex items-center gap-2 rounded-lg border border-sky-line px-2.5 py-1.5 text-left hover:border-sky-accent">
-      <Glyph glyph={item.glyph} size="text-[18px]" />
+      {/* a term or a page is named in English, and an English name in the
+          display face at glyph size matched nothing else on the card (Sam,
+          2026-09-20, on "Particle" under Read about it): it is a label */}
+      {japaneseFont(item.glyph) ? <Glyph glyph={item.glyph} size="text-[18px]" /> : <span className="text-[13.5px] font-medium leading-5 text-sky-ink">{item.glyph}</span>}
       {note && <span className={`font-sky-display text-[13px] text-sky-muted ${japaneseFont(note)}`}>{note}</span>}
       {item.english !== item.glyph && <span className="text-[12.5px] text-sky-muted">{item.english}</span>}
     </button>

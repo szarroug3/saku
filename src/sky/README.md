@@ -6838,3 +6838,5 @@ same rule in the browser, on the real panels: every `[data-star]` box against
 the panel's box and against its four corner squares, on a one-pick lesson and a
 two-pick one, at rest and dragged to 200, 120 and 48 pixels, at 1440 and narrow,
 and on "Your sky tonight" with one pick and two.
+
+**A chip named in English is a label (2026-09-20, SAK-470).** Sam, on "Particle" under Read about it: "the font doesn't match anything else". `StarButton` drew every related chip's name with `Glyph`, the display face at glyph size, which is right for 電 and wrong for a term's English name. A name with no Japanese in it is drawn as a label in the UI face now.
