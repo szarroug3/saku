@@ -341,9 +341,9 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
       },
       {
         text:
-          "A verb that happens on its own never takes を. In ドアが開きます the " +
-          "door opens by itself. Put を in the sentence and you need the other " +
-          "verb, 開ける.",
+          "開く is a verb for something that happens by itself, so it does not " +
+          "take を. In ドアが開きます, the door opens by itself. When you are the " +
+          "one opening it, you need the other verb, 開ける, and that one takes を.",
         examples: [{ jp: "ドアを開けます。", mark: "を", en: "I open the door.", readings: ["あ"] }],
       },
     ],
@@ -398,7 +398,7 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
       {
         heading: "The same room, two particles",
         text:
-          "One room takes either one, and the verb decides. に goes with a verb " +
+          "One room can take either particle. The verb decides. に goes with a verb " +
           "that says something is there. で needs a verb with something going on " +
           "in it.",
         examples: [
@@ -411,7 +411,7 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
         text:
           "へ is a third particle for somewhere you are heading. に marks the " +
           "point you end up at, and へ marks the way there. After 行く, the two " +
-          "sound much the same. As a particle, へ is read \"e\", so 学校へ is said " +
+          "mean much the same. As a particle, へ is read \"e\", so 学校へ is said " +
           "\"gakkou e\".",
         examples: [{ jp: "学校へ行きます。", mark: "へ", en: "I am going to school.", readings: ["がっこう", "い"] }],
       },
@@ -430,7 +430,7 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
         examples: [{ jp: "犬が部屋にいます。", mark: "に", en: "The dog is in the room.", readings: ["いぬ", "へや"] }],
       },
       {
-        text: "今日 and 毎日 take no particle at all. They say when on their own.",
+        text: "今日 and 毎日 do not take に. They say when without it.",
         examples: [{ jp: "今日、学校に行きます。", mark: "に", en: "I am going to school today.", readings: ["きょう", "がっこう", "い"] }],
       },
     ],
@@ -462,9 +462,9 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
       {
         heading: "に and へ",
         text:
-          "に marks the point you end up at. へ marks the way there, so 日本へ行き" +
-          "ます has a little more of the going in it than 日本に行きます does. The " +
-          "に and で page goes through に in full.",
+          "に marks the point you end up at. へ marks the way there. 日本へ行き" +
+          "ます is more about the trip, and 日本に行きます is more about arriving. " +
+          "The に and で page goes through に in full.",
       },
       {
         heading: "Where beginners go wrong",
@@ -486,8 +486,8 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
     body: [
       {
         text:
-          "まで marks the end of a stretch. までに marks a deadline. One kana " +
-          "tells them apart, and beginners put the wrong one in.",
+          "まで marks the end of a stretch. までに marks a deadline. Only one kana " +
+          "separates them, so beginners often use the wrong one.",
       },
       {
         heading: "What まで does",
@@ -552,13 +552,13 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
       },
       {
         text: "A time works the same way.",
-        examples: [{ jp: "九時から始まります。", mark: "から", en: "It starts at nine and runs on from there.", readings: ["くじ", "はじ"] }],
+        examples: [{ jp: "九時から始まります。", mark: "から", en: "It starts from nine.", readings: ["くじ", "はじ"] }],
       },
       {
-        heading: "The same clock with に",
+        heading: "から and に on a time",
         text:
-          "Both particles go on nine o'clock. に names the moment and stops " +
-          "there. から names the moment something opens and keeps going.",
+          "Both particles go on a time. に names the moment something happens. " +
+          "から names the moment it starts, and it goes on from there.",
         examples: [
           { jp: "九時に始まります。", mark: "に", en: "It starts at nine.", readings: ["くじ", "はじ"] },
           { jp: "今日から勉強します。", mark: "から", en: "I start studying today.", readings: ["きょう", "べんきょう"] },
@@ -593,11 +593,11 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
   {
     recipes: ["to-conditional"],
     eyebrow: "What と does",
-    title: "と ties two things together",
+    title: "と joins two things",
     body: [
       {
         text:
-          "Put と between two nouns and you have tied them together. English " +
+          "Put と between two nouns and you have joined them. English " +
           "would use \"and\" there.",
         examples: [{ jp: "パンとりんごを食べます。", mark: "と", en: "I eat bread and an apple.", readings: ["た"] }],
       },
@@ -623,14 +623,14 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
       {
         heading: "Telling the two apart",
         text:
-          "A noun in front of と ties it to the noun after it. When a whole " +
-          "sentence comes first, と is the whenever one.",
+          "With a noun in front of it, と joins that noun to the next one. When " +
+          "a whole sentence comes first, と means \"whenever\".",
       },
       {
         heading: "Where beginners go wrong",
         text:
-          "と ties nouns together and nothing else. Two adjectives are joined " +
-          "another way, so 安いとおいしいです is not Japanese.",
+          "と joins nouns only. Two adjectives are joined with the て-form, so " +
+          "安いとおいしいです is not Japanese. 安くておいしいです is.",
         examples: [{ jp: "私と妹は学生です。", mark: "と", en: "My sister and I are students.", readings: ["わたし", "いもうと", "がくせい"] }],
       },
     ],
@@ -663,9 +663,9 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
       {
         heading: "は and も",
         text:
-          "は picks one thing out of the things around it. も puts it back among " +
-          "them. One sentence goes either way, and the particle is the whole " +
-          "difference.",
+          "は talks about one thing and says nothing about the rest. も says that " +
+          "what is true of the others is true of this one as well. The same " +
+          "sentence works with either particle.",
         examples: [
           { jp: "妹は学生です。", mark: "は", en: "My sister is a student.", readings: ["いもうと", "がくせい"] },
           { jp: "妹も学生です。", mark: "も", en: "My sister is a student too.", readings: ["いもうと", "がくせい"] },
@@ -807,8 +807,7 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
     body: [
       {
         text:
-          "ね and よ are both said last, and they change who the sentence is " +
-          "for. ね treats what you said as something you both know. よ treats it " +
+          "ね and よ both come at the end of a sentence. ね treats what you said as something you both know. よ treats it " +
           "as news for the other person.",
       },
       {

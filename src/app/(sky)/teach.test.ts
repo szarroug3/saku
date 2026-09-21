@@ -494,7 +494,7 @@ describe("a particle's page says what the particle means", () => {
     assert.match(kara, /where something starts/, "から's page does not cover the starting point");
     assert.match(kara, /gives the reason/, "から's page does not cover the reason");
     const to = prose("to-conditional");
-    assert.match(to, /tied them together/, "と's page does not cover joining two nouns");
+    assert.match(to, /joined them/, "と's page does not cover joining two nouns");
     assert.match(to, /every time the first half does/, "と's page does not cover the conditional");
   });
 
@@ -547,7 +547,7 @@ describe("a particle's page says what the particle means", () => {
     // the words a paragraph weighing two particles uses, kept tight: "both" and
     // "the other" turn up in "the bread you are both looking at" and "every
     // other day", which compare nothing
-    const compares = (text: string) => /\bswaps?\b|\binstead of\b|\beither one\b|\beither way\b/i.test(text);
+    const compares = (text: string) => /\bswaps?\b|\binstead of\b|\beither one\b|\beither way\b|\beither particle\b/i.test(text);
     let found = 0;
     for (const note of shared) {
       const particles = writtenParticles(note);
