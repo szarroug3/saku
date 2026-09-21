@@ -16,6 +16,7 @@ import { cluster } from "@/data/grammar/clusters";
 import { CURRICULUM_LESSONS } from "@/data/grammar/lessons";
 import { kanjiRuns, PARTICLE_NOTES, type ParticleNote } from "@/data/grammar/particle-notes";
 import { PARTICLE_ROWS } from "@/data/grammar/particles";
+import { primaryPatternRecipe, recipe as recipeById } from "@/data/grammar/recipes";
 import { PARTICLE_RULE } from "@/data/phase-intros";
 import { termEntry } from "@/data/terms";
 import { emptyHistory } from "@/lib/history-ops";
@@ -447,12 +448,54 @@ describe("a particle's page says what the particle means", () => {
       assert.ok(page, `${recipe} has no page of prose`);
       assert.equal(page.title, note.title);
       assert.equal(page.paragraphs.length, note.body.length, `${recipe}'s page lost paragraphs`);
-      // the source is named, once, by its own title rather than by a bare URL
+      // the source is named, once, by its own title rather than by a bare URL.
+      // A page with no link at all says why in the data, the way a cluster
+      // without one does: って is the only one, because Tofugu has no page for it.
+      if (!note.link) {
+        assert.ok(note.noLinkReason, `${recipe} has no Read more link and no reason`);
+        assert.equal(page.link, undefined, `${recipe}'s page links something its note does not name`);
+        continue;
+      }
       assert.ok(page.link, `${recipe}'s page names no source`);
       assert.match(page.link.href, /^https:\/\//);
       assert.match(page.link.label, /^Read more: .+\(Tofugu\)$/);
       assert.ok(page.link.label.length > "Read more: (Tofugu)".length + 10, `${recipe}'s link has no title in it`);
     }
+  });
+
+  // The whole Sentences row, once Sam said to build the rest (2026-09-20: "go
+  // ahead and build all of them"). Pinned as a list so that a particle losing
+  // its page is a test that fails rather than a card that quietly goes back to
+  // saying "take a noun, add まで". から and と sit on the recipe their row on
+  // the Particle page opens, which is the page that written pattern has.
+  it("covers every particle the Particle page lists", () => {
+    const covered = new Set(recipesInScope);
+    const missing = PARTICLE_ROWS
+      .map((row) => primaryPatternRecipe(row.recipeId)?.id ?? row.recipeId)
+      .filter((id) => !covered.has(id));
+    assert.deepEqual([...new Set(missing)], [], "a particle on the Particle page has no page of prose");
+    assert.deepEqual(
+      PARTICLE_NOTES.map((n) => [...n.recipes]),
+      [
+        ["wa", "ga"], ["wo"], ["ni", "de"], ["e"], ["made", "made-ni"],
+        ["kara-reason"], ["to-conditional"], ["mo"], ["dake", "shika-nai"],
+        ["ka"], ["ne", "yo"], ["tte"],
+      ],
+      "the pages, and which particles share one, changed",
+    );
+  });
+
+  // から and と each hold two senses on one written pattern, and the page a
+  // learner opens is the pattern's. Both senses have to be on it, or half the
+  // card's own meaning line has no explanation behind it.
+  it("covers both senses on the two pages that hold two", () => {
+    const prose = (recipe: string) => (pageOf(recipe)?.paragraphs ?? []).map((p) => p.text).join("\n");
+    const kara = prose("kara-reason");
+    assert.match(kara, /where something starts/, "から's page does not cover the starting point");
+    assert.match(kara, /gives the reason/, "から's page does not cover the reason");
+    const to = prose("to-conditional");
+    assert.match(to, /tied them together/, "と's page does not cover joining two nouns");
+    assert.match(to, /every time the first half does/, "と's page does not cover the conditional");
   });
 
   it("puts it after the build and before Family", () => {
@@ -465,29 +508,58 @@ describe("a particle's page says what the particle means", () => {
     }
   });
 
-  it("prints one page word for word on the 〜は card and the 〜が card", () => {
-    const note = noteOf("wa");
-    assert.deepEqual(note.recipes, ["wa", "ga"], "は and が no longer name one page between them");
-    assert.equal(noteOf("ga"), note, "が reads some other page");
-    const wa = pageOf("wa"), ga = pageOf("ga");
-    assert.ok(wa && ga, "one of the two cards has no page");
-    assert.deepEqual(ga, wa, "the two cards print different pages");
-    // it starts from nothing: both particles are named and told apart before
-    // any paragraph compares them
-    assert.match(wa.paragraphs[0]?.text ?? "", /は marks the topic/);
-    assert.match(wa.paragraphs[0]?.text ?? "", /が marks[\s\S]*the subject/);
+  /** The particles a shared note is the page for, as they are written: 〜しか〜ない
+   * is しか, which is what its sentences mark and what its prose calls it. */
+  const writtenParticles = (note: ParticleNote) =>
+    note.recipes.map((id) => (recipeById(id)?.pattern ?? "").split("〜").find(Boolean) ?? "");
+
+  const shared = PARTICLE_NOTES.filter((n) => n.recipes.length > 1);
+
+  it("prints one page word for word on both of the cards that share it", () => {
+    assert.ok(shared.length >= 4, `only ${shared.length} pages are shared`);
+    for (const note of shared) {
+      const pages = note.recipes.map((id) => ({ id, page: pageOf(id) }));
+      for (const { id, page } of pages) assert.ok(page, `${id} has no page`);
+      const [first, ...rest] = pages;
+      for (const { id, page } of rest) {
+        assert.equal(noteOf(id), note, `${id} reads some other page`);
+        assert.deepEqual(page, first.page, `${id} and ${first.id} print different pages`);
+      }
+    }
+  });
+
+  it("names every particle it is about in its first paragraph", () => {
+    // a shared page starts from nothing: a reader can open either card first,
+    // so both particles are named and told apart before anything compares them
+    for (const note of shared) {
+      const opening = pageOf(note.recipes[0])?.paragraphs[0]?.text ?? "";
+      for (const particle of writtenParticles(note)) {
+        assert.ok(opening.includes(particle), `${note.eyebrow} opens without naming ${particle}`);
+      }
+    }
+    // and は and が say which is the topic and which the subject, in that first line
+    const wa = pageOf("wa")?.paragraphs[0]?.text ?? "";
+    assert.match(wa, /は marks the topic/);
+    assert.match(wa, /が marks[\s\S]*the subject/);
   });
 
   it("names both particles in every paragraph that compares them", () => {
-    const page = pageOf("wa");
-    // the words a paragraph weighing the two uses, kept tight: "both" and "the
-    // other" turn up in "the bread you are both looking at" and "every other
-    // day", which compare nothing
-    const compares = (page?.paragraphs ?? []).filter((p) => /\bswaps?\b|\binstead of\b|\beither one\b/i.test(p.text));
-    assert.ok(compares.length >= 2, "nothing on the page compares the two");
-    for (const para of compares) {
-      assert.ok(para.text.includes("は") && para.text.includes("が"), `"${para.text}" compares them without naming both`);
+    // the words a paragraph weighing two particles uses, kept tight: "both" and
+    // "the other" turn up in "the bread you are both looking at" and "every
+    // other day", which compare nothing
+    const compares = (text: string) => /\bswaps?\b|\binstead of\b|\beither one\b|\beither way\b/i.test(text);
+    let found = 0;
+    for (const note of shared) {
+      const particles = writtenParticles(note);
+      for (const para of pageOf(note.recipes[0])?.paragraphs ?? []) {
+        if (!compares(para.text)) continue;
+        found += 1;
+        for (const particle of particles) {
+          assert.ok(para.text.includes(particle), `"${para.text}" compares them without naming ${particle}`);
+        }
+      }
     }
+    assert.ok(found >= 4, `only ${found} paragraphs across the shared pages compare their two particles`);
   });
 
   it("says how は is read, in the words the kana cards use", () => {
@@ -549,12 +621,16 @@ describe("a particle's page says what the particle means", () => {
     assert.equal(kyou?.ruby, "きょう");
   });
 
-  it("leaves the wa-ga family page to link nothing, so the article is named once a page", () => {
-    const family = cluster("wa-ga");
-    assert.equal(family?.link, null, "the Family page links the article a second time");
-    assert.ok(family?.noLinkReason, "an empty link slot must say why");
-    assert.ok(!/no rule for choosing/.test(family?.feel ?? ""), "the Family note still says there is no rule");
-    assert.ok((family?.feel ?? "").includes(noteOf("wa").eyebrow), "the Family note does not name the page before it");
+  it("leaves the family page of a shared pair to link nothing, so the article is named once a page", () => {
+    // Both clusters sat one turn after a page that now links the same article
+    // and now states the rule the note used to say did not exist.
+    for (const [id, recipe] of [["wa-ga", "wa"], ["ni-de", "ni"]] as const) {
+      const family = cluster(id);
+      assert.equal(family?.link, null, `${id}'s Family page links the article a second time`);
+      assert.ok(family?.noLinkReason, `${id} has an empty link slot and no reason`);
+      assert.ok(!/no rule for choosing/.test(family?.feel ?? ""), `${id}'s note still says there is no rule`);
+      assert.ok((family?.feel ?? "").includes(noteOf(recipe).eyebrow), `${id}'s note does not name the page before it`);
+    }
   });
 });
 

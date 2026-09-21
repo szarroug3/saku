@@ -307,15 +307,20 @@ export const CLUSTERS: readonly Cluster[] = [
     title: "に vs で",
     gloss: "where something is vs where something happens",
     members: ["ni", "de"],
+    // SAK-470: this said there was no rule for choosing between them, which
+    // stopped being true once the two shared a page saying what each one does.
+    // The rule is the verb, and the page is one turn back in the same pager,
+    // so the note points at it. Same change the wa-ga note took.
     feel:
-      "Roughly: に marks existence and destination, で marks where an " +
-      "action happens. There is no rule for choosing between them. You learn " +
-      "which one a sentence takes from time and exposure.",
-    link: {
-      url: "https://www.tofugu.com/japanese/ni-vs-de/",
-      label: "Tofugu: に vs で",
-      lastVerified: "2026-07-17",
-    },
+      "に marks where something is or where it is going. で marks where " +
+      "something happens. The に and で page before this one goes through both " +
+      "and shows which verbs take which.",
+    // Linked from that page, under the article's own title, so a learner
+    // turning from one page to the next does not get the same link twice.
+    link: null,
+    noLinkReason:
+      "The に and で page links the Tofugu article under its own title, so the " +
+      "cluster does not link it a second time.",
   },
   // --- THE LAST MAP-ONLY CLUSTER -------------------------------------------
   // transitivity has no `members`: it is a choice between two verbs (開ける/開く)

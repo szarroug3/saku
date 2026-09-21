@@ -125,7 +125,12 @@ describe("は/が and に/で: quizzable MEANING, never a choice", () => {
     const c = cluster("ni-de");
     assert.ok(c);
     assert.deepEqual([...c.members], ["ni", "de"]);
-    assert.ok(c.link, "に/で still links out to the fuller comparison");
+    // SAK-470, second pass: に and で got the same treatment は and が did. One
+    // page of prose on both cards, one turn back in the same pager, and that
+    // page links the Tofugu comparison under its own title. So this slot is
+    // empty on purpose and says why, exactly as は/が's does.
+    assert.equal(c.link, null, "に/で links the article a second time");
+    assert.ok(c.noLinkReason, "に/で has no link and no reason");
   });
 
   test("は/が/に/で recipes exist but are MEANING-ONLY — never produced or chosen", () => {

@@ -748,4 +748,157 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
       label: "Read more: だけ for \"Only\" (Tofugu)",
     },
   },
+  {
+    recipes: ["ka"],
+    eyebrow: "What か does",
+    title: "か marks what you do not know",
+    body: [
+      {
+        text:
+          "A sentence with か on the end of it is a question. Nothing else in " +
+          "the sentence moves.",
+        examples: [{ jp: "これは何ですか。", mark: "か", en: "What is this?", readings: ["なん"] }],
+      },
+      {
+        text:
+          "English swaps two words around to ask something. Japanese leaves the " +
+          "sentence as it was and adds か.",
+        examples: [{ jp: "学生ですか。", mark: "か", en: "Are you a student?", readings: ["がくせい"] }],
+      },
+      {
+        text:
+          "A question ending in か is traditionally written with 。 at the end. " +
+          "？ turns up in casual writing now as well.",
+      },
+      {
+        heading: "か on a question word",
+        text:
+          "誰 is \"who\". Put か after it and you have 誰か, \"someone\". 何 and どこ " +
+          "work the same way.",
+        examples: [{ jp: "誰かが来ました。", mark: "か", en: "Someone came.", readings: ["だれ", "き"] }],
+      },
+      {
+        text:
+          "誰 on its own is still the question word, and the question's own か " +
+          "goes at the end.",
+        examples: [{ jp: "誰が来ましたか。", mark: "か", en: "Who came?", readings: ["だれ", "き"] }],
+      },
+      {
+        heading: "か between two things",
+        text: "か between two nouns offers a choice. English says \"or\".",
+        examples: [{ jp: "コーヒーかお茶を飲みます。", mark: "か", en: "I drink coffee or tea.", readings: ["ちゃ", "の"] }],
+      },
+      {
+        heading: "Where beginners go wrong",
+        text:
+          "か after a plain verb sounds blunt in conversation. Among friends, " +
+          "people let their voice rise instead and leave か off.",
+      },
+    ],
+    link: {
+      url: "https://www.tofugu.com/japanese-grammar/particle-ka/",
+      label: "Read more: Particle か: A Marker of the Unknown (Tofugu)",
+    },
+  },
+  {
+    recipes: ["ne", "yo"],
+    eyebrow: "ね and よ",
+    title: "What ね and よ each do",
+    body: [
+      {
+        text:
+          "ね and よ are both said last, and they change who the sentence is " +
+          "for. ね treats what you said as something you both know. よ treats it " +
+          "as news for the other person.",
+      },
+      {
+        heading: "What ね does",
+        text:
+          "Put ね on the end and you are asking the other person to agree. " +
+          "English tags a short question on: \"isn't it?\", \"right?\".",
+        examples: [{ jp: "今日は暑いですね。", mark: "ね", en: "Hot today, don't you think?", readings: ["きょう", "あつ"] }],
+      },
+      {
+        text:
+          "ね is also how you check something you are fairly sure of already.",
+        examples: [{ jp: "田中さんですね。", mark: "ね", en: "You are Tanaka, right?", readings: ["たなか"] }],
+      },
+      {
+        heading: "What よ does",
+        text:
+          "Put よ on the end and you are telling the other person something they " +
+          "did not know.",
+        examples: [{ jp: "電車が来ますよ。", mark: "よ", en: "The train is coming.", readings: ["でんしゃ", "き"] }],
+      },
+      {
+        text: "An opinion is new to whoever hears it, so an opinion often ends in よ.",
+        examples: [{ jp: "もう遅いよ。", mark: "よ", en: "It is late already.", readings: ["おそ"] }],
+      },
+      {
+        heading: "The same sentence both ways",
+        text:
+          "暑いですね says you are both feeling it. 暑いですよ says the other " +
+          "person has not noticed yet.",
+        examples: [
+          { jp: "暑いですね。", mark: "ね", en: "Hot, isn't it?", readings: ["あつ"] },
+          { jp: "暑いですよ。", mark: "よ", en: "It's hot, you know.", readings: ["あつ"] },
+        ],
+      },
+      {
+        heading: "よね",
+        text:
+          "よね puts the two together. You are telling the other person " +
+          "something and checking it with them at the same time.",
+        examples: [{ jp: "田中さんですよね。", mark: "よね", en: "You're Tanaka, aren't you?", readings: ["たなか"] }],
+      },
+      {
+        heading: "Where beginners go wrong",
+        text:
+          "Answering an invitation with いいですよ sounds cold. The person asking " +
+          "already thinks it sounds good, so いいですね is the warm answer.",
+      },
+      {
+        text:
+          "よ to someone senior can sound pushy. A plain です with no particle on " +
+          "the end is the safe answer at work.",
+      },
+    ],
+    link: {
+      url: "https://www.tofugu.com/japanese/yo-vs-ne/",
+      label: "Read more: よ and ね: What Do These Particles Really Mean to Japanese Speakers? (Tofugu)",
+    },
+  },
+  {
+    recipes: ["tte"],
+    eyebrow: "What って does",
+    title: "って passes on what someone else said",
+    body: [
+      {
+        text:
+          "Put って on the end of a sentence and you are repeating what you " +
+          "heard. Who said it often goes unsaid.",
+        examples: [{ jp: "明日は休みだって。", mark: "って", en: "I hear tomorrow is a day off.", readings: ["あした", "やす"] }],
+      },
+      {
+        text:
+          "って is the spoken form of と. 行くと言いました becomes 行くって言いました " +
+          "in conversation.",
+        examples: [{ jp: "行くって言いました。", mark: "って", en: "He said he is going.", readings: ["い", "い"] }],
+      },
+      {
+        text: "A noun keeps its だ in front of って, the way it does in front of と.",
+        examples: [{ jp: "田中さんは学生だって。", mark: "って", en: "I hear Tanaka is a student.", readings: ["たなか", "がくせい"] }],
+      },
+      {
+        heading: "Where beginners go wrong",
+        text:
+          "って is casual. In writing, or with someone you do not know, the same " +
+          "thing is said with と言っていました or そうです.",
+      },
+    ],
+    noLinkReason:
+      "Tofugu has no page for って. Their と page covers it in two lines, under " +
+      "quotations, and that page is already the Read more on 〜と, so linking it " +
+      "here would point two particle pages at one article.",
+  },
 ];
