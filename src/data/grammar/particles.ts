@@ -38,7 +38,7 @@ import type { EntryId } from "@/types/facts";
 
 /**
  * Every recipe that teaches a particle, in the order the page lists them: the
- * words that mark a noun's job first (は が を に で へ), then the ones that
+ * words that say what a noun is doing first (は が を に で へ), then the ones that
  * bound or add to it (まで までに から と も だけ しか〜ない), then the ones that
  * close a whole sentence (か ね よ って).
  *

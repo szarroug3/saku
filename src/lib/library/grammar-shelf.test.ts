@@ -66,13 +66,17 @@ describe("the grammar shelf is cut by form", () => {
     }
   });
 
-  test("the Particles section holds exactly the case/binding particles", () => {
+  test("the Particles section holds exactly the particles the Particle page lists", () => {
     const particles = grammarShelfSections().find((s) => s.label === "Particles")!;
     assert.ok(particles, "a Particles section exists");
     const ids = particles.entries.map((e) => RECIPE_OF_ENTRY.get(e.id)!.id).sort();
-    // は/が/に/で plus the pre-existing を/へ/まで/までに/だけ/しか, and か. Order
-    // within the section is teaching order (asserted rank-ascending elsewhere);
-    // membership is the point here — these eleven and nothing else.
+    // One list since SAK-470: the seventeen the Particle page teaches
+    // (src/data/grammar/particles.ts). Eleven were written out here before, so
+    // も, ね, よ, って and the noun senses of から and と were on the Particle
+    // page while their own cards said "Grammar pattern". Two of the seventeen,
+    // kara-source and to-and, have no tile of their own: each shares the one
+    // page its written pattern has (〜から "because", 〜と "whenever"), so the
+    // shelf holds fifteen.
     assert.deepEqual(ids, [
       "dake",
       "de",
@@ -81,10 +85,14 @@ describe("the grammar shelf is cut by form", () => {
       "ka",
       "made",
       "made-ni",
+      "mo",
+      "ne",
       "ni",
       "shika-nai",
+      "tte",
       "wa",
       "wo",
+      "yo",
     ]);
   });
 

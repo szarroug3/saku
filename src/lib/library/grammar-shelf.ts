@@ -37,6 +37,7 @@ import {
 import type { LibEntry } from "@/lib/library/entries";
 import type { ShelfSection } from "@/lib/library/shelf-view";
 import type { Form } from "@/lib/conjugate";
+import { PARTICLE_RECIPE_IDS as PARTICLE_PAGE_RECIPE_IDS } from "@/data/grammar/particles";
 
 /** The trailing bucket's key — the plain-form patterns (which build no shape) and
  * every pattern with no verb host at all. */
@@ -68,19 +69,12 @@ type SectionKey = Form | typeof OTHER | typeof PARTICLES;
  * comet, and there should be one answer to "is this a particle", not two lists
  * that can drift apart.
  */
-export const PARTICLE_RECIPE_IDS: ReadonlySet<string> = new Set([
-  "wa", // は — topic
-  "ga", // が — subject
-  "ni", // に — location / destination
-  "de", // で — site of an action
-  "wo", // を — direct object
-  "e", // へ — direction
-  "made", // まで — until / as far as
-  "made-ni", // までに — by (a deadline)
-  "dake", // だけ — only
-  "shika-nai", // しか〜ない — only (nothing but)
-  "ka", // か — question
-]);
+// ONE LIST, NOT TWO (SAK-470). This set was eleven ids written out here while
+// the Particle page listed seventeen from src/data/grammar/particles.ts, so も,
+// ね, よ, って and the noun senses of から and と were on the Particle page, and
+// their own cards said "Grammar pattern" and drew a comet. The page's list is
+// the list now.
+export const PARTICLE_RECIPE_IDS: ReadonlySet<string> = new Set(PARTICLE_PAGE_RECIPE_IDS);
 
 /** A case or binding particle rather than a pattern built on a verb form.
  * Read by the "Particles" section below and by whatever labels a pattern for

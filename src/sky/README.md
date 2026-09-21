@@ -6955,3 +6955,5 @@ per new page (`wo`, `ni`, `e`, `made`, `kara`, `to`, `mo`, `dake`, `ka`, `ne`,
 `tte`), the four `-same-page` shots showing a shared page printed word for word
 on its second card (`de`, `made-ni`, `shika`, `yo`), and `ni-family-note` with
 the rewritten note and no link under it.
+
+**One list of particles (2026-09-20, SAK-470).** `grammar-shelf.ts` wrote out eleven particle ids while the Particle page listed seventeen from `src/data/grammar/particles.ts`, so も, ね, よ and って were on the Particle page while their own cards said "Grammar pattern" and drew a comet. The shelf's set is built from the page's list now: those four say "Particle", draw a moon, and sit in the Atlas's Particles section. The noun senses of から and と have no tile of their own (each shares its written pattern's page), so the shelf holds fifteen.
