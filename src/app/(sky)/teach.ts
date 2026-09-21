@@ -540,10 +540,14 @@ function notePara(para: ParticleNotePara): TeachParagraph {
  * It goes between the build page and Family: the build page says how to attach
  * the particle, this says what it means, and Family puts it beside the ones it
  * is confused with. Two particles can name one note between them, and は and が
- * do: both cards print the same page, word for word, because a page about one
- * of them that leans on the other's page is a page a learner can open first and
- * not follow. The page names the article it drew on once, which is why the
- * wa-ga cluster no longer links it again on the Family page right after.
+ * do, as do に and で, まで and までに, だけ and しか, ね and よ: both cards print
+ * the same page, word for word, because a page about one of them that leans on
+ * the other's page is a page a learner can open first and not follow. The page
+ * names the article it drew on once, which is why the wa-ga and ni-de clusters
+ * no longer link it again on the Family page right after.
+ *
+ * A note with no link prints none. Only って has none, and its `noLinkReason`
+ * says why (particle-notes.ts).
  */
 function particleNotePage(recipeId: string): TeachPage | undefined {
   const note = PARTICLE_NOTES.find((n) => n.recipes.includes(recipeId));
@@ -552,7 +556,7 @@ function particleNotePage(recipeId: string): TeachPage | undefined {
     eyebrow: note.eyebrow,
     title: note.title,
     paragraphs: note.body.map(notePara),
-    link: { href: note.link.url, label: note.link.label },
+    ...(note.link ? { link: { href: note.link.url, label: note.link.label } } : {}),
   };
 }
 

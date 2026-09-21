@@ -59,6 +59,33 @@
 // used for that here are the kana cards' own (PARTICLE_RULE in phase-intros.ts,
 // NOTES in characters.ts), so a learner reads the same rule in the same words
 // wherever it comes up.
+//
+// WHICH PARTICLES SHARE A PAGE
+// ============================
+// Sam, 2026-09-20: "go ahead and build all of them." Two particles share a page
+// where a learner confuses them with each other, which is the call は and が
+// came out of: に and で, まで and までに, だけ and しか, ね and よ. へ has a
+// short page of its own that names the に and で page, because に against へ is
+// said there already and a second answer is one more thing to keep in step. は
+// against も is on も's page and names は itself, for the reason the は and が
+// page names both: a reader can open either card first.
+//
+// WHICH CARD A PAGE LANDS ON
+// ==========================
+// A note names recipe ids, and a recipe id is not always a card. 〜から is one
+// page holding "because" and "from", and 〜と is one page holding "and" and
+// "whenever", so those two notes name `kara-reason` and `to-conditional`, which
+// are the entries the Particle page's rows open (`primaryPatternRecipe`). Each
+// of the two covers both senses and says what tells them apart, because a
+// learner who opens 〜から has both of them in front of them.
+//
+// A PAGE WITH NO READ MORE
+// ========================
+// `link` is optional, and a note without one carries `noLinkReason` instead,
+// the way a cluster with no link does (clusters.ts). って is the one page here
+// with none: Tofugu has no page for it. Saying so in the data beats an
+// approximate link, which would teach a reader that our citations are
+// decorative.
 
 /** A run of kanji: one or more kanji characters with nothing between them.
  * Every run takes one authored reading. */
@@ -101,8 +128,12 @@ export interface ParticleNote {
   readonly eyebrow: string;
   readonly title: string;
   readonly body: readonly ParticleNotePara[];
-  /** The one Read more link, naming the page it drew on. */
-  readonly link: { readonly url: string; readonly label: string };
+  /** The one Read more link, naming the page it drew on. Absent where Tofugu
+   * has no page for the particle, and then `noLinkReason` says so. */
+  readonly link?: { readonly url: string; readonly label: string };
+  /** Required when there is no link. Not shown to a reader: it is the written
+   * record of a citation nobody could make, the way a cluster's is. */
+  readonly noLinkReason?: string;
 }
 
 /** The particles that have a page of prose, in the order the Particle page
@@ -263,6 +294,189 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
     link: {
       url: "https://www.tofugu.com/japanese/wa-and-ga/",
       label: "Read more: は and が: What's the Difference, Really? (Tofugu)",
+    },
+  },
+  {
+    recipes: ["wo"],
+    eyebrow: "What を does",
+    title: "を marks the thing the verb happens to",
+    body: [
+      {
+        text: "Put を after a word and that word is what the verb happens to.",
+        examples: [{ jp: "パンを食べます。", mark: "を", en: "I eat bread.", readings: ["た"] }],
+      },
+      {
+        text:
+          "を is only ever used as a particle, and it is always read \"o\". The " +
+          "line above is said \"pan o tabemasu\".",
+      },
+      {
+        text:
+          "Not every verb takes one. 食べる and 飲む happen to something. 起きる " +
+          "and 寝る do not, so neither of them has a を in front of it.",
+        examples: [{ jp: "水を飲みます。", mark: "を", en: "I drink water.", readings: ["みず", "の"] }],
+      },
+      {
+        text:
+          "を also goes on a road or a path you move along. The word in front of " +
+          "it is the route you took.",
+        examples: [{ jp: "道を歩きます。", mark: "を", en: "I walk along the road.", readings: ["みち", "ある"] }],
+      },
+      {
+        heading: "を on a place",
+        text:
+          "を and で both come after a place, and they say different things. を " +
+          "is the ground you covered. で is where you were while you did it.",
+        examples: [
+          { jp: "公園を走ります。", mark: "を", en: "I run through the park.", readings: ["こうえん", "はし"] },
+          { jp: "公園で走ります。", mark: "で", en: "I run in the park.", readings: ["こうえん", "はし"] },
+        ],
+      },
+      {
+        heading: "Where beginners go wrong",
+        text:
+          "English gives an object to verbs that Japanese does not. A bus is " +
+          "something you get on in Japanese, so 乗る takes に.",
+        examples: [{ jp: "バスに乗ります。", mark: "に", en: "I get on the bus.", readings: ["の"] }],
+      },
+      {
+        text:
+          "A verb that happens on its own never takes を. In ドアが開きます the " +
+          "door opens by itself. Put を in the sentence and you need the other " +
+          "verb, 開ける.",
+        examples: [{ jp: "ドアを開けます。", mark: "を", en: "I open the door.", readings: ["あ"] }],
+      },
+    ],
+    link: {
+      url: "https://www.tofugu.com/japanese-grammar/particle-wo/",
+      label: "Read more: Particle を: Direct Object Marker (Tofugu)",
+    },
+  },
+  {
+    recipes: ["ni", "de"],
+    eyebrow: "に and で",
+    title: "What に and で each do",
+    body: [
+      {
+        text:
+          "に and で both go after a place, so beginners mix them up. に marks " +
+          "where something is or where it is going. で marks where something " +
+          "happens.",
+      },
+      {
+        heading: "What に does",
+        text:
+          "Put に after a word and you have named one point. With いる and ある, " +
+          "that point is where the thing already is.",
+        examples: [{ jp: "学校にいます。", mark: "に", en: "I am at school.", readings: ["がっこう"] }],
+      },
+      {
+        text: "A verb of going puts に on the place you end up at.",
+        examples: [{ jp: "東京に行きます。", mark: "に", en: "I am going to Tokyo.", readings: ["とうきょう", "い"] }],
+      },
+      {
+        text:
+          "に goes on a time as well, as long as you could point at it on a " +
+          "clock or a calendar.",
+        examples: [{ jp: "七時に起きます。", mark: "に", en: "I get up at seven.", readings: ["しちじ", "お"] }],
+      },
+      {
+        heading: "What で does",
+        text: "Put で after a place and that is where the action happens.",
+        examples: [{ jp: "図書館で勉強します。", mark: "で", en: "I study at the library.", readings: ["としょかん", "べんきょう"] }],
+      },
+      {
+        text: "で also marks what you used to do something.",
+        examples: [{ jp: "ペンで書きます。", mark: "で", en: "I write with a pen.", readings: ["か"] }],
+      },
+      {
+        text:
+          "How you got somewhere counts as something you used, so a bus or a " +
+          "train takes で.",
+        examples: [{ jp: "バスで行きます。", mark: "で", en: "I go by bus.", readings: ["い"] }],
+      },
+      {
+        heading: "The same room, two particles",
+        text:
+          "One room takes either one, and the verb decides. に goes with a verb " +
+          "that says something is there. で needs a verb with something going on " +
+          "in it.",
+        examples: [
+          { jp: "教室にいます。", mark: "に", en: "I am in the classroom.", readings: ["きょうしつ"] },
+          { jp: "教室で話します。", mark: "で", en: "We talk in the classroom.", readings: ["きょうしつ", "はな"] },
+        ],
+      },
+      {
+        heading: "に and へ",
+        text:
+          "へ is a third particle for somewhere you are heading. に marks the " +
+          "point you end up at, and へ marks the way there. After 行く, the two " +
+          "sound much the same. As a particle, へ is read \"e\", so 学校へ is said " +
+          "\"gakkou e\".",
+        examples: [{ jp: "学校へ行きます。", mark: "へ", en: "I am going to school.", readings: ["がっこう", "い"] }],
+      },
+      {
+        heading: "Where beginners go wrong",
+        text:
+          "歩く and 走る do not take you anywhere by themselves, so 学校に歩きます " +
+          "is not something a Japanese speaker says. Put 行く on the end of it " +
+          "and the sentence works.",
+        examples: [{ jp: "学校に歩いて行きます。", mark: "に", en: "I walk to school.", readings: ["がっこう", "ある", "い"] }],
+      },
+      {
+        text:
+          "A thing that is somewhere takes に. An English ear likes 部屋でいます, " +
+          "which is why beginners write it.",
+        examples: [{ jp: "犬が部屋にいます。", mark: "に", en: "The dog is in the room.", readings: ["いぬ", "へや"] }],
+      },
+      {
+        text: "今日 and 毎日 take no particle at all. They say when on their own.",
+        examples: [{ jp: "今日、学校に行きます。", mark: "に", en: "I am going to school today.", readings: ["きょう", "がっこう", "い"] }],
+      },
+    ],
+    link: {
+      url: "https://www.tofugu.com/japanese/ni-vs-de/",
+      label: "Read more: に vs で: Which Particle To Choose And Why (Tofugu)",
+    },
+  },
+  {
+    recipes: ["e"],
+    eyebrow: "What へ does",
+    title: "へ marks which way you are going",
+    body: [
+      {
+        text: "Put へ after a place and you have said which way you are going.",
+        examples: [{ jp: "日本へ行きます。", mark: "へ", en: "I am going to Japan.", readings: ["にほん", "い"] }],
+      },
+      {
+        text:
+          "へ is normally read \"he\". When it points somewhere, it is read \"e\", " +
+          "so the line above is said \"nihon e ikimasu\".",
+      },
+      {
+        text:
+          "歩く says nothing about where you are going. Put a place with へ on it " +
+          "in front of 歩く and the walking has a direction.",
+        examples: [{ jp: "学校へ歩きます。", mark: "へ", en: "I walk to school.", readings: ["がっこう", "ある"] }],
+      },
+      {
+        heading: "に and へ",
+        text:
+          "に marks the point you end up at. へ marks the way there, so 日本へ行き" +
+          "ます has a little more of the going in it than 日本に行きます does. The " +
+          "に and で page goes through に in full.",
+      },
+      {
+        heading: "Where beginners go wrong",
+        text:
+          "へ marks somewhere you are heading. A place you are already at takes " +
+          "に.",
+        examples: [{ jp: "学校にいます。", mark: "に", en: "I am at school.", readings: ["がっこう"] }],
+      },
+    ],
+    link: {
+      url: "https://www.tofugu.com/japanese-grammar/particle-he/",
+      label: "Read more: Particle へ: For Marking Direction (Tofugu)",
     },
   },
 ];
