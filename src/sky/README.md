@@ -6840,3 +6840,57 @@ two-pick one, at rest and dragged to 200, 120 and 48 pixels, at 1440 and narrow,
 and on "Your sky tonight" with one pick and two.
 
 **A chip named in English is a label (2026-09-20, SAK-470).** Sam, on "Particle" under Read about it: "the font doesn't match anything else". `StarButton` drew every related chip's name with `Glyph`, the display face at glyph size, which is right for 電 and wrong for a term's English name. A name with no Japanese in it is drawn as a label in the UI face now.
+
+## A search the open collection has none of shows what the others found (2026-09-20, SAK-475)
+
+Sam, in the Atlas with Sentences open, searched を. The page said "0 Shown ·
+Matching を. Nothing in Sentences matches. Also found: 1 Kana, 17 Words, 1
+Grammar", and her words were "search を doesn't bring up the page". The 〜を page
+existed the whole time, one collection over. A chip counted it. Nothing drew
+it.
+
+**Why she was in the wrong collection.** She was not. Saku calls the particles
+"Particle" and offers them in the Observatory's Sentences row, so Sentences is
+where a learner goes to look one up. Search is scoped to the open collection,
+which makes the collection she picked the one place the answer cannot be. Three
+clicks stood between を and 〜を. The first of them was a guess.
+
+**What it does now.** When the open collection finds nothing, the other
+collections' matches are drawn where the learner is already looking: tiles under
+each collection's name, in the grid the shelves use, each opening its page in
+the panel the way any tile does. The chips stay exactly where they were, because
+switching collection is still a thing to want. Nothing changes when the open
+collection does have matches: its tiles and its chips, as before.
+
+**The order, in `src/sky/lib/atlas-search.ts`.** Grammar first when the query is
+kana, then the shelves' own teaching order. Type a run of kana and you have
+typed either a word you heard or a particle, and a beginner typing kana into the
+Atlas is usually after a particle; every particle is kana, so asking whether the
+query is kana asks whether it could be one. A kanji or an English meaning leaves
+the collections in the order the rail reads down, which is the order the search
+already came back in. Inside a group, a pattern whose written form is what was
+typed comes first: 〜を is the page を was typed for, and it cannot sit behind
+〜を + place because the search happened to rank the two together. The
+placeholder comes off either end, so ば finds 〜ば. Everything else keeps the
+app's own ranking.
+
+**The tiles are what the chips count.** The chips have never honored the status
+filter, so neither do these. The two always say the same thing. Every tile on screen also
+joins the order a shift-click runs over, so a range crosses the collections the
+way it crosses a shelf's cuts.
+
+**Tests.** `src/sky/lib/atlas-search.test.ts` on the grouping and the order:
+Grammar first for kana and not for 日 or for English, 〜を in front of 〜を +
+place, 〜ば in front of 〜ば〜ほど, everything else left as the search gave it,
+and a collection the shelves do not name sorted last rather than first. The e2e
+searches を in Sentences on the sample learner, reads the three group names in
+order, opens 〜を from its tile and finds the particle's page in the panel, then
+searches "because", which Sentences does have, and finds today's view with no
+group names at all.
+
+**Screenshots** in the lane's `shots-470-search`, each one opened:
+`before-page.png` is Sam's report, the chips and nothing else; `after-page.png`
+is the same search with Grammar, Kana and Words drawn under it;
+`after-opened.png` is the 〜を tile clicked, with "marks the direct object", the
+noun table and the example sentence in the panel; `after-has-matches.png` is
+"because" in Sentences, unchanged.
