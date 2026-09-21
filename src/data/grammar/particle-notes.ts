@@ -479,4 +479,273 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
       label: "Read more: Particle へ: For Marking Direction (Tofugu)",
     },
   },
+  {
+    recipes: ["made", "made-ni"],
+    eyebrow: "まで and までに",
+    title: "What まで and までに each do",
+    body: [
+      {
+        text:
+          "まで marks the end of a stretch. までに marks a deadline. One kana " +
+          "tells them apart, and beginners put the wrong one in.",
+      },
+      {
+        heading: "What まで does",
+        text:
+          "Put まで after a time or a place and that is where the stretch ends. " +
+          "から often marks where it started.",
+        examples: [{ jp: "一時から二時まで勉強します。", mark: "まで", en: "I study from one until two.", readings: ["いちじ", "にじ", "べんきょう"] }],
+      },
+      {
+        text: "から can be left out when you both know where the stretch began.",
+        examples: [{ jp: "駅まで歩きます。", mark: "まで", en: "I walk as far as the station.", readings: ["えき", "ある"] }],
+      },
+      {
+        text:
+          "まで goes after a verb too, and there it means until that has " +
+          "happened.",
+        examples: [{ jp: "終わるまで待ちます。", mark: "まで", en: "I will wait until it is over.", readings: ["お", "ま"] }],
+      },
+      {
+        heading: "What までに does",
+        text:
+          "Put までに after a time and you have set a deadline. Any moment " +
+          "before that time counts.",
+        examples: [{ jp: "金曜日までに本を返します。", mark: "までに", en: "I will return the book by Friday.", readings: ["きんようび", "ほん", "かえ"] }],
+      },
+      {
+        heading: "Telling the two apart",
+        text:
+          "まで covers the whole stretch up to that time, and までに picks one " +
+          "moment before it. 待つ goes on and on, so it takes まで. 帰る happens " +
+          "once, so it takes までに.",
+        examples: [
+          { jp: "六時まで待ちます。", mark: "まで", en: "I will wait until six.", readings: ["ろくじ", "ま"] },
+          { jp: "六時までに帰ります。", mark: "までに", en: "I will be home by six.", readings: ["ろくじ", "かえ"] },
+        ],
+      },
+      {
+        heading: "Where beginners go wrong",
+        text:
+          "A verb that goes on takes まで. 六時までに待ちます asks you to finish " +
+          "the waiting before six, and nobody waits that way.",
+        examples: [{ jp: "春まで待ちます。", mark: "まで", en: "I will wait until spring.", readings: ["はる", "ま"] }],
+      },
+    ],
+    link: {
+      url: "https://www.tofugu.com/japanese-grammar/particle-made/",
+      label: "Read more: Particle まで: Endpoint Marker (Tofugu)",
+    },
+  },
+  {
+    recipes: ["kara-reason"],
+    eyebrow: "What から does",
+    title: "から marks where something comes from",
+    body: [
+      {
+        text: "Put から after a word and that word is where something starts.",
+        examples: [{ jp: "東京から来ました。", mark: "から", en: "I am from Tokyo.", readings: ["とうきょう", "き"] }],
+      },
+      {
+        text: "まで often follows it and marks where the stretch ends.",
+        examples: [{ jp: "家から学校まで歩きます。", mark: "から", en: "I walk from home to school.", readings: ["いえ", "がっこう", "ある"] }],
+      },
+      {
+        text: "A time works the same way.",
+        examples: [{ jp: "九時から始まります。", mark: "から", en: "It starts at nine and runs on from there.", readings: ["くじ", "はじ"] }],
+      },
+      {
+        heading: "The same clock with に",
+        text:
+          "Both particles go on nine o'clock. に names the moment and stops " +
+          "there. から names the moment something opens and keeps going.",
+        examples: [
+          { jp: "九時に始まります。", mark: "に", en: "It starts at nine.", readings: ["くじ", "はじ"] },
+          { jp: "今日から勉強します。", mark: "から", en: "I start studying today.", readings: ["きょう", "べんきょう"] },
+        ],
+      },
+      {
+        heading: "から for a reason",
+        text:
+          "The same から comes after a whole sentence and gives the reason for " +
+          "what follows it.",
+        examples: [{ jp: "寒いから、家にいます。", mark: "から", en: "It is cold, so I am staying home.", readings: ["さむ", "いえ"] }],
+      },
+      {
+        heading: "Telling the two apart",
+        text:
+          "Look at what comes before it. A single word makes から a starting " +
+          "point. A whole sentence with its own verb makes it a reason.",
+      },
+      {
+        heading: "Where beginners go wrong",
+        text:
+          "A noun needs だ in front of a reason から. 学生から on its own reads as " +
+          "\"from a student\".",
+        examples: [{ jp: "学生だから、お金がありません。", mark: "から", en: "I am a student, so I have no money.", readings: ["がくせい", "かね"] }],
+      },
+    ],
+    link: {
+      url: "https://www.tofugu.com/japanese-grammar/particle-kara/",
+      label: "Read more: Particle から: Starting Point Marker (Tofugu)",
+    },
+  },
+  {
+    recipes: ["to-conditional"],
+    eyebrow: "What と does",
+    title: "と ties two things together",
+    body: [
+      {
+        text:
+          "Put と between two nouns and you have tied them together. English " +
+          "would use \"and\" there.",
+        examples: [{ jp: "パンとりんごを食べます。", mark: "と", en: "I eat bread and an apple.", readings: ["た"] }],
+      },
+      {
+        text:
+          "After a person, と is closer to \"with\". The person in front of it did " +
+          "the thing alongside you.",
+        examples: [{ jp: "友達と行きます。", mark: "と", en: "I am going with a friend.", readings: ["ともだち", "い"] }],
+      },
+      {
+        heading: "The second と",
+        text:
+          "There is another と, and it comes after a whole sentence. It says " +
+          "that the second half happens every time the first half does.",
+        examples: [{ jp: "雨が降ると、寒くなります。", mark: "と", en: "When it rains, it gets cold.", readings: ["あめ", "ふ", "さむ"] }],
+      },
+      {
+        text:
+          "The result has to follow on its own. Nothing you decide to do can " +
+          "come after this と, so a plan or a request takes たら.",
+        examples: [{ jp: "春になると、暖かくなります。", mark: "と", en: "When spring comes, it gets warm.", readings: ["はる", "あたた"] }],
+      },
+      {
+        heading: "Telling the two apart",
+        text:
+          "A noun in front of と ties it to the noun after it. When a whole " +
+          "sentence comes first, と is the whenever one.",
+      },
+      {
+        heading: "Where beginners go wrong",
+        text:
+          "と ties nouns together and nothing else. Two adjectives are joined " +
+          "another way, so 安いとおいしいです is not Japanese.",
+        examples: [{ jp: "私と妹は学生です。", mark: "と", en: "My sister and I are students.", readings: ["わたし", "いもうと", "がくせい"] }],
+      },
+    ],
+    link: {
+      url: "https://www.tofugu.com/japanese-grammar/particle-to/",
+      label: "Read more: Particle と: For Connecting Words Together (Tofugu)",
+    },
+  },
+  {
+    recipes: ["mo"],
+    eyebrow: "What も does",
+    title: "も adds one more to what has been said",
+    body: [
+      {
+        text:
+          "Put も after a word and that word joins the ones already named. " +
+          "English says \"too\" or \"also\".",
+        examples: [{ jp: "田中さんも先生です。", mark: "も", en: "Tanaka is a teacher too.", readings: ["たなか", "せんせい"] }],
+      },
+      {
+        text:
+          "も takes the place of は, が and を. It does not stand next to them, so " +
+          "私はも行きます is not Japanese.",
+        examples: [{ jp: "私も行きます。", mark: "も", en: "I am going too.", readings: ["わたし", "い"] }],
+      },
+      {
+        text: "The other particles stay where they are, and も follows them.",
+        examples: [{ jp: "学校にも行きます。", mark: "も", en: "I go to school too.", readings: ["がっこう", "い"] }],
+      },
+      {
+        heading: "は and も",
+        text:
+          "は picks one thing out of the things around it. も puts it back among " +
+          "them. One sentence goes either way, and the particle is the whole " +
+          "difference.",
+        examples: [
+          { jp: "妹は学生です。", mark: "は", en: "My sister is a student.", readings: ["いもうと", "がくせい"] },
+          { jp: "妹も学生です。", mark: "も", en: "My sister is a student too.", readings: ["いもうと", "がくせい"] },
+        ],
+      },
+      {
+        text: "In a negative sentence, も comes out as \"either\".",
+        examples: [{ jp: "私も行きません。", mark: "も", en: "I am not going either.", readings: ["わたし", "い"] }],
+      },
+      {
+        text: "も on a number says the number is more than you would expect.",
+        examples: [{ jp: "三時間も待ちました。", mark: "も", en: "I waited three whole hours.", readings: ["さんじかん", "ま"] }],
+      },
+      {
+        text:
+          "A question word with も on it covers everything at once. 何も with a " +
+          "negative verb is \"nothing at all\".",
+        examples: [{ jp: "何も食べませんでした。", mark: "も", en: "I ate nothing.", readings: ["なに", "た"] }],
+      },
+    ],
+    link: {
+      url: "https://www.tofugu.com/japanese-grammar/particle-mo/",
+      label: "Read more: Particle も: Addition Marker (Tofugu)",
+    },
+  },
+  {
+    recipes: ["dake", "shika-nai"],
+    eyebrow: "だけ and しか",
+    title: "What だけ and しか each do",
+    body: [
+      {
+        text:
+          "だけ and しか both mean \"only\". だけ leaves the verb alone. しか needs " +
+          "the verb in its negative form, and the English still comes out as " +
+          "\"only\".",
+      },
+      {
+        heading: "What だけ does",
+        text: "Put だけ after a word and that word is all there is.",
+        examples: [{ jp: "水だけ飲みます。", mark: "だけ", en: "I drink only water.", readings: ["みず", "の"] }],
+      },
+      {
+        text:
+          "だけ goes after a verb as well. There it limits what you are doing.",
+        examples: [{ jp: "見るだけです。", mark: "だけ", en: "I am only looking.", readings: ["み"] }],
+      },
+      {
+        heading: "What しか does",
+        text:
+          "Put しか after a word and put the verb into the negative. 飲みません " +
+          "with しか in front of it still says you drink something.",
+        examples: [{ jp: "水しか飲みません。", mark: "しか", en: "I drink only water.", readings: ["みず", "の"] }],
+      },
+      {
+        heading: "Telling the two apart",
+        text:
+          "だけ states the amount and leaves it there. しか adds that the amount " +
+          "is small, so it can sound like a complaint or like a boast about how " +
+          "little it took.",
+        examples: [
+          { jp: "一時間だけ勉強しました。", mark: "だけ", en: "I studied for one hour.", readings: ["いちじかん", "べんきょう"] },
+          { jp: "一時間しか勉強しませんでした。", mark: "しか", en: "I only studied for one hour.", readings: ["いちじかん", "べんきょう"] },
+        ],
+      },
+      {
+        heading: "Where beginners go wrong",
+        text:
+          "しか with a plain verb is the mistake to watch for. 水しか飲みます is " +
+          "not Japanese, because しか needs 飲みません at the end.",
+        examples: [{ jp: "五分しかかかりません。", mark: "しか", en: "It only takes five minutes.", readings: ["ごふん"] }],
+      },
+      {
+        text:
+          "Both of them go where が or を would have been, and that particle is " +
+          "usually dropped. 水を飲みます becomes 水だけ飲みます.",
+      },
+    ],
+    link: {
+      url: "https://www.tofugu.com/japanese-grammar/dake/",
+      label: "Read more: だけ for \"Only\" (Tofugu)",
+    },
+  },
 ];
