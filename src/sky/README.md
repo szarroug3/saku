@@ -6967,3 +6967,7 @@ Three more things from the same sitting:
 - The "What を does" pill and a page's title drew their English in the Japanese font. Both are drawn run by run now (`Mixed`), inside one span so the spaces around the kana survive the chip's flex layout.
 - A pattern's tile was wide on Sentences and a small square on Grammar, where 〜ている read "〜て…". `named` in `atlas-grid.tsx` counts every grammar pattern as a name, so both shelves draw the wide tile.
 - The Kanji shelf's "Built from" row was a `<p>` holding a `<div>`, which React reports as a hydration error in development. It is a `<div>`.
+
+## Atlas tiles share one text style (SAK-476)
+
+Sam, 2026-09-21, on the を search: "it's fine to have a different size but the text looks different too. also even within words, the font is different." A wide tile drew its English line bold and white, and a square tile drew it small and muted. In a Words cut, を stood at 24px beside 顔を… at 15px. Now the line under a glyph is the same small muted line on every tile, and a glyph is drawn large only in a cut where every glyph is one character (Kana, Radicals, Kanji). Both rules are in `atlas-grid.tsx`.
