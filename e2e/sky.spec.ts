@@ -835,6 +835,42 @@ test("the atlas opens on its question, with its shelves from a cached catalogue"
   expect(html, `the atlas sent ${(html / 1024).toFixed(0)} KB`).toBeLessThan(200 * 1024);
 });
 
+test("a search the open collection has none of draws the other collections' matches (SAK-475)", async ({ page }) => {
+  // Sam, 2026-09-20, with Sentences open: "search を doesn't bring up the
+  // page". It said "0 Shown · Matching を. Nothing in Sentences matches. Also
+  // found: 1 Kana, 17 Words, 1 Grammar", and the 〜を page sat behind a chip.
+  await page.goto("/atlas?sample");
+  await expect(page.getByRole("heading", { name: "What would you like to know?" })).toBeVisible();
+  await page.getByRole("button", { name: /^Sentences/ }).first().click();
+  await page.getByRole("searchbox").fill("を");
+
+  // the line and the chips are still what they were
+  await expect(page.getByText("Nothing in Sentences matches.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "1 Grammar" })).toBeVisible();
+
+  // the other collections' tiles are drawn under their names, Grammar first
+  // because を is kana, then the shelves' own order
+  const names = page.locator("p[class*='font-semibold'][class*='text-sky-muted']");
+  await expect(names).toHaveText(["Grammar", "Kana", "Words"]);
+
+  // and 〜を, the page the を was typed for, leads its group
+  const wo = page.getByRole("button", { name: /^〜を/ });
+  await expect(wo).toBeVisible();
+
+  // the tile opens the particle's page in the panel, as any tile does
+  await wo.click();
+  const panel = page.locator("[data-atlas-panel]");
+  await expect(panel.getByText("marks the direct object").first()).toBeVisible();
+  await expect(panel.getByText("Take a noun, just as it is, and add を.")).toBeVisible();
+
+  // a search this collection DOES have keeps today's view: its own tile, the
+  // chips, and no other collection's tiles
+  await page.getByRole("searchbox").fill("because");
+  await expect(page.getByText(/^1 Shown · Matching/)).toBeVisible();
+  await expect(page.getByRole("button", { name: "Because / so" })).toBeVisible();
+  await expect(names).toHaveCount(0);
+});
+
 test("the atlas opens on the shelf that holds what you asked for", async ({ page }) => {
   // SAK-354. /atlas?entry=kanji:日 opened 日 in the panel with the middle
   // still showing Kana, so closing the panel left you on the wrong shelf.

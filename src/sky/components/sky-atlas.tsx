@@ -36,6 +36,7 @@ import { useEntries } from "@/sky/components/use-entries";
 import { useNarrow } from "@/sky/components/use-narrow";
 import { useSelection } from "@/sky/components/use-selection";
 import { dragPanel, panelFit, panelFloor, panelRoom, panelWidth, stepPanel } from "@/sky/lib/atlas-panel";
+import { alsoFound } from "@/sky/lib/atlas-search";
 import type { CoverageCounts } from "@/sky/lib/coverage";
 import { buildGraph } from "@/sky/lib/graph";
 import { japaneseFont } from "@/sky/lib/japanese";
@@ -289,11 +290,22 @@ export function SkyAtlas({ data, lookup, picksHref, quizHref, written: Written, 
   const result = asked && answer?.query === asked ? answer : null;
   const searching = !!asked && !result;
 
-  // what the middle shows: the open shelf's cuts, or this collection's
-  // search results with a line on what the other collections found
+  // what the middle shows: the open shelf's cuts, or this collection's search
+  // results with a line on what the other collections found, and their tiles
+  // too when this collection found none
   const found = useMemo(() => result?.sections.map((section) => ({ section, shelf: data.shelves.find((s) => s.id === section.id), shown: section.items.filter(keep) })) ?? [], [result, data.shelves, keep]);
   const here = found.find((f) => f.shelf?.id === shelf?.id);
-  const elsewhere = found.filter((f) => f.shelf && f.shelf.id !== shelf?.id);
+  const elsewhere = useMemo(() => found.filter((f) => f.shelf && f.shelf.id !== shelf?.id), [found, shelf?.id]);
+  // Nothing here, and the answer one collection over: the other collections'
+  // matches are drawn where the learner is already looking (SAK-475, and
+  // `atlas-search.ts` for why). The tiles are what the chips count, so the
+  // status filter is left out of them the way it is left out of the chips.
+  const alsoHere = useMemo(
+    () => (result && !(here && here.shown.length > 0)
+      ? alsoFound(elsewhere.map((f) => ({ id: f.shelf!.id, kind: f.shelf!.kind, title: f.shelf!.title, items: itemsOf(f.section.items) })), data.shelves.map((s) => s.kind), result.query)
+      : []),
+    [result, here, elsewhere, itemsOf, data.shelves],
+  );
   const cuts = useMemo(() => {
     if (!shelf) return [];
     if (shelf.streamed) {
@@ -304,7 +316,9 @@ export function SkyAtlas({ data, lookup, picksHref, quizHref, written: Written, 
     return shelf.sections.map((s) => ({ ...s, items: s.items.filter(keep) })).filter((s) => s.items.length > 0);
   }, [shelf, keep, streamKey, streamedCuts, graph]);
   const shownOnShelf = cuts.reduce((n, s) => n + s.items.length, 0);
-  const order = useMemo(() => (result ? (here?.shown ?? []) : cuts.flatMap((c) => c.items)), [result, here, cuts]);
+  // every tile on screen, in the order it is drawn, so a shift-click runs
+  // across the other collections' tiles as it does across a shelf's cuts
+  const order = useMemo(() => (result ? [...(here?.shown ?? []), ...alsoHere.flatMap((g) => g.items.map((it) => it.id))] : cuts.flatMap((c) => c.items)), [result, here, alsoHere, cuts]);
 
   // the selection, and the entries behind it
   const selection = useSelection(order, initialEntry);
@@ -435,6 +449,9 @@ export function SkyAtlas({ data, lookup, picksHref, quizHref, written: Written, 
                       ))}
                     </p>
                   )}
+                  {alsoHere.map((g) => (
+                    <LazyTileGrid key={g.id} label={g.title} items={g.items} selected={selection.set} onPick={selection.pick} onPeek={entries.peek} />
+                  ))}
                 </>
               ) : shelf ? (
                 <>
