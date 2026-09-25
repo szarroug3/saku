@@ -5,7 +5,9 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
+import { ASSEMBLY, canonicalOrder } from "@/data/assembly";
 import { GRAMMAR_SUBJECT } from "@/data/grammar";
+import { pieceSounds } from "@/data/sentence-readings";
 import { kanjiRow } from "@/data/kanji";
 import { pitchFactId } from "@/data/pitch-facts";
 import { VOCAB, VOCAB_SUBJECT, wordMeaningFactId, wordUnitFacts } from "@/data/vocab";
@@ -80,6 +82,39 @@ describe("the sample quiz", () => {
     assert.ok(order.order!.pieces.length < 2 || !order.order!.pieces.every((p, i) => p === order.order!.answer[i]), "not dealt in order");
     assert.equal(order.answer, order.order!.answer.join(""));
     assert.ok(order.meta?.facts !== undefined);
+  });
+
+  // SAK-484: the pieces and the answer line carried no furigana. The task is
+  // the order, so a reading over 宿題 gives nothing away.
+  it("gives each piece its furigana, the pieces still in the dealt order", () => {
+    const order = cards.find((c) => c.order)!.order!;
+    assert.ok(order.sounds, "the dealt sentence has its readings");
+    assert.equal(order.sounds.length, order.pieces.length);
+    order.sounds.forEach((sound, i) => assert.equal(sound.map((r) => r.text).join(""), order.pieces[i], "a piece's readings spell the piece"));
+    assert.equal(order.answerSound?.map((r) => r.text).join(""), order.answer.join(""));
+  });
+});
+
+describe("the furigana on an ordering card's pieces (SAK-484)", () => {
+  const KANJI = /[一-鿿㐀-䶿々]/;
+
+  it("reads 私は / 宿題を / 忘れてしまった。 piece by piece", () => {
+    const sounds = pieceSounds("私は宿題を忘れてしまった。", ["私は", "宿題を", "忘れてしまった。"]);
+    assert.deepEqual(sounds?.map((s) => s.filter((r) => r.ruby).map((r) => [r.text, r.ruby])), [[["私", "わたし"]], [["宿", "しゅく"], ["題", "だい"]], [["忘", "わす"]]]);
+  });
+
+  it("reads every sentence a card can deal, with no kanji left bare", () => {
+    for (const item of ASSEMBLY) {
+      const sounds = pieceSounds(item.jp, canonicalOrder(item));
+      if (!KANJI.test(item.jp)) continue;
+      assert.ok(sounds, `${item.jp} has no readings: rerun scripts/build-sentence-readings.ts and the readings pass`);
+      const bare = sounds.flat().filter((r) => !r.ruby && KANJI.test(r.text)).map((r) => r.text);
+      assert.deepEqual(bare, [], `${item.jp}: kanji with no reading over it`);
+    }
+  });
+
+  it("prints the pieces plain when they do not spell the sentence", () => {
+    assert.equal(pieceSounds("私は宿題を忘れてしまった。", ["私は", "宿題"]), undefined);
   });
 });
 

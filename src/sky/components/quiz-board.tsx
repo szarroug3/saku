@@ -17,6 +17,7 @@ import type { RefObject } from "react";
 import type { HearComponent, PitchComponent } from "@/sky/components/lesson-card";
 import { SkyButton } from "@/sky/components/sky-button";
 import { Eyebrow } from "@/sky/components/sky-card";
+import { Sound } from "@/sky/components/teach-page";
 import { japaneseFont, optionSize, promptSize } from "@/sky/lib/japanese";
 import type { Open, QuizCard } from "@/sky/lib/quiz";
 
@@ -78,23 +79,29 @@ export function QuizPrompt({ card, listening, answered, listenRef, hear: Hear }:
  * `built` is the pieces placed so far, by their index in the deal, which is
  * how the loop keeps them; this draws them and says which index was touched. */
 export function QuizOrder({ order, built, onBuilt, onCheck }: {
-  order: { pieces: readonly string[]; answer: readonly string[] };
+  order: NonNullable<QuizCard["order"]>;
   built: readonly number[];
   onBuilt: (built: readonly number[]) => void;
   onCheck: () => void;
 }) {
+  // a piece with its furigana when the sentence has them (SAK-484), drawn the
+  // way the teaching draws a line, else the piece as written
+  const face = (i: number) => {
+    const sound = order.sounds?.[i];
+    return sound ? <Sound line={sound} /> : order.pieces[i];
+  };
   return (
     <div className="flex flex-col gap-3">
       <div className={`flex min-h-[44px] flex-wrap items-center justify-center gap-2 rounded-xl border border-dashed px-3 py-2 ${built.length ? "border-sky-line" : "border-sky-line/60"}`}>
         {built.length === 0 && <span className="text-[12.5px] text-sky-muted">Tap the pieces in order.</span>}
         {built.map((p, i) => (
-          <button key={`${p}-${i}`} type="button" onClick={() => onBuilt(built.filter((_, j) => j !== i))} className={`rounded-lg border border-sky-accent bg-sky-card-strong px-3 py-1.5 text-[17px] text-sky-ink ${japaneseFont(order.pieces[p])}`}>{order.pieces[p]}</button>
+          <button key={`${p}-${i}`} type="button" onClick={() => onBuilt(built.filter((_, j) => j !== i))} className={`rounded-lg border border-sky-accent bg-sky-card-strong px-3 py-1.5 text-[17px] text-sky-ink ${japaneseFont(order.pieces[p])}`}>{face(p)}</button>
         ))}
       </div>
       <div className="flex flex-wrap justify-center gap-2">
         {order.pieces.map((piece, i) => {
           const placed = built.includes(i);
-          return <button key={i} type="button" disabled={placed} onClick={() => onBuilt([...built, i])} className={`rounded-lg border px-3 py-1.5 text-[17px] ${placed ? "border-transparent bg-sky-card/40 text-sky-muted/50" : "border-sky-line bg-sky-card text-sky-ink hover:border-sky-accent"} ${japaneseFont(piece)}`}>{piece}</button>;
+          return <button key={i} type="button" disabled={placed} onClick={() => onBuilt([...built, i])} className={`rounded-lg border px-3 py-1.5 text-[17px] ${placed ? "border-transparent bg-sky-card/40 text-sky-muted/50" : "border-sky-line bg-sky-card text-sky-ink hover:border-sky-accent"} ${japaneseFont(piece)}`}>{face(i)}</button>;
         })}
       </div>
       <div className="flex justify-center"><SkyButton onClick={onCheck} disabled={built.length !== order.pieces.length}>Check</SkyButton></div>

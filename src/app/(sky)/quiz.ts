@@ -14,6 +14,7 @@ import { rollConstructionItem } from "@/lib/engine/number-quiz";
 import { pitchFactId, PITCH_SUBJECT } from "@/data/pitch-facts";
 import { pitchInstruction, rollPitchQuestion } from "@/lib/pitch-quiz";
 import { assemblyFacts, canonicalOrder, pickAssemblyForTiers } from "@/data/assembly";
+import { pieceSounds } from "@/data/sentence-readings";
 import { isSentenceTierMarkerFact, sentenceTierMarkerFact } from "@/lib/sentence-ordering-progress";
 import { confusableWith, SENTENCE_RULE_KIND } from "@/lib/library/entries";
 import { CONSTRUCTION_CATEGORIES, constructionConfigForFact, isConstructionFact } from "@/data/counter-categories";
@@ -609,10 +610,13 @@ function orderCard(history: HistoryFile, marker: FactId, now = Date.now()): Quiz
   const pick = entry ? offerPicker(history, now).offerPick(entry.id) : undefined;
   if (!item || !pick) return undefined;
   const answer = canonicalOrder(item);
-  const pieces = [...answer];
-  for (let i = pieces.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [pieces[i], pieces[j]] = [pieces[j], pieces[i]]; }
+  // the deal as indices into the answer, so each piece keeps its furigana
+  const deal = answer.map((_, i) => i);
+  for (let i = deal.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [deal[i], deal[j]] = [deal[j], deal[i]]; }
   // a deal that is already the answer is no question; deal again once
-  if (pieces.every((p, i) => p === answer[i]) && pieces.length > 1) pieces.push(pieces.shift()!);
+  if (deal.every((d, i) => answer[d] === answer[i]) && deal.length > 1) deal.push(deal.shift()!);
+  const pieces = deal.map((d) => answer[d]);
+  const sounds = pieceSounds(item.jp, answer);
   const agg = history.facts?.[marker];
   return {
     id: marker,
@@ -624,7 +628,7 @@ function orderCard(history: HistoryFile, marker: FactId, now = Date.now()): Quiz
     options: [],
     answerId: marker,
     answer: item.jp,
-    order: { pieces, answer },
+    order: { pieces, answer, ...(sounds ? { sounds: deal.map((d) => sounds[d]), answerSound: sounds.flat() } : {}) },
     seen: agg?.seen ?? 0,
     missed: agg?.missed ?? 0,
     teach: teachFor(pick),

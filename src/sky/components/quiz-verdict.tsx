@@ -78,7 +78,10 @@ export function QuizVerdict({ answered, card, pitch: Pitch }: {
         </p>
       )}
       <p className={`text-center font-sky-display text-[28px] leading-tight text-sky-ink ${japaneseFont(line.said)}`}>
-        {card.answerPitch !== undefined && Pitch && !line.note ? <Pitch reading={line.said} downstep={card.answerPitch} /> : line.said}
+        {card.answerPitch !== undefined && Pitch && !line.note
+          ? <Pitch reading={line.said} downstep={card.answerPitch} />
+          // an ordering card's sentence with its furigana (SAK-484)
+          : card.order?.answerSound && line.said === card.answer ? <Sound line={card.order.answerSound} /> : line.said}
       </p>
       {line.note && (
         <p className="text-center text-[13px] text-sky-muted">
