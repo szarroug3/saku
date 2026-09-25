@@ -101,8 +101,10 @@ export function kanjiRuns(jp: string): readonly string[] {
  * pick out in it, and the English. */
 export interface ParticleNoteExample {
   readonly jp: string;
-  /** The particle as it is written, marked wherever it appears in `jp`. */
-  readonly mark: string;
+  /** The particle as it is written, marked wherever it appears in `jp`. A
+   * sentence that shows two particles at once (妹は歌が上手です under
+   * "Sentences with both") lists both, and both are picked out. */
+  readonly mark: string | readonly string[];
   readonly en: string;
   /** One reading per run of kanji in `jp`, left to right, for the furigana
    * over it. Absent only for a sentence written in kana. */
@@ -216,7 +218,10 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
           "\"which one of you is the student?\". It picks you out of the group, " +
           "so it sounds like an answer to a question. An introduction would use " +
           "は.",
-        examples: [{ jp: "私が学生です。", mark: "が", en: "I am the student.", readings: ["わたし", "がくせい"] }],
+        examples: [
+          { jp: "私は学生です。", mark: "は", en: "I am a student.", readings: ["わたし", "がくせい"] },
+          { jp: "私が学生です。", mark: "が", en: "I am the student.", readings: ["わたし", "がくせい"] },
+        ],
       },
       {
         heading: "New information",
@@ -254,7 +259,7 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
           "Plenty of sentences use both. は says what the whole sentence is " +
           "about. が then picks out the part of it that everything else " +
           "describes.",
-        examples: [{ jp: "妹は歌が上手です。", mark: "が", en: "My sister is good at singing.", readings: ["いもうと", "うた", "じょうず"] }],
+        examples: [{ jp: "妹は歌が上手です。", mark: ["は", "が"], en: "My sister is good at singing.", readings: ["いもうと", "うた", "じょうず"] }],
       },
       {
         heading: "A second が",
@@ -494,7 +499,7 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
         text:
           "Put まで after a time or a place and that is where the stretch ends. " +
           "から often marks where it started.",
-        examples: [{ jp: "一時から二時まで勉強します。", mark: "まで", en: "I study from one until two.", readings: ["いちじ", "にじ", "べんきょう"] }],
+        examples: [{ jp: "一時から二時まで勉強します。", mark: ["から", "まで"], en: "I study from one until two.", readings: ["いちじ", "にじ", "べんきょう"] }],
       },
       {
         text: "から can be left out when you both know where the stretch began.",
@@ -548,7 +553,7 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
       },
       {
         text: "まで often follows it and marks where the stretch ends.",
-        examples: [{ jp: "家から学校まで歩きます。", mark: "から", en: "I walk from home to school.", readings: ["いえ", "がっこう", "ある"] }],
+        examples: [{ jp: "家から学校まで歩きます。", mark: ["から", "まで"], en: "I walk from home to school.", readings: ["いえ", "がっこう", "ある"] }],
       },
       {
         text: "A time works the same way.",

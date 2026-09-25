@@ -487,13 +487,16 @@ function particleListPage(): TeachPage {
   };
 }
 
-/** A written particle marked wherever it appears in a stretch of kana. Every
- * occurrence, not the first, so the two は of 夏は暑いですが、冬は寒いです are both
- * picked out, which is the whole point of the sentence being there. */
-function withEveryMark(text: string, mark: string): SkySoundLine {
+/** The written particles marked wherever they appear in a stretch of kana.
+ * Every occurrence, not the first, so the two は of 夏は暑いですが、冬は寒いです
+ * are both picked out, which is the whole point of the sentence being there.
+ * And every particle listed, so a sentence shown for は and が together picks
+ * out both (Sam, 2026-09-24: "the sentence highlights only one"). */
+function withEveryMark(text: string, marks: readonly string[]): SkySoundLine {
+  const each = new RegExp(`(${marks.map((m) => m.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})`);
   return text
-    .split(mark)
-    .flatMap((piece, i) => (i === 0 ? [{ text: piece }] : [{ text: mark, accent: true }, { text: piece }]))
+    .split(each)
+    .map((piece, i) => (i % 2 ? { text: piece, accent: true } : { text: piece }))
     .filter((r) => r.text);
 }
 
@@ -508,17 +511,18 @@ function withEveryMark(text: string, mark: string): SkySoundLine {
  * and the two passes cannot collide. */
 function exampleLine(ex: ParticleNoteExample): SkySoundLine {
   const readings = ex.readings ?? [];
+  const marks = typeof ex.mark === "string" ? [ex.mark] : ex.mark;
   const runs: Array<{ text: string; accent?: boolean; ruby?: string }> = [];
   let at = 0;
   let n = 0;
   for (const run of kanjiRuns(ex.jp)) {
     const from = ex.jp.indexOf(run, at);
-    if (from > at) runs.push(...withEveryMark(ex.jp.slice(at, from), ex.mark));
+    if (from > at) runs.push(...withEveryMark(ex.jp.slice(at, from), marks));
     const reading = readings[n++];
     runs.push(reading ? { text: run, ruby: reading } : { text: run });
     at = from + run.length;
   }
-  if (at < ex.jp.length) runs.push(...withEveryMark(ex.jp.slice(at), ex.mark));
+  if (at < ex.jp.length) runs.push(...withEveryMark(ex.jp.slice(at), marks));
   return runs;
 }
 

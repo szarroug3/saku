@@ -7012,3 +7012,9 @@ Past the cap the button still reads "Start lesson anyway".
 ## With no References, the order takes the whole right column (SAK-478)
 
 Sam, 2026-09-24, on a lesson of は, Simple and を: "this looks awkward. if there's no reference, just make the tonight, in order bar full height." When References was empty the sky spanned both columns and "Tonight, in order" was drawn at its usual share at the bottom right, with a hole above it. Now the sky keeps the left column either way, and with nothing to rest on the order cell is `lg:h-full`. With References, nothing changed. The e2e test opens a lesson of two particles and checks the order cell runs from the sky's top to the card's bottom.
+
+## An example about two particles picks out both (SAK-479)
+
+Sam, 2026-09-24, on the は and が page: "these examples talk about how the sentence has both but then the sentence highlights only one." 妹は歌が上手です under "Sentences with both" picked out が alone. An example's `mark` in `src/data/grammar/particle-notes.ts` now takes one particle or a list, and `exampleLine` in `teach.ts` picks out every one of them wherever it appears. Three sentences list two: 妹は歌が上手です (は and が), and 一時から二時まで勉強します and 家から学校まで歩きます (から and まで). The "marked everywhere" test now checks each marked particle on its own.
+
+From the same review: "this says that the sentence would use ha but then it uses ga." The 私は学生です paragraph on the same page talked through both versions and showed only 私が学生です, so it now shows 私は学生です and 私が学生です as a pair, the way the 猫 pair below it does.

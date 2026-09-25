@@ -583,11 +583,21 @@ describe("a particle's page says what the particle means", () => {
         const plain = ex.jp.map((r) => r.text).join("");
         const marked = ex.jp.filter((r) => r.accent);
         assert.ok(marked.length > 0, `${plain} has nothing marked in it`);
-        const mark = marked[0]?.text ?? "";
-        assert.equal(marked.length, plain.split(mark).length - 1, `${plain} marks ${mark} only once`);
+        for (const mark of new Set(marked.map((r) => r.text))) {
+          assert.equal(marked.filter((r) => r.text === mark).length, plain.split(mark).length - 1, `${plain} marks ${mark} only once`);
+        }
         assert.ok(ex.en.length > 0, `${plain} has no English`);
       }
     }
+  });
+
+  // Sam, 2026-09-24, on "Sentences with both": "these examples talk about how
+  // the sentence has both but then the sentence highlights only one."
+  it("picks out both particles in a sentence shown for the two of them", () => {
+    const shown = pageOf("wa")?.paragraphs.flatMap((p) => p.examples ?? []) ?? [];
+    const both = shown.find((ex) => ex.jp.map((r) => r.text).join("") === "妹は歌が上手です。");
+    assert.ok(both, "妹は歌が上手です is not on the は page");
+    assert.deepEqual(both.jp.filter((r) => r.accent).map((r) => r.text), ["は", "が"]);
   });
 
   // Sam: "we should have furigana in example sentences." The readings are
