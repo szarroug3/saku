@@ -411,11 +411,13 @@ export function SkyLesson({ data, drillHref, observatoryHref, written, hear, pit
           is put away, so the card has the whole column and not the column less
           a gap. */}
       <div ref={body} style={splitStyle(sky) as CSSProperties} className="flex min-h-0 flex-1 flex-col gap-x-4 gap-y-4 overflow-y-auto lg:grid lg:grid-cols-[minmax(0,1fr)_300px] lg:grid-rows-[var(--sky-row)_minmax(0,1fr)] lg:gap-y-[var(--sky-gap)] lg:overflow-hidden">
-        {/* Nothing to rest on leaves no hole: the sky takes the whole top row.
-            Dragged all the way up it is not drawn at lg at all, and it is
+        {/* Nothing to rest on: the sky keeps the left column and the order
+            takes the whole right one (SAK-478; it used to be the sky across
+            both columns and the order at the bottom of the right one, with a
+            hole above it). Dragged all the way up it is not drawn at lg at all, and it is
             always drawn below lg, where the four are a stack and the handle is
             not offered. */}
-        <div data-lesson-cell="sky" className={`relative h-[28%] min-h-[150px] shrink-0 overflow-hidden rounded-2xl border border-sky-line md:h-[42%] md:min-h-[180px] lg:col-start-1 lg:row-start-1 lg:h-auto lg:min-h-0 lg:shrink ${references.length ? "" : "lg:col-span-2"} ${skyShown(sky) ? "" : "lg:hidden"}`}>
+        <div data-lesson-cell="sky" className={`relative h-[28%] min-h-[150px] shrink-0 overflow-hidden rounded-2xl border border-sky-line md:h-[42%] md:min-h-[180px] lg:col-start-1 lg:row-start-1 lg:h-auto lg:min-h-0 lg:shrink ${skyShown(sky) ? "" : "lg:hidden"}`}>
           <SkyField
             items={data.items}
             roots={taught}
@@ -511,7 +513,7 @@ export function SkyLesson({ data, drillHref, observatoryHref, written, hear, pit
             Each panel scrolls inside itself now that each owns a cell of its
             own; the column that used to scroll them both (SAK-416) is gone
             with the column. */}
-        <div data-lesson-cell="order" className="flex min-h-0 shrink-0 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:h-[calc(58%-1rem)] lg:shrink lg:self-end">
+        <div data-lesson-cell="order" className={`flex min-h-0 shrink-0 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:shrink lg:self-end ${references.length ? "lg:h-[calc(58%-1rem)]" : "lg:h-full"}`}>
           <SkyPanel title="Tonight, in order" className="flex h-full min-h-0 w-full flex-col !p-4">
             {/* why the order runs the way it does, when tonight has a shape
                 to explain; nothing at all when it does not (SAK-464) */}

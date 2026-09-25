@@ -489,15 +489,17 @@ test("the lesson is a two by two, and each row's two panels are one height", asy
   // the right column keeps the rail's width
   expect(Math.abs(references.width - order.width)).toBeLessThanOrEqual(1);
 
-  // a lesson that rests on nothing leaves no hole: the sky takes the whole
-  // top row rather than sitting beside an empty cell
+  // a lesson that rests on nothing leaves no hole: the sky keeps the left
+  // column and the order takes the whole right one (SAK-478; it used to be
+  // the sky across both columns and a short order panel under a hole)
   await page.goto(`/lesson?sample&picks=${encodeURIComponent("primitive:圭")}`);
   await expect(page.getByRole("heading", { name: "Tonight, in order" })).toBeVisible();
   await expect(page.locator('[data-lesson-cell="references"]')).toHaveCount(0);
-  const whole = await cell("sky");
+  const same = await cell("sky");
   const alone = await cell("order");
-  expect(whole.width).toBeGreaterThan(sky.width);
-  expect(whole.x + whole.width).toBeGreaterThanOrEqual(alone.x + alone.width - 1);
+  expect(Math.abs(same.width - sky.width)).toBeLessThanOrEqual(1);
+  expect(Math.abs(alone.y - same.y)).toBeLessThanOrEqual(1);
+  expect(alone.height).toBeGreaterThan(order.height);
 
   // narrow, the four are a stack in the order they are read: the sky, the
   // details, Tonight, References, and the body scrolls to the end of it
@@ -513,6 +515,30 @@ test("the lesson is a two by two, and each row's two panels are one height", asy
   await heading.scrollIntoViewIfNeeded();
   const seen = await heading.boundingBox();
   expect(seen && seen.y).toBeLessThan(900);
+});
+
+test("with no References, the order takes the whole right column (SAK-478)", async ({ page }) => {
+  // Sam, 2026-09-24, on a lesson of は, Simple and を: "this looks awkward.
+  // if there's no reference, just make the tonight, in order bar full
+  // height." The sky spanned both columns and the order was a short panel at
+  // the bottom right with a hole above it.
+  const cell = async (name: string) => {
+    const box = await page.locator(`[data-lesson-cell="${name}"]`).boundingBox();
+    if (!box) throw new Error(`no ${name} cell`);
+    return box;
+  };
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto(`/lesson?sample&picks=${encodeURIComponent("grammar:wa,grammar:wo")}`);
+  await expect(page.getByRole("heading", { name: "Tonight, in order" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "References", exact: true })).toHaveCount(0);
+  const sky = await cell("sky");
+  const card = await cell("card");
+  const order = await cell("order");
+  // the sky keeps the left column
+  expect(sky.x + sky.width).toBeLessThanOrEqual(order.x);
+  // and the order runs from the sky's top to the card's bottom
+  expect(Math.abs(order.y - sky.y)).toBeLessThanOrEqual(1);
+  expect(Math.abs(order.y + order.height - (card.y + card.height))).toBeLessThanOrEqual(1);
 });
 
 test("the lesson's details card is dragged taller and nothing else moves (SAK-471)", async ({ page }) => {
