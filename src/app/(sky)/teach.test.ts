@@ -20,7 +20,7 @@ import { autoPatternPage, sentenceExampleFor } from "@/data/grammar/auto-page";
 import { primaryPatternRecipe, RECIPES, recipe as recipeById } from "@/data/grammar/recipes";
 import { PARTICLE_RULE } from "@/data/phase-intros";
 import { hasSentenceReadings, sentenceRuby, sentenceSlots } from "@/data/sentence-readings";
-import { SENTENCE_ORDERING_GUIDES, type SentenceOrderingTierId } from "@/data/sentence-ordering-guides";
+import { SENTENCE_ORDERING_GUIDES } from "@/data/sentence-ordering-guides";
 import { termEntry } from "@/data/terms";
 import { emptyHistory } from "@/lib/history-ops";
 import { knownFactsOf, libEntry } from "@/lib/library/entries";
@@ -31,7 +31,7 @@ import type { HistoryFile } from "@/types/store";
 import { atlasEntryFromHistory } from "./atlas";
 import type { PartedSentence } from "@/sky/lib/lesson";
 
-import { pageFromIntro, sentenceRulePages } from "./teach";
+import { pageFromIntro } from "./teach";
 
 const NOW = Date.UTC(2026, 8, 8);
 const VERBS = grammarConceptEntry("verb-classes");
@@ -716,8 +716,14 @@ describe("the In a sentence block prints furigana over its kanji", () => {
       const line = pageFromIntro(autoPatternPage(r)).examples?.[0]?.japanese;
       if (line) lines.push({ jp: line.map((run) => run.text).join(""), line });
     }
-    for (const tier of Object.keys(SENTENCE_ORDERING_GUIDES) as SentenceOrderingTierId[]) {
-      for (const page of sentenceRulePages(tier)) {
+    // every pattern claimed, so every type's page shows every example
+    const history = emptyHistory();
+    for (const r of RECIPES) {
+      const entry = libEntry(patternEntry(r.id));
+      if (entry) for (const f of knownFactsOf(entry)) history.claims = { ...history.claims, [f]: NOW };
+    }
+    for (const tier of Object.keys(SENTENCE_ORDERING_GUIDES)) {
+      for (const page of atlasEntryFromHistory(history, `writing-rule:sentence-rule-${tier}`, NOW)?.teach?.pages ?? []) {
         for (const ex of page.examples ?? []) lines.push({ jp: ex.japanese.map((run) => run.text).join(""), line: ex.japanese });
       }
     }

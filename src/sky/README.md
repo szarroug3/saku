@@ -7022,3 +7022,11 @@ From the same review: "this says that the sentence would use ha but then it uses
 ## A second full read of the particle pages (SAK-479)
 
 Sam, 2026-09-24: "'が goes on the part your listener does not have yet.' does not have is jargon. it should be does not know." And: "seems like a lot of little issues like this. go through these again and check them carefully." So every page in `particle-notes.ts` was read again, line by line, and 27 lines changed. The kind of thing that went: a figurative word where a plain one does the same work ("the news about that thing", "sets today against", "the ground you covered", "An English ear likes", "comes out as", "tags a short question on", "sounds cold", "the warm answer", "passes on"), a grammar term a beginner may not have ("clause", "object"), a comma tail ("and it goes on from there"), and "turned up" for "came". No grammar claim changed.
+
+## Furigana on the "In a sentence" block (SAK-480)
+
+Sam, 2026-09-25: the Japanese sentence in a lesson card's "In a sentence" block needs furigana. Another session built it on the branch `furigana-sentence`, and its two commits were brought over here. Readings for all 119 sentences the block can show live in `src/data/generated/sentence-readings.json`, made by `scripts/build-sentence-readings.ts` (the list) and `scripts/ingest/teach_sentence_readings.py` (the readings, with fugashi and unidic-lite the way the word pages' sentences were read, and an overrides list for the tokenizer's mistakes). `src/data/sentence-readings.ts` turns a row into ruby runs, one reading per kanji (学 がく, 生 せい), and one reading over the whole word for a jukujikun (今日, 明日, 部屋). Every reading was checked by hand twice, once in that session and once here.
+
+Two things left as built, for Sam to change if she wants: each kanji carries its own reading, the way the word pages' sentences do, where the particle pages put one reading over a run of kanji; and the part chips under the sentence ("Topic" over 私は) have no furigana.
+
+On the way in, `sentenceRulePages` went back to being private: the test that walks every sentence type's page builds the pages through `atlasEntryFromHistory` with every pattern claimed.
