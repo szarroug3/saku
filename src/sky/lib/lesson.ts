@@ -190,8 +190,12 @@ export interface TeachExample {
 
 /** A sentence as runs of text. A run with a label is one of the sentence's
  * parts ("Topic" over 私は); the part this page teaches is marked active.
- * Runs without a label are the text between parts. */
-export type PartedSentence = ReadonlyArray<{ text: string; label?: string; active?: boolean }>;
+ * Runs without a label are the text between parts.
+ *
+ * `sound` is the same text with the furigana over its kanji, as a SoundLine
+ * whose runs join back into `text` (私は: 私 carrying わたし, then は). Absent
+ * where nothing knows the readings, and the run prints as `text`. */
+export type PartedSentence = ReadonlyArray<{ text: string; label?: string; active?: boolean; sound?: SoundLine }>;
 
 interface LessonStep {
   id: string;

@@ -40,6 +40,7 @@ import { wordPitch } from "@/data/pitch";
 import { TERMS, termEntry } from "@/data/terms";
 import { readingUnits, vocabRow } from "@/data/vocab";
 import { exampleFor } from "@/data/word-examples";
+import { sentenceRuby } from "@/data/sentence-readings";
 import { lessonsForTier, positionedStepParts, stepPartOrder, type PositionedStepPart, type StepKey, type TierExample } from "@/lib/sentence-rule-walk";
 import { libEntry } from "@/lib/library/entries";
 import { standingFor } from "./learner";
@@ -62,6 +63,21 @@ const REGISTER: Record<string, { label: string; desc: string }> = {
 function marked(jp: string, span: readonly [number, number]): PartedSentence {
   const [a, b] = span;
   return [{ text: jp.slice(0, a) }, { text: jp.slice(a, b), label: "The verb", active: true }, { text: jp.slice(b) }].filter((r) => r.text);
+}
+
+/** A sentence's parts with the furigana over their kanji: each part carries
+ * its own stretch of the sentence's readings, so the part the page teaches
+ * keeps its accent and the readings sit over the kanji in every part. The
+ * readings are the ones the readings pass worked out for this sentence (see
+ * src/data/sentence-readings.ts); a sentence it has no row for is left plain. */
+function withFurigana(jp: string, line: PartedSentence): PartedSentence {
+  let at = 0;
+  return line.map((run) => {
+    const from = at;
+    at += run.text.length;
+    const sound = sentenceRuby(jp, from, at);
+    return sound?.some((s) => s.ruby) ? { ...run, sound } : run;
+  });
 }
 
 /** A kana's romaji, from the character sets. */
@@ -389,7 +405,7 @@ function sentenceRulePages(tier: SentenceOrderingTierId, readable?: ReadonlySet<
     return {
       natural: runs(example.en, positionedStepParts(example.en, example, order, "en"), active),
       ordered: runs(ordered, positionedStepParts(ordered, example, order, "enOrdered"), active),
-      japanese: runs(example.jp, positionedStepParts(example.jp, example, order, "jp"), active),
+      japanese: withFurigana(example.jp, runs(example.jp, positionedStepParts(example.jp, example, order, "jp"), active)),
     };
   };
   const intro: TeachPage = {
@@ -397,7 +413,7 @@ function sentenceRulePages(tier: SentenceOrderingTierId, readable?: ReadonlySet<
     title: g.title,
     hook: g.hook,
     paragraphs: g.body,
-    ...(g.example ? { examples: [{ natural: [{ text: g.example.en }], ordered: [{ text: g.example.enOrdered }], japanese: [{ text: g.example.jp }] }] } : {}),
+    ...(g.example ? { examples: [{ natural: [{ text: g.example.en }], ordered: [{ text: g.example.enOrdered }], japanese: withFurigana(g.example.jp, [{ text: g.example.jp }]) }] } : {}),
   };
   return [
     intro,
@@ -731,7 +747,7 @@ export function pageFromIntro(intro: PhaseIntro, mark?: string): TeachPage {
     });
   }
   const ex = intro.sentenceExample;
-  const examples = ex ? [{ natural: [{ text: ex.en }], japanese: [{ text: ex.jp.slice(0, ex.span[0]) }, { text: ex.jp.slice(ex.span[0], ex.span[1]), label: "Pattern", active: true }, { text: ex.jp.slice(ex.span[1]) }].filter((r) => r.text) }] : undefined;
+  const examples = ex ? [{ natural: [{ text: ex.en }], japanese: withFurigana(ex.jp, [{ text: ex.jp.slice(0, ex.span[0]) }, { text: ex.jp.slice(ex.span[0], ex.span[1]), label: "Pattern", active: true }, { text: ex.jp.slice(ex.span[1]) }].filter((r) => r.text)) }] : undefined;
   return {
     // the page's own name on the pager pill (〜ので, "The て/で-form"); the
     // app's eyebrow is the same "Grammar" on every generated page

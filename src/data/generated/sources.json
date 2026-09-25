@@ -516,6 +516,11 @@
       "script": "scripts/build-scheduling-preview.mjs",
       "why": "no upstream archive: built from committed data by scripts/build-scheduling-preview.mjs."
     },
+    "sentence-readings.json": {
+      "archives": [],
+      "script": "scripts/build-sentence-readings.ts",
+      "why": "no upstream archive: the sentences are listed from committed code and data by scripts/build-sentence-readings.ts, and scripts/ingest/teach_sentence_readings.py reads them with fugashi + unidic-lite against vocab.json's own align readings, the same pass word-examples.json's kr comes from. Unidic-lite is a pip package, not a hashed archive."
+    },
     "sky-catalogue-base.json": {
       "archives": [],
       "script": "scripts/build-catalogues.mjs",

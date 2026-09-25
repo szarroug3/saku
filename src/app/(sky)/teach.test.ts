@@ -16,12 +16,15 @@ import { cluster } from "@/data/grammar/clusters";
 import { CURRICULUM_LESSONS } from "@/data/grammar/lessons";
 import { kanjiRuns, PARTICLE_NOTES, type ParticleNote } from "@/data/grammar/particle-notes";
 import { PARTICLE_ROWS } from "@/data/grammar/particles";
-import { primaryPatternRecipe, recipe as recipeById } from "@/data/grammar/recipes";
+import { autoPatternPage, sentenceExampleFor } from "@/data/grammar/auto-page";
+import { primaryPatternRecipe, RECIPES, recipe as recipeById } from "@/data/grammar/recipes";
 import { PARTICLE_RULE } from "@/data/phase-intros";
+import { hasSentenceReadings } from "@/data/sentence-readings";
+import { SENTENCE_ORDERING_GUIDES } from "@/data/sentence-ordering-guides";
 import { termEntry } from "@/data/terms";
 import { emptyHistory } from "@/lib/history-ops";
 import { knownFactsOf, libEntry } from "@/lib/library/entries";
-import { readableTierExamples } from "@/lib/sentence-rule-walk";
+import { readableTierExamples, TIER_EXAMPLES } from "@/lib/sentence-rule-walk";
 import type { EntryId } from "@/types/facts";
 import type { HistoryFile } from "@/types/store";
 
@@ -671,6 +674,52 @@ describe("a Family table opens the pattern a row names", () => {
     const sent = new Set((atlasEntryFromHistory(emptyHistory(), "grammar:wa", NOW)?.items ?? []).map((x) => x.id));
     for (const id of familyOf("wa")?.opens ?? []) {
       if (id) assert.ok(sent.has(id), `${id} did not travel with は, so its row would open nothing`);
+    }
+  });
+});
+
+// Sam, 2026-09-25: the "In a sentence" block printed 私は学生です with no
+// furigana. The readings come from src/data/sentence-readings.ts, generated
+// for every sentence the block can show.
+describe("the In a sentence block prints furigana over its kanji", () => {
+  it("reads 私は学生です over its kanji and keeps the pattern in the accent", () => {
+    const wa = recipeById("wa");
+    assert.ok(wa, "no recipe wa");
+    const line = pageFromIntro(autoPatternPage(wa)).examples?.[0]?.japanese;
+    assert.ok(line, "the は page has no sentence");
+    assert.equal(line.map((r) => r.text).join(""), "私は学生です。");
+    const pattern = line.find((r) => r.active);
+    assert.equal(pattern?.text, "は");
+    assert.equal(pattern?.sound, undefined, "the pattern is kana and takes no reading");
+    const ruby = line.flatMap((r) => r.sound ?? []).filter((s) => s.ruby).map((s) => [s.text, s.ruby]);
+    assert.deepEqual(ruby, [["私", "わたし"], ["学", "がく"], ["生", "せい"]]);
+  });
+
+  it("has a reading row for every sentence the block can show", () => {
+    const shown = new Set<string>();
+    for (const r of RECIPES) {
+      const ex = sentenceExampleFor(r);
+      if (ex) shown.add(ex.jp);
+    }
+    for (const g of Object.values(SENTENCE_ORDERING_GUIDES)) if (g.example) shown.add(g.example.jp);
+    for (const list of Object.values(TIER_EXAMPLES)) for (const ex of list) shown.add(ex.jp);
+    const missing = [...shown].filter((jp) => !hasSentenceReadings(jp));
+    assert.deepEqual(missing, [], "rerun scripts/build-sentence-readings.ts and scripts/ingest/teach_sentence_readings.py");
+  });
+
+  it("puts kana over kanji and nothing else, and every part still spells its text", () => {
+    for (const r of RECIPES) {
+      const ex = sentenceExampleFor(r);
+      if (!ex) continue;
+      const line = pageFromIntro(autoPatternPage(r)).examples?.[0]?.japanese ?? [];
+      for (const run of line) {
+        if (!run.sound) continue;
+        assert.equal(run.sound.map((s) => s.text).join(""), run.text, `${ex.jp}: a part's readings do not spell it`);
+        for (const s of run.sound.filter((s) => s.ruby)) {
+          assert.match(s.text, /^[一-龯㐀-䶿々]+$/, `${ex.jp}: "${s.text}" is not kanji and has a reading over it`);
+          assert.match(s.ruby!, /^[぀-ゟ]+$/, `${ex.jp}: "${s.ruby}" is not kana`);
+        }
+      }
     }
   });
 });

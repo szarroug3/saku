@@ -42,7 +42,7 @@ export function Parted({ line, className = "" }: { line: PartedSentence; classNa
   return (
     <p className={`text-sky-ink ${className}`}>
       {line.map((run, i) => (
-        <span key={i} className={run.active ? "font-semibold text-sky-accent" : run.label ? "font-medium" : ""}>{run.text}</span>
+        <span key={i} className={run.active ? "font-semibold text-sky-accent" : run.label ? "font-medium" : ""}>{run.sound ? <Sound line={run.sound} /> : run.text}</span>
       ))}
     </p>
   );
