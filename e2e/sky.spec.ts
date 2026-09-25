@@ -1683,6 +1683,32 @@ test("a word's example sentence has the furigana over its kanji", async ({ page 
   expect(box.off).toBeLessThan(4);
 });
 
+/** Every reading drawn on the page: the text under it and the kana over it. */
+async function rubies(page: Page): Promise<string[][]> {
+  return page.locator("ruby").evaluateAll((els) => els.map((el) => {
+    const rt = el.querySelector("rt");
+    return [(el.textContent ?? "").slice(0, (el.textContent ?? "").length - (rt?.textContent ?? "").length), rt?.textContent ?? ""];
+  }));
+}
+
+test("the 々 page puts ときどき over 時々", async ({ page }) => {
+  // SAK-484. The page's whole point is that 時々 reads ときどき and 人々 reads
+  // ひとびと, and neither reading was over the word.
+  await page.goto(`/atlas?sample&entry=${encodeURIComponent("writing-rule:iteration-mark")}`);
+  await expect(page.getByRole("heading", { name: "々 repeats the kanji before it." })).toBeVisible();
+  await expect.poll(() => rubies(page)).toEqual(expect.arrayContaining([["時々", "ときどき"], ["人々", "ひとびと"], ["時", "とき"]]));
+});
+
+test("a verb pair's example sentences have the furigana over their kanji", async ({ page }) => {
+  // SAK-484. お金が出た and お金を出した printed bare under 出る and 出す.
+  await page.goto(`/atlas?sample&entry=${encodeURIComponent("transitivity:出る/出す")}`);
+  await expect(page.getByText("It happens on its own")).toBeVisible();
+  await expect.poll(() => rubies(page)).toEqual(expect.arrayContaining([["金", "かね"], ["出", "で"], ["出", "だ"]]));
+  // the verb is still the part picked out, reading and all
+  const verb = page.locator("span.text-sky-accent", { has: page.locator("ruby") }).first();
+  await expect(verb.locator("rt")).toHaveText("で");
+});
+
 test("the why behind writing early folds open under the card that raises it", async ({ page }) => {
   await page.goto(`/atlas?sample&entry=${encodeURIComponent("kanji:日")}`);
   await page.getByRole("button", { name: "Open How it's written" }).click();
