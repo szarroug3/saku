@@ -191,7 +191,7 @@ export function SkyObservatory({ data, cap = COMFORTABLE_WEIGHT, lessonHref, ini
     "Nothing yet": "Pick anything to start.",
     Light: "Room for more.",
     Medium: "Room for more.",
-    Full: "A full lesson, right at the limit.",
+    Full: "A full lesson.",
     "Too much": "That's more than a comfortable lesson.",
   }[size];
   const startLabel = over ? "Start lesson anyway" : "Start lesson";

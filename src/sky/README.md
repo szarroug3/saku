@@ -6996,7 +6996,7 @@ A particle is a grammar pattern and weighs 3 like any other (Sam changed her min
 | nothing picked | Nothing yet | Pick anything to start. |
 | under a third of the cap (1 to 3) | Light | Room for more. |
 | under two thirds (4 to 7) | Medium | Room for more. |
-| up to and including the cap (8 to 12) | Full | A full lesson, right at the limit. |
+| up to and including the cap (8 to 12) | Full | A full lesson. |
 | over the cap | Too much | That's more than a comfortable lesson. |
 
 Past the cap the button still reads "Start lesson anyway".
