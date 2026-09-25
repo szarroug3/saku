@@ -22,6 +22,18 @@ export function japaneseFont(text: string): string {
   return isJapanese(text) ? "font-kana" : "";
 }
 
+/** A kanji, or the iteration mark that repeats one. */
+const KANJI = /[々㐀-䶿一-鿿]/;
+
+/** The reading a word's chip prints beside the word (SAK-483), when it has
+ * one worth printing: a word written with kanji, whose reading is not the word
+ * itself. A kanji or a radical chip has an English gloss and no reading here,
+ * and a word written in kana is its own reading. */
+export function chipReading(item: { kind: string; glyph: string; reading?: string }): string | undefined {
+  if (item.kind !== "word" || !item.reading || item.reading === item.glyph || !KANJI.test(item.glyph)) return undefined;
+  return item.reading;
+}
+
 /** One stretch of a sentence, and which face it is drawn in. */
 interface TextRun {
   readonly text: string;

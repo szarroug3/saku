@@ -3,7 +3,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { mixedRuns, optionSize, promptSize } from "@/sky/lib/japanese";
+import { chipReading, mixedRuns, optionSize, promptSize } from "@/sky/lib/japanese";
 
 describe("promptSize", () => {
   it("draws every short prompt at the same size", () => {
@@ -138,5 +138,23 @@ describe("mixedRuns (SAK-443)", () => {
 
   it("draws punctuation on its own in the UI face when nothing else is there", () => {
     assert.deepEqual(mixedRuns("..."), [{ text: "...", japanese: false }]);
+  });
+});
+
+describe("chipReading", () => {
+  // SAK-483: the related-word chips on a kanji or radical card printed 今日
+  // and 申し込み with no reading
+  it("gives a word written with kanji its reading", () => {
+    assert.equal(chipReading({ kind: "word", glyph: "今日", reading: "きょう" }), "きょう");
+    assert.equal(chipReading({ kind: "word", glyph: "申し込み", reading: "もうしこみ" }), "もうしこみ");
+    assert.equal(chipReading({ kind: "word", glyph: "人々", reading: "ひとびと" }), "ひとびと");
+  });
+
+  it("leaves a kanji, a radical and a kana word as they are", () => {
+    assert.equal(chipReading({ kind: "kanji", glyph: "日", reading: "にち" }), undefined);
+    assert.equal(chipReading({ kind: "radical", glyph: "氵" }), undefined);
+    assert.equal(chipReading({ kind: "word", glyph: "これ", reading: "これ" }), undefined);
+    assert.equal(chipReading({ kind: "word", glyph: "テレビ", reading: "てれび" }), undefined);
+    assert.equal(chipReading({ kind: "word", glyph: "今日" }), undefined);
   });
 });

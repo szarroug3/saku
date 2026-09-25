@@ -1858,6 +1858,43 @@ test("a kanji card's Readings fold puts on'yomi under its own heading and gives 
   await expect(kyuujitsu.locator("rt")).toHaveText(["きゅう", "じつ"]);
 });
 
+test("a word card's forms tables put the reading over each form's kanji (SAK-483)", async ({ page }) => {
+  // Every cell under "Written" printed bare: 食べます, 食べさせられる.
+  await page.goto(`/atlas?sample&entry=${encodeURIComponent("word:食べる")}`);
+  await expect(page.getByRole("heading", { name: "What would you like to know?" })).toBeVisible();
+  await page.getByRole("button", { name: "Open Plain and polite" }).click();
+  const panel = page.locator(`[id="${await page.getByRole("button", { name: "Close Plain and polite" }).getAttribute("aria-controls")}"]`);
+  await expect(panel).toBeVisible();
+  // た over 食, and the rest of 食べます plain after it (the cell's text
+  // content reads the ruby's reading in with its kanji)
+  const polite = panel.locator("tbody tr").filter({ hasText: "polite" }).locator("td").nth(1);
+  await expect(polite.locator("ruby")).toHaveText("食た");
+  await expect(polite.locator("ruby rt")).toHaveText(["た"]);
+  await expect(polite).toHaveText("食たべます");
+  // every form in the table has a reading over its kanji
+  const cells = panel.locator("tbody tr td:nth-child(2)");
+  const count = await cells.count();
+  expect(count).toBeGreaterThan(1);
+  for (let i = 0; i < count; i++) await expect(cells.nth(i).locator("ruby rt")).toHaveCount(1);
+});
+
+test("a kanji card's word chips show each word's reading (SAK-483)", async ({ page }) => {
+  // 今日 and 真面目 sat under "Words written with it" with no reading.
+  await page.goto(`/atlas?sample&entry=${encodeURIComponent("kanji:日")}`);
+  await expect(page.getByRole("heading", { name: "What would you like to know?" })).toBeVisible();
+  await page.getByRole("button", { name: /^Open Words written with it/ }).click();
+  const panel = page.locator(`[id="${await page.getByRole("button", { name: /^Close Words written with it/ }).getAttribute("aria-controls")}"]`);
+  await expect(panel).toBeVisible();
+  const kyou = panel.getByRole("button").filter({ hasText: "今日" }).first();
+  await expect(kyou).toContainText("きょう");
+  // and a kanji chip keeps its English and nothing else
+  await page.getByRole("button", { name: /^Open Kanji written with it/ }).click();
+  const kanji = page.locator(`[id="${await page.getByRole("button", { name: /^Close Kanji written with it/ }).getAttribute("aria-controls")}"]`);
+  const chip = kanji.getByRole("button").first();
+  await expect(chip).toBeVisible();
+  expect(await chip.textContent()).not.toMatch(/[぀-ゟ]/);
+});
+
 test("every line on the sky is the same line, and none of them is dashed", async ({ page }) => {
   // SAK-338. A line used to take its dash and its fade from the standing of
   // the star it pointed AT, so the same edge read differently depending on

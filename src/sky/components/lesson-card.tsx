@@ -22,7 +22,7 @@ import { FoldRow, SkyChip } from "@/sky/components/sky-button";
 import { Eyebrow } from "@/sky/components/sky-card";
 import { StandingChip } from "@/sky/components/standing-legend";
 import { Pager, Parted, Sound, Table, TeachPageView } from "@/sky/components/teach-page";
-import { japaneseFont } from "@/sky/lib/japanese";
+import { chipReading, japaneseFont } from "@/sky/lib/japanese";
 import type { LessonTeach, SoundLine, TeachPage } from "@/sky/lib/lesson";
 import { cutLine } from "@/sky/lib/sound-line";
 import { typeLabel } from "@/sky/lib/tokens";
@@ -96,8 +96,15 @@ export type HearComponent = ComponentType<{ glyph: string; word?: string; downst
  *
  * items-center, not items-baseline (SAK-415): an 18px glyph beside a 12.5px
  * gloss centers on the pill rather than hanging the gloss off the glyph's
- * baseline, which left the pair sitting high. */
-function StarButton({ item, note, onSelect }: { item: SkyItem; note?: string; onSelect: (id: string) => void }) {
+ * baseline, which left the pair sitting high.
+ *
+ * A word's chip prints its reading in the note slot when nothing else is
+ * there (SAK-483): 今日 きょう today, the way "Written with" prints a kanji's
+ * reading beside it. Beside the word rather than over it, because ruby over an
+ * 18px glyph comes out near 10px, and a row of chips where only some carry
+ * ruby would be two heights. */
+function StarButton({ item, note: given, onSelect }: { item: SkyItem; note?: string; onSelect: (id: string) => void }) {
+  const note = given ?? chipReading(item);
   return (
     <button type="button" onClick={() => onSelect(item.id)} className="inline-flex items-center gap-2 rounded-lg border border-sky-line px-2.5 py-1.5 text-left hover:border-sky-accent">
       {/* a term or a page is named in English, and an English name in the

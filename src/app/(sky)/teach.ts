@@ -15,7 +15,7 @@ import { wordContrastNoteFor } from "@/data/word-contrast-notes";
 import { builtPieces } from "@/data/kanji-etymology";
 import { teachablePieceMeaning } from "@/lib/kanji-parts";
 import { usedAsPartIn } from "@/lib/library/components";
-import { piecesOf } from "@/lib/library/word-pieces";
+import { piecesOf, type WordPiece } from "@/lib/library/word-pieces";
 import { derivePosition } from "@/lib/radical-position";
 import { formsOfWord, wordFormKind } from "@/lib/word-forms";
 import { COUNTER_CURRICULUM, counterForm, counterRoleNote } from "@/data/counters";
@@ -39,7 +39,7 @@ import { getMnemonic, type SoundLine } from "@/data/mnemonics";
 import { numberConstructionFor } from "@/data/number-construction";
 import { wordPitch } from "@/data/pitch";
 import { TERMS, termEntry } from "@/data/terms";
-import { readingUnits, vocabRow } from "@/data/vocab";
+import { readingUnits, vocabRow, type VocabRow } from "@/data/vocab";
 import { exampleFor } from "@/data/word-examples";
 import { sentenceRuby, slotRuby } from "@/data/sentence-readings";
 import { lessonsForTier, positionedStepParts, stepPartOrder, type PositionedStepPart, type StepKey, type TierExample } from "@/lib/sentence-rule-walk";
@@ -217,6 +217,42 @@ function wordSound(word: string): SkySoundLine {
   return pieces.map((p) => (p.kind === "kanji" ? { text: p.written, ruby: p.reading } : { text: p.text }));
 }
 
+const KANJI = /[々〆㐀-䶿一-鿿]/;
+
+/** One form of a word with its furigana (SAK-483), from the form written
+ * (食べさせられる) and the same form built from the word's kana
+ * (たべさせられる).
+ *
+ * Conjugation only ever changes the kana after the last kanji, so the stem, the
+ * dictionary spelling up to and including its last kanji (食, or 申し込 in
+ * 申し込む), is the part that stays fixed. What follows it in the written form
+ * is the kana the form adds, and the kana spelling ends with the same kana, so
+ * what comes before them in the kana spelling is what the stem says in this
+ * form. When that is what the word's alignment says the stem says (た for 食),
+ * each kanji takes its own reading from the alignment. When the stem is one
+ * kanji and says something else in this form (来 is こ in 来ない), that kanji
+ * takes what it says here. A word that does not split by kanji (下手, 真似る)
+ * carries the stem's reading over the whole stem, the way `wordSound` does for
+ * the word itself. Anything else prints plain, never with a reading guessed. */
+function formSound(row: VocabRow, pieces: readonly WordPiece[] | null, written: string, reading: string | undefined): SkySoundLine {
+  const plain: SkySoundLine = [{ text: written }];
+  const chars = [...row.keb];
+  const last = chars.findLastIndex((c) => KANJI.test(c));
+  if (last < 0 || !reading) return plain;
+  const stem = chars.slice(0, last + 1).join("");
+  if (!written.startsWith(stem)) return plain;
+  const tail = written.slice(stem.length);
+  if (!reading.endsWith(tail) || reading.length === tail.length) return plain;
+  const said = reading.slice(0, reading.length - tail.length);
+  const rest: SkySoundLine = tail ? [{ text: tail }] : [];
+  const stemPieces = pieces?.slice(0, pieces.findLastIndex((p) => p.kind === "kanji") + 1);
+  if (stemPieces && stemPieces.map((p) => (p.kind === "kanji" ? p.reading : p.text)).join("") === said) {
+    return [...stemPieces.map((p) => (p.kind === "kanji" ? { text: p.written, ruby: p.reading } : { text: p.text })), ...rest];
+  }
+  if (!pieces || [...stem].length === 1) return [{ text: stem, ruby: said }, ...rest];
+  return plain;
+}
+
 export function teachFor(item: SkyItem, scope: TeachScope = {}): LessonTeach {
   const t: LessonTeach = {};
   const glyph = item.glyph;
@@ -297,7 +333,9 @@ export function teachFor(item: SkyItem, scope: TeachScope = {}): LessonTeach {
     const contrast = wordContrastNoteFor(glyph);
     if (contrast) t.notes = [contrast];
     const groups = row ? formsOfWord(row) : null;
-    if (groups) t.tables = groups.map((g) => ({ title: g.title, heads: ["Form", "Written"], rows: g.rows.map((r) => [[{ text: r.label }], [{ text: r.value }]]) }));
+    // each form with its furigana over the kanji (SAK-483)
+    const pieces = row ? piecesOf(row) : null;
+    if (groups && row) t.tables = groups.map((g) => ({ title: g.title, heads: ["Form", "Written"], rows: g.rows.map((r) => [[{ text: r.label }], formSound(row, pieces, r.value, r.reading)]) }));
     return t;
   }
   if (item.kind === "counter") {

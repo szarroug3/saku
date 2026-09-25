@@ -30,6 +30,7 @@ import type { EntryId } from "@/types/facts";
 import type { HistoryFile } from "@/types/store";
 
 import { atlasEntryFromHistory } from "./atlas";
+import { chipReading } from "@/sky/lib/japanese";
 import type { PartedSentence } from "@/sky/lib/lesson";
 
 import { pageFromIntro } from "./teach";
@@ -858,5 +859,71 @@ describe("the In a sentence block prints furigana over its kanji", () => {
       const runs = sentenceRuby(jp);
       assert.ok(runs?.some((s) => s.text === word && s.ruby === ruby), `${jp}: ${word} is not read ${ruby} as one word`);
     }
+  });
+});
+
+// ===========================================================================
+// SAK-483: a verb or adjective card's forms tables have furigana.
+//
+// Every cell under "Written" printed bare: 食べます, 食べさせられる,
+// 大きくなかった. Each form is now built from the word's kana as well, and the
+// kanji before the kana the form adds take their readings from the word's
+// alignment.
+// ===========================================================================
+describe("a word card's forms tables", () => {
+  const cellsOf = (glyph: string) => (atlasEntryFromHistory(emptyHistory(), `word:${glyph}`, NOW)?.teach?.tables ?? []).flatMap((t) => t.rows.map((r) => r[1]));
+  const cellFor = (glyph: string, written: string) => cellsOf(glyph).find((c) => c.map((s) => s.text).join("") === written);
+
+  it("puts た over 食 and leaves the kana the form adds plain", () => {
+    assert.deepEqual(cellFor("食べる", "食べさせられる"), [{ text: "食", ruby: "た" }, { text: "べさせられる" }]);
+    assert.deepEqual(cellFor("大きい", "大きくなかった"), [{ text: "大", ruby: "おお" }, { text: "きくなかった" }]);
+  });
+
+  it("gives every form of 食べる, 言う, 大きい and 汚れる its reading, over the kanji only", () => {
+    for (const glyph of ["食べる", "言う", "大きい", "汚れる"]) {
+      const cells = cellsOf(glyph);
+      assert.ok(cells.length >= 10, `${glyph} has ${cells.length} forms`);
+      for (const cell of cells) {
+        const written = cell.map((s) => s.text).join("");
+        assert.ok(cell.some((s) => s.ruby), `${glyph}: ${written} has no reading`);
+        for (const s of cell) {
+          if (s.ruby) assert.match(s.ruby, /^[぀-ゟ]+$/, `${written}: "${s.ruby}" is not kana`);
+          else assert.doesNotMatch(s.text, /[一-鿿]/, `${written}: "${s.text}" is kanji with no reading over it`);
+        }
+      }
+    }
+  });
+
+  it("reads a kanji between kana from the alignment, 申 and 込 in 申し込む", () => {
+    assert.deepEqual(cellFor("申し込む", "申し込みます"), [{ text: "申", ruby: "もう" }, { text: "し" }, { text: "込", ruby: "こ" }, { text: "みます" }]);
+  });
+
+  it("gives 来 what it says in each form of 来る", () => {
+    assert.deepEqual(cellFor("来る", "来ない"), [{ text: "来", ruby: "こ" }, { text: "ない" }]);
+    assert.deepEqual(cellFor("来る", "来ます"), [{ text: "来", ruby: "き" }, { text: "ます" }]);
+  });
+
+  it("puts one reading over the whole stem of a word that does not split by kanji", () => {
+    assert.deepEqual(cellFor("真似る", "真似ます"), [{ text: "真似", ruby: "まね" }, { text: "ます" }]);
+  });
+});
+
+// ===========================================================================
+// SAK-483: the word chips on a kanji or radical card carry their readings.
+// ===========================================================================
+describe("the word chips on a kanji card", () => {
+  it("give every word written with 日 its reading", () => {
+    const group = atlasEntryFromHistory(emptyHistory(), "kanji:日", NOW)?.related.find((g) => g.title === "Words written with it");
+    assert.ok(group, "日 has no Words written with it group");
+    const bare = group.items.filter((w) => !chipReading(w)).map((w) => w.glyph);
+    assert.deepEqual(bare, []);
+    const kyou = group.items.find((w) => w.glyph === "今日");
+    if (kyou) assert.equal(chipReading(kyou), "きょう");
+  });
+
+  it("leave the kanji chips on a radical card as they are", () => {
+    const group = atlasEntryFromHistory(emptyHistory(), "radical:日", NOW)?.related.find((g) => g.title === "Kanji written with it");
+    assert.ok(group?.items.length, "the 日 radical has no Kanji written with it group");
+    for (const k of group.items) assert.equal(chipReading(k), undefined, `${k.glyph} has a reading on its chip`);
   });
 });

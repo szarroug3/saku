@@ -142,6 +142,12 @@ export function Table({ table, onOpen }: { table: TeachTable; onOpen?: (id: stri
           <tbody>
             {table.rows.map((row, r) => {
               const opens = table.opens?.[r];
+              // A row with furigana in it (a word's forms, SAK-483) sits on
+              // one baseline, and the cell with the reading is drawn at the
+              // size of the "In a sentence" block, since the reading over it is
+              // a little over half its size and at the table's 13.5px it came
+              // out near 7px.
+              const ruby = row.some((cell) => cell.some((x) => x.ruby));
               return (
               <tr key={r}>
                 {row.map((cell, c) => {
@@ -149,8 +155,9 @@ export function Table({ table, onOpen }: { table: TeachTable; onOpen?: (id: stri
                   // short cells hold their line and the table scrolls sideways in
                   // a narrow panel; a long note wraps at a readable measure
                   const line = <Sound line={cell} />;
+                  const size = cell.some((x) => x.ruby) ? " font-sky-display text-[17px] leading-[1.9]" : "";
                   return (
-                    <td key={c} className={`py-1 pr-3 align-top ${plain.length > 18 ? "min-w-[18ch]" : "whitespace-nowrap"}`}>
+                    <td key={c} className={`py-1 pr-3 ${ruby ? "align-baseline" : "align-top"} ${plain.length > 18 ? "min-w-[18ch]" : "whitespace-nowrap"}${size}`}>
                       {c === 0 && opens && onOpen
                         ? <SkyTextButton tone="accent" title={`Read about ${plain}`} onClick={() => onOpen(opens)} className="inline-flex items-center">{line}</SkyTextButton>
                         : line}

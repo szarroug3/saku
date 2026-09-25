@@ -380,11 +380,18 @@ export function groupsFor(cls: WordClass): readonly FormGroup[] {
   return isAdjective(cls) ? ADJ_GROUPS : VERB_GROUPS;
 }
 
-/** One printable row: the label, and the form the engine actually produced. */
+/** One printable row: the label, and the form the engine actually produced.
+ *
+ * `reading` is the same form built from the word's kana (SAK-483): 食べさせられる
+ * and たべさせられる. The engine adds the same kana to either spelling, so the
+ * two end alike and the difference between them is what the kanji say. It is
+ * absent when the kana spelling has no such form, and it equals `value` for a
+ * word written in kana. */
 export interface BuiltForm {
   readonly label: string;
   readonly form: Form;
   readonly value: string;
+  readonly reading?: string;
 }
 
 export interface BuiltGroup {
@@ -411,11 +418,12 @@ export function formsOfWord(w: VocabRow): readonly BuiltGroup[] | null {
   // The engine takes the WRITTEN form. For a word JMdict marks "usually kana"
   // (keb === reb) that is already the kana, so this is right either way.
   const { forms } = conjugateAll(w.keb, cls);
+  const readings = w.reb === w.keb ? forms : conjugateAll(w.reb, cls).forms;
 
   const out: BuiltGroup[] = [];
   for (const g of groupsFor(cls)) {
     const rows = g.rows
-      .map((r) => ({ ...r, value: forms[r.form] }))
+      .map((r) => ({ ...r, value: forms[r.form], ...(typeof readings[r.form] === "string" ? { reading: readings[r.form] } : {}) }))
       .filter((r): r is BuiltForm => typeof r.value === "string");
     if (rows.length) out.push({ title: g.title, rows });
   }
