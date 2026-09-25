@@ -479,6 +479,19 @@ export interface PhaseIntro {
    * More precise than `below` when later notes must continue after the example. */
   examplesAfterBodyIndex?: number;
   /**
+   * The furigana for the Japanese written in this card's prose and examples
+   * (SAK-484): each run of Japanese as it appears in the text (見る, 時々, 人),
+   * and its whole reading in kana (みる, ときどき, ひと), which the Sky splits
+   * over the run's kanji. null is a run printed plain on purpose: a shape
+   * rather than a word (氵, 々 on its own), or a kanji the paragraph is about
+   * because it has more than one reading (生). A card with no Japanese in it,
+   * or one the Sky does not show on a term's page, has none, and nothing else
+   * about how a card is written changes. The Sky reads these on the term,
+   * writing-rule and concept pages (src/app/(sky)/prose-sound.ts); a test
+   * holds every kanji on those pages to one.
+   */
+  readings?: Readonly<Record<string, string | null>>;
+  /**
    * A build table: the rule as a list of equations (`かう − う + って → かって`),
    * the dropped kana grayed and the added one accented. Used by the grammar
    * te-form pages, where "how to build it" reads best as the transformation
@@ -942,6 +955,10 @@ export const PARTICLE_RULE: PhaseIntro = {
       text: "Everywhere else, they keep their usual sound. You will learn 私は on your first day, so this one is worth knowing early.",
     },
   ],
+  readings: {
+    "私は": "わたしは",
+    "学校へ": "がっこうへ",
+  },
 };
 
 // PUNCTUATION — the sentence-level card, anchored to the end of hiragana.
@@ -1013,6 +1030,20 @@ export const ITERATION_MARK: PhaseIntro = {
     { from: "様 + 様", to: "様々", reading: "さまざま", gloss: "various", say: "様々" },
     { from: "国 + 国", to: "国々", reading: "くにぐに", gloss: "various countries", say: "国々" },
   ],
+  // The whole word's reading over the whole word, since the page's point is how
+  // 々 makes one word of two kanji; the single kanji each word repeats, with the
+  // reading it has there. 々 on its own has no reading.
+  readings: {
+    "人々": "ひとびと",
+    "時々": "ときどき",
+    "様々": "さまざま",
+    "国々": "くにぐに",
+    "人": "ひと",
+    "時": "とき",
+    "様": "さま",
+    "国": "くに",
+    "々": null,
+  },
 };
 
 // RENDAKU — sequential voicing, and the app's second glyphless mark.
@@ -1055,6 +1086,19 @@ export const RENDAKU: PhaseIntro = {
     { from: "手 + 紙", to: "手紙", reading: "てがみ", gloss: "letter (か → が)", say: "手紙" },
     { from: "言 + 葉", to: "言葉", reading: "ことば", gloss: "word (は → ば)", say: "言葉" },
   ],
+  // Each half with the reading it has on its own, so the sound that changes
+  // can be seen changing: かみ over 紙, then てがみ over 手紙.
+  readings: {
+    "仕": "し",
+    "事": "こと",
+    "仕事": "しごと",
+    "手": "て",
+    "紙": "かみ",
+    "手紙": "てがみ",
+    "言": "こと",
+    "葉": "は",
+    "言葉": "ことば",
+  },
 };
 
 // OKURIGANA — the kana tail written after a kanji, and this file's first rule
@@ -1105,6 +1149,14 @@ export const OKURIGANA_INTRO: PhaseIntro = {
   // No worked examples: the second paragraph already names 生きる (tail きる, 生 =
   // い) and 生まれる (tail まれる, 生 = う), so an example panel beside it restated
   // the prose word for word. The moving/not-moving cards below carry the examples.
+  //
+  // 生 alone carries no reading: the paragraph is about it having several, and
+  // says which one each word takes in kana right beside it.
+  readings: {
+    "生": null,
+    "生きる": "いきる",
+    "生まれる": "うまれる",
+  },
 };
 
 export const OKURIGANA_MOVING: PhaseIntro = {
@@ -1129,6 +1181,9 @@ export const OKURIGANA_MOVING: PhaseIntro = {
       ],
     },
   ],
+  readings: {
+    "答え": "こたえ",
+  },
 };
 
 // OKURIGANA_FIXED merged into OKURIGANA_MOVING above.
@@ -1389,6 +1444,10 @@ export const PITCH_INTRO: PhaseIntro = {
       ],
     },
   ],
+  readings: {
+    "箸": "はし",
+    "橋": "はし",
+  },
 };
 
 // ON'YOMI AND KUN'YOMI — a reading card, the first thing to name the two reading
@@ -1421,6 +1480,14 @@ export const ONYOMI_INTRO: PhaseIntro = {
       text: "Japanese has many exceptions and mixed-reading words, so the word's own reading is what counts. Each kanji page places its kun’yomi and on’yomi side by side, with an everyday word showing where each reading is used.",
     },
   ],
+  // 人 and 車 on their own carry their kun'yomi, the native word the first
+  // paragraph matches them to; the words carry the on'yomi the second names.
+  readings: {
+    "人": "ひと",
+    "車": "くるま",
+    "外国人": "がいこくじん",
+    "電車": "でんしゃ",
+  },
 };
 
 // BUILT FROM — the card that explains how to READ the "Built from" box: which

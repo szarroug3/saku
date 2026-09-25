@@ -26,6 +26,17 @@ the word pages do not have: a jukujikun (今日, 明日, 部屋) is one slot ove
 whole word. teach.test.ts holds the committed file to no null slot at all, so
 a kanji the pass cannot read is fixed here, not shipped bare.
 
+SINCE SAK-484, MORE THAN THE "IN A SENTENCE" BLOCK
+===================================================
+The list also holds the Japanese inside grammar prose, a verb pair's example
+sentences and every sentence a sentence-ordering quiz card can deal
+(scripts/build-sentence-readings.ts says which). Those brought kanji
+vocab.json never attests (嬉, 凄, 噂), which the aligner refuses though the
+token splits cleanly, so a token with ONE kanji the aligner refuses is read
+from the token's own reading with its kana taken off (single_kanji_reading).
+Every reading that produced was checked by hand, and the three it got wrong
+are overrides below.
+
 OVERRIDES, FOR A READING THE TAGGER GETS WRONG RATHER THAN MISSES
 =================================================================
 The same failure mode sentence_readings.py's SENTENCE_READING_OVERRIDES
@@ -67,7 +78,32 @@ TOKEN_READING_OVERRIDES = {
     "今日": [["今日", "きょう", "きょう"]],
     "明日": [["明日", "あした", "あした"]],
     "部屋": [["部屋", "へや", "へや"]],
+    # SAK-484, the quiz's ordering sentences. 昨日 and 日向 are jukujikun like
+    # the three above; the rest split by kanji but hold a kanji vocab.json
+    # never attests, so the aligner refused the whole word. Each is the word's
+    # dictionary reading.
+    "昨日": [["昨日", "きのう", "きのう"]],
+    "日向": [["日向", "ひなた", "ひなた"]],
+    "居心地": [["居", "い", "い"], ["心", "ごこ", "こころ"], ["地", "ち", "ち"]],
+    "正夢": [["正", "まさ", "まさ"], ["夢", "ゆめ", "ゆめ"]],
+    "物置": [["物", "もの", "もの"], ["置", "おき", "おき"]],
+    "几帳面": [["几", "き", "き"], ["帳", "ちょう", "ちょう"], ["面", "めん", "めん"]],
+    "胸毛": [["胸", "むな", "むね"], ["毛", "げ", "け"]],
+    "蜘蛛": [["蜘", "く", "く"], ["蛛", "も", "も"]],
+    "切符": [["切", "きっ", "きり"], ["符", "ぷ", "ふ"]],
+    # unidic-lite takes these as one token each: 皿洗(い) and 日向ぼっこ.
+    "皿洗": [["皿", "さら", "さら"], ["洗", "あら", "あら"]],
+    "日向ぼっこ": [["日向", "ひなた", "ひなた"]],
+    # 上手 is じょうず, a reading of the word and not of its kanji one by one;
+    # unidic-lite reads the pair かみて, the stage-left noun.
+    "上手": [["上手", "じょうず", "じょうず"]],
 }
+
+# 何 before か, が, を, も or し is なに (何か, 何が, 何を, 何も, 何してる), where
+# unidic-lite reads every lone 何 as なん. Before と, て, だ or で it is なん
+# (何と, 何て, 何だ), which is what the tagger already says. The seven
+# sentence overrides below for 何 predate this rule and agree with it.
+NANI_BEFORE = set("かがをもし")
 
 # One kanji in one sentence, keyed by (sentence, kanji, 0-based occurrence of
 # that kanji among the sentence's kanji slots).
@@ -107,7 +143,67 @@ SENTENCE_READING_OVERRIDES = {
     # 亜美, a given name: 亜 あ and 美 み.
     ("さっき入れ違いで亜美さんが出て行ったところです。", "亜", 0): ["亜", "あ", "あ"],
     ("さっき入れ違いで亜美さんが出て行ったところです。", "美", 0): ["美", "み", "み"],
+    # SAK-484: the sentences the Sky reads for the first time, a particle's
+    # prose and the quiz's ordering cards.
+    #
+    # 開く said of a door, a window or a gate opening by itself is あく; unidic-
+    # lite reads it ひらく. The particle page's point is exactly that 開く here
+    # has no を ("the door opens by itself"), and vocab.json's 開く is あく.
+    ("ドアが開きます", "開", 0): ["開", "あ", "あ"],
+    ("押せばドアが開きます", "開", 0): ["開", "あ", "あ"],
+    ("窓が開いたら閉めないといけません", "開", 0): ["開", "あ", "あ"],
+    ("門ならもう開いてるよ", "開", 0): ["開", "あ", "あ"],
+    # 酒臭い is さけくさい; unidic-lite reads the 酒 of the compound しゅ.
+    ("トム酒臭いからあっちに行って", "酒", 0): ["酒", "さけ", "さけ"],
+    # 宇宙人 is うちゅうじん, as 外国人 is がいこくじん; unidic-lite read 人 にん.
+    ("宇宙人っていると思う", "人", 0): ["人", "じん", "じん"],
+    # 富士山 is ふじさん; unidic-lite read 山 やま.
+    ("富士山ならここから見えるよ", "山", 0): ["山", "さん", "さん"],
+    # 大丈夫、君ならできる: 君 is the pronoun きみ, not the name suffix くん
+    # unidic-lite took it for once the comma was gone.
+    ("大丈夫君ならできる", "君", 0): ["君", "きみ", "きみ"],
+    # 大金持ち is おおがねもち, with the voicing on 金.
+    ("私が大金持ちだったらいいのに", "金", 0): ["金", "がね", "かね"],
+    # 途中で止めたら後悔する: stopping partway, which is やめる. とめる is a
+    # real reading of 止める but is stopping a thing, not quitting a task.
+    ("途中で止めたら後悔するぜ", "止", 0): ["止", "や", "や"],
+    # 描き方 is かきかた in everyday speech; えがく is the written, literary
+    # reading unidic-lite gives.
+    ("鳥の描き方がわからない", "描", 0): ["描", "か", "か"],
+    # 洗濯物 is せんたくもの; unidic-lite splits 洗濯 + 物 and reads 物 ぶつ.
+    ("洗濯物乾いたら取り込んで", "物", 0): ["物", "もの", "もの"],
+    # 今日中 is きょうじゅう, "by the end of today"; unidic-lite reads 中 ちゅう.
+    ("今日中には決めなければなりません", "中", 0): ["中", "じゅう", "ちゅう"],
+    # The kanji below are read by single_kanji_reading, from the token's own
+    # reading, and three of those came out wrong:
+    #   - 塵も積もれば山となる is the proverb, read ちり; unidic-lite gives ごみ.
+    #   - 箱なら物置にあるよ: 箱 on its own is はこ; unidic-lite gives the voiced
+    #     ばこ it has inside compounds (本箱).
+    #   - 辛いから気をつけて, said of food, is からい (spicy); unidic-lite gives
+    #     つらい. The English on the card is the only other clue and a quiz card
+    #     has none, so this is a judgment call, named in the card comment.
+    ("塵も積もれば山となる", "塵", 0): ["塵", "ちり", "ちり"],
+    ("箱なら物置にあるよ", "箱", 0): ["箱", "はこ", "はこ"],
+    ("辛いから気をつけて", "辛", 0): ["辛", "から", "から"],
 }
+
+
+def single_kanji_reading(surf, kana):
+    """A token with one kanji and kana around it (嬉しい, 来な, 床), read by
+    taking the kana around the kanji off the token's own reading. For a kanji
+    vocab.json never attests, which the aligner refuses though the token splits
+    cleanly: every one of these is listed in the SAK-484 card comment and was
+    checked by hand. None when the token has more than one kanji or its kana do
+    not line up with the reading."""
+    ks = [i for i, c in enumerate(surf) if is_kanji(c)]
+    if len(ks) != 1:
+        return None
+    i = ks[0]
+    before, after = kata2hira(surf[:i]), kata2hira(surf[i + 1:])
+    if not kana.startswith(before) or not kana.endswith(after):
+        return None
+    mid = kana[len(before):len(kana) - len(after)]
+    return [[surf[i], mid, mid]] if mid else None
 
 
 def sentence_slots(jp, tagger, krd):
@@ -120,8 +216,11 @@ def sentence_slots(jp, tagger, krd):
     kanji it covers."""
     slots = []
     seen = {}
+    at = 0
     for w in tagger(jp):
         surf = w.surface
+        start = jp.find(surf, at)
+        at = start + len(surf) if start >= 0 else at
         kanji = [c for c in surf if is_kanji(c)]
         if not kanji:
             continue
@@ -130,9 +229,13 @@ def sentence_slots(jp, tagger, krd):
             if len(triples) < len(kanji):  # a word-wide reading
                 slots.extend(triples)
                 continue
+        elif surf == "何" and at < len(jp) and jp[at] in NANI_BEFORE:
+            triples = [["何", "なに", "なに"]]
         else:
             kana = kata2hira(w.feature.kana or w.feature.pron or "")
             a = align(surf, kana, krd) if kana else None
+            if not a and kana:
+                a = single_kanji_reading(surf, kana)
             triples = [list(t) for t in a] if a else [None] * len(kanji)
         for i, k in enumerate(kanji):
             occ = seen.get(k, 0)

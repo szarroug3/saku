@@ -177,6 +177,19 @@ export const RADICAL_TRACK: PhaseIntro = {
       text: "So a kanji is never broken into a shape you have not seen. When a piece is a kanji too, learning that kanji is where you get the shape, and its card tells you everything it is used for.",
     },
   ],
+  // The pieces that are words get their word's reading (人 ひと, "a word you can
+  // say"). The shapes that are only ever part of a kanji (气, 氵, 氺) are not
+  // said on their own, and 泳 is named here as a shape, "泳 (swim)": the word
+  // is 泳ぐ, and its kanji has no reading of its own to print.
+  readings: {
+    "人": "ひと",
+    "气": null,
+    "水": "みず",
+    "氵": null,
+    "泳": null,
+    "氺": null,
+    "様": "さま",
+  },
 };
 
 export const KANJI_TRACK: PhaseIntro = {
@@ -195,6 +208,13 @@ export const KANJI_TRACK: PhaseIntro = {
       text: "Each one is assembled from smaller pieces called radicals. This can help give you an idea of what the kanji might mean.",
     },
   ],
+  // 人 alone carries none: the paragraph is about it taking three sounds, and
+  // gives each one in kana beside the word it is in.
+  readings: {
+    "人": null,
+    "外国人": "がいこくじん",
+    "三人": "さんにん",
+  },
 };
 
 export const WORD_TRACK: PhaseIntro = {
@@ -256,6 +276,21 @@ export const VARIANT_INTRO: PhaseIntro = {
     { from: "水", op: "→", to: "氵", gloss: "on the left of 海, sea" },
     { from: "心", op: "→", to: "忄", gloss: "on the left of 情, feeling" },
   ],
+  // The characters and the words they are seen in, each with its reading; the
+  // forms (亻, 氵, 忄, 辶) are shapes a character takes inside a kanji and are
+  // not said on their own.
+  readings: {
+    "人": "ひと",
+    "亻": null,
+    "体": "からだ",
+    "水": "みず",
+    "氵": null,
+    "海": "うみ",
+    "心": "こころ",
+    "忄": null,
+    "情": "じょう",
+    "辶": null,
+  },
 };
 
 export const GRAMMAR_TRACK: PhaseIntro = {
@@ -295,6 +330,11 @@ export const COUNTERS_TRACK: PhaseIntro = {
       text: "Counting specific things takes a counter: 本 for pens, 人 for people. A number with no counter is for the number as a number: math, a phone number, a price, a page, a year. English blurs the two, since “one apple” and “the number one” are both “one”; Japanese keeps them apart, so いち is the number one and ひとつ or いっぽん do the counting.",
     },
   ],
+  // As counters: 人 counting people is にん (三人 さんにん), not the word ひと.
+  readings: {
+    "本": "ほん",
+    "人": "にん",
+  },
 };
 
 // A NON-TERM ADDITIONAL INTRO PAGE. Some tracks want an intro card that is not a

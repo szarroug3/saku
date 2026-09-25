@@ -48,10 +48,12 @@ export interface LessonTeach {
   /** A word the sound is heard in: "ほん hon · book". */
   exampleWord?: { word: string; reading: string; gloss: string };
   /** Anything else worth a line: a counter's role, a pair's two verbs, a
-   * keigo set's words. Plain paragraphs. */
-  notes?: readonly string[];
-  /** Where the character comes from, for a kanji. */
-  etymology?: string;
+   * keigo set's words. Plain paragraphs, or runs where the note's Japanese
+   * carries its furigana (a term's definition, SAK-484). */
+  notes?: ReadonlyArray<string | SoundLine>;
+  /** Where the character comes from, for a kanji, as runs: a piece named for
+   * its sound ("the sound of 丁") carries that sound over it (SAK-484). */
+  etymology?: SoundLine;
   /** A kanji's readings, on'yomi and kun'yomi, each with words it is read
    * that way in. A reading the dictionary lists as both is shown under both.
    * Each word carries its furigana as runs (SAK-482): each kanji with its own

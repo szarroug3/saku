@@ -273,7 +273,7 @@ export function LessonCard({ item, teach, madeOf, partOf, onSelect, onRead, writ
           counter's role); they read before its pages, not after them */}
       {/* a note is prose, so its Japanese words are drawn in the Japanese face
           and its English in the UI face, run by run (SAK-443) */}
-      {teach?.notes?.map((note, i) => <p key={i} className={`text-[14px] leading-relaxed text-sky-ink/90 ${i === 0 ? "mt-3" : "mt-1.5"}`}><Mixed text={note} /></p>)}
+      {teach?.notes?.map((note, i) => <p key={i} className={`text-[14px] leading-relaxed text-sky-ink/90 ${i === 0 ? "mt-3" : "mt-1.5"}`}>{typeof note === "string" ? <Mixed text={note} /> : <Sound line={note} />}</p>)}
       {pages.length > 0 && (
         <>
           {pages.length > 1 && <Pager pages={pages} page={at} onPage={turnTo} />}
@@ -340,7 +340,7 @@ export function LessonCard({ item, teach, madeOf, partOf, onSelect, onRead, writ
           ))}
         </div>
       )}
-      {teach?.etymology && <p className="mt-2 text-[14px] leading-relaxed text-sky-muted">{teach.etymology}</p>}
+      {teach?.etymology && <p className="mt-2 text-[14px] leading-relaxed text-sky-muted"><Sound line={teach.etymology} /></p>}
 
       {teach?.writtenWith && teach.writtenWith.length > 0 ? (
         <>

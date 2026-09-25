@@ -10,8 +10,12 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
+import readingsJson from "@/data/generated/sentence-readings.json" with { type: "json" };
 import { patternEntry } from "@/data/grammar";
-import { grammarConceptEntry } from "@/data/grammar-concepts";
+import { GRAMMAR_CONCEPTS, grammarConceptEntry } from "@/data/grammar-concepts";
+import { etymologyOf } from "@/data/kanji-etymology";
+import { MARKS, markEntry } from "@/data/marks";
+import { VERB_PAIRS } from "@/data/transitivity";
 import { cluster } from "@/data/grammar/clusters";
 import { CURRICULUM_LESSONS } from "@/data/grammar/lessons";
 import { kanjiRuns, PARTICLE_NOTES, type ParticleNote } from "@/data/grammar/particle-notes";
@@ -21,7 +25,7 @@ import { primaryPatternRecipe, RECIPES, recipe as recipeById } from "@/data/gram
 import { PARTICLE_RULE } from "@/data/phase-intros";
 import { hasSentenceReadings, sentenceRuby, sentenceSlots } from "@/data/sentence-readings";
 import { SENTENCE_ORDERING_GUIDES } from "@/data/sentence-ordering-guides";
-import { termEntry } from "@/data/terms";
+import { TERMS, termEntry } from "@/data/terms";
 import { emptyHistory } from "@/lib/history-ops";
 import { knownFactsOf, libEntry } from "@/lib/library/entries";
 import { readableTierExamples, TIER_EXAMPLES } from "@/lib/sentence-rule-walk";
@@ -31,7 +35,8 @@ import type { HistoryFile } from "@/types/store";
 
 import { atlasEntryFromHistory } from "./atlas";
 import { chipReading } from "@/sky/lib/japanese";
-import type { PartedSentence } from "@/sky/lib/lesson";
+import type { PartedSentence, SoundLine, TeachPage } from "@/sky/lib/lesson";
+import { kanjiRunsIn, rubyFromReading } from "@/sky/lib/sound-line";
 
 import { pageFromIntro } from "./teach";
 
@@ -925,5 +930,142 @@ describe("the word chips on a kanji card", () => {
     const group = atlasEntryFromHistory(emptyHistory(), "radical:日", NOW)?.related.find((g) => g.title === "Kanji written with it");
     assert.ok(group?.items.length, "the 日 radical has no Kanji written with it group");
     for (const k of group.items) assert.equal(chipReading(k), undefined, `${k.glyph} has a reading on its chip`);
+  });
+});
+
+// SAK-484: six places whose Japanese had no readings anywhere in the data.
+describe("furigana where the readings had to be written", () => {
+  const KANJI = /[一-鿿㐀-䶿々]/;
+  const entry = (id: string) => atlasEntryFromHistory(emptyHistory(), id, NOW)?.teach;
+  const rubyOf = (line: SoundLine) => line.filter((r) => r.ruby).map((r) => [r.text, r.ruby]);
+  /** The runs of kanji on a line with nothing over them. */
+  const bareIn = (line: SoundLine, plainOnPurpose: ReadonlySet<string> = new Set()) =>
+    line.filter((r) => !r.ruby && KANJI.test(r.text)).flatMap((r) => kanjiRunsIn(r.text)).filter((run) => !plainOnPurpose.has(run));
+  /** Every line of prose and every table cell on a set of pages. */
+  const linesOf = (pages: readonly TeachPage[]): SoundLine[] => pages.flatMap((p) => [
+    ...[...p.paragraphs, ...(p.after ?? [])].map((para) => para.runs ?? [{ text: para.text }]),
+    ...(p.tables ?? []).flatMap((t) => t.rows.flat()),
+  ]);
+
+  it("leaves no reading slot empty anywhere in the readings file", () => {
+    const empty = Object.entries(readingsJson as Record<string, ReadonlyArray<unknown>>).filter(([, slots]) => slots.some((s) => !s)).map(([jp]) => jp);
+    assert.deepEqual(empty, []);
+  });
+
+  describe("a particle's page, the Japanese inside its prose", () => {
+    const pages = RECIPES.flatMap((r) => (PARTICLE_NOTES.some((n) => n.recipes.includes(r.id)) ? entry(patternEntry(r.id))?.pages ?? [] : []));
+    const paras = pages.flatMap((p) => p.paragraphs);
+
+    it("reads a word from the vocabulary and a sentence from the readings pass", () => {
+      const said = new Set(paras.flatMap((p) => p.runs ?? []).filter((r) => r.ruby).map((r) => `${r.text}${r.ruby}`));
+      for (const pair of ["食た", "飲の", "猫ねこ", "好す", "田た", "中なか", "来き", "学がっ", "校こう", "歩ある", "水みず", "安やす", "部屋へや", "誰だれ", "今日きょう"]) assert.ok(said.has(pair), `no ${pair} on a particle page`);
+    });
+
+    it("leaves no kanji in its prose without a reading, and keeps the prose word for word", () => {
+      assert.ok(paras.length > 0);
+      for (const para of paras) {
+        assert.deepEqual(bareIn(para.runs ?? [{ text: para.text }]), [], para.text);
+        if (para.runs) assert.equal(para.runs.map((r) => r.text).join(""), para.text);
+      }
+    });
+  });
+
+  describe("the Family table", () => {
+    const cells = RECIPES.filter((r) => r.cluster)
+      .flatMap((r) => entry(patternEntry(r.id))?.pages?.filter((p) => p.eyebrow === "Family") ?? [])
+      .flatMap((p) => p.tables?.[0]?.rows.flat() ?? []);
+
+    it("reads 行くから and 本は", () => {
+      const find = (text: string) => cells.find((c) => c.map((r) => r.text).join("") === text);
+      assert.deepEqual(rubyOf(find("行くから")!), [["行", "い"]]);
+      assert.deepEqual(rubyOf(find("本は")!), [["本", "ほん"]]);
+    });
+
+    it("leaves no kanji in a pattern or a built form without a reading", () => {
+      assert.ok(cells.length > 0);
+      for (const cell of cells) assert.deepEqual(bareIn(cell), [], cell.map((r) => r.text).join(""));
+    });
+  });
+
+  describe("a term's page", () => {
+    const ids = [...TERMS.map((t) => termEntry(t.id)), ...MARKS.map((m) => markEntry(m.id)), ...GRAMMAR_CONCEPTS.map((c) => grammarConceptEntry(c.id))];
+    const cards = [...TERMS.flatMap((t) => t.cards ?? []), ...MARKS.flatMap((m) => m.intros), ...GRAMMAR_CONCEPTS.flatMap((c) => c.cards)];
+    const plainOnPurpose = new Set(cards.flatMap((c) => Object.entries(c.readings ?? {}).filter(([, r]) => r === null).map(([run]) => run)));
+    const rubyOn = (id: string) => linesOf(entry(id)?.pages ?? []).flatMap(rubyOf);
+
+    it("puts ときどき over 時々, ひとびと over 人々, and とき over each 時 of 時 + 時", () => {
+      const ruby = rubyOn(markEntry("iteration-mark"));
+      for (const [text, reading] of [["時々", "ときどき"], ["人々", "ひとびと"], ["時", "とき"]]) assert.ok(ruby.some(([t, r]) => t === text && r === reading), `${text} ${reading}`);
+    });
+
+    it("reads 生きる and 生まれる on Okurigana, 高い and 嫌い on Keiyōshi, 水 on Radical", () => {
+      const has = (id: string, text: string, reading: string) => assert.ok(rubyOn(id).some(([t, r]) => t === text && r === reading), `${id}: ${text} ${reading}`);
+      has(termEntry("okurigana"), "生", "い");
+      has(termEntry("okurigana"), "生", "う");
+      has(grammarConceptEntry("adjective-types"), "高", "たか");
+      has(grammarConceptEntry("adjective-types"), "嫌", "きら");
+      has(termEntry("radical"), "水", "みず");
+    });
+
+    it("reads a term's own definition: 人 counting people is にん", () => {
+      const notes = entry(termEntry("counter"))?.notes ?? [];
+      assert.deepEqual(notes.flatMap((n) => (typeof n === "string" ? [] : rubyOf(n))), [["本", "ほん"], ["人", "にん"]]);
+    });
+
+    it("leaves no kanji without a reading except the ones written plain on purpose", () => {
+      for (const id of ids) {
+        const t = entry(id);
+        const lines = [...linesOf(t?.pages ?? []), ...(t?.notes ?? []).map((n) => (typeof n === "string" ? [{ text: n }] : n))];
+        for (const line of lines) assert.deepEqual(bareIn(line, plainOnPurpose), [], `${id}: ${line.map((r) => r.text).join("")}`);
+      }
+    });
+
+    it("writes each reading so it lines up with its run, and only for runs the card has", () => {
+      for (const card of cards) {
+        const text = [...card.body.map((p) => p.text), ...(card.examples ?? []).flatMap((e) => [e.from, e.to, e.gloss ?? ""])].join("\n");
+        for (const [run, reading] of Object.entries(card.readings ?? {})) {
+          assert.ok(kanjiRunsIn(text).includes(run), `${card.id}: ${run} is not in the card`);
+          if (reading) assert.ok(rubyFromReading(run, reading), `${card.id}: ${reading} does not line up with ${run}`);
+        }
+      }
+    });
+  });
+
+  describe("a verb pair's example sentences", () => {
+    const active = (line: PartedSentence) => line.find((r) => r.active)!;
+
+    it("reads お金 and the verb, the verb still the part picked out", () => {
+      const forms = entry("transitivity:出る/出す")?.forms ?? [];
+      assert.equal(forms.length, 2);
+      const [happens, doIt] = forms.map((f) => f.example!);
+      assert.deepEqual(happens.flatMap((r) => rubyOf(r.sound ?? [])), [["金", "かね"], ["出", "で"]]);
+      assert.deepEqual(rubyOf(active(happens).sound!), [["出", "で"]]);
+      assert.deepEqual(rubyOf(active(doIt).sound!), [["出", "だ"]]);
+      assert.equal(active(doIt).text, "出した");
+    });
+
+    it("has every example sentence the pairs have in the readings file", () => {
+      for (const pair of VERB_PAIRS) for (const side of [pair.happens, pair.doIt]) {
+        if (side.example) assert.ok(sentenceSlots(side.example.jp)?.every(Boolean), side.example.jp);
+      }
+    });
+  });
+
+  describe("a kanji's origin, where it names a piece for its sound", () => {
+    const origin = (glyph: string) => entry(`kanji:${glyph}`)?.etymology ?? [];
+
+    it("puts the piece's on'yomi over it when no reading follows: 丁 on 可", () => {
+      assert.deepEqual(rubyOf(origin("可")), [["丁", "ちょう"]]);
+      assert.equal(origin("可").map((r) => r.text).join(""), etymologyOf("可")?.originText);
+    });
+
+    it("picks the on'yomi closest to the kanji's own: 主 on 住 is しゅう", () => {
+      assert.deepEqual(rubyOf(origin("住")), [["主", "しゅう"]]);
+    });
+
+    it("leaves a piece alone when its reading is already written, and a piece named for its meaning", () => {
+      assert.deepEqual(rubyOf(origin("仕")), []);
+      assert.ok(!rubyOf(origin("住")).some(([t]) => t === "人"));
+    });
   });
 });

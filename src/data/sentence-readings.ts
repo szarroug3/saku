@@ -1,5 +1,8 @@
 // The furigana over a lesson's example sentences: the kana each kanji says in
-// the sentence a lesson's "In a sentence" block shows.
+// the sentence a lesson's "In a sentence" block shows. Since SAK-484 the same
+// file reads the Japanese inside grammar prose (猫は好きです in a particle's
+// page, 行くから in a Family table), a verb pair's example sentences and every
+// sentence a sentence-ordering quiz card deals.
 //
 // Generated in two passes, the same shape word-examples.json has:
 // scripts/build-sentence-readings.ts lists every sentence the block can show,
@@ -104,4 +107,22 @@ export function slotRuby(
     } else plain(chars[i]);
   }
   return runs;
+}
+
+/** Each piece of a sentence dealt in pieces (a sentence-ordering quiz card,
+ * SAK-484) with the furigana over its kanji, in the order given: the
+ * sentence's readings cut where the pieces meet. Undefined when the pieces do
+ * not spell the sentence, the sentence has no row, or nothing in it has a
+ * reading, and the pieces print as written. */
+export function pieceSounds(jp: string, pieces: readonly string[]): Array<Array<{ text: string; ruby?: string }>> | undefined {
+  if (pieces.join("") !== jp) return undefined;
+  const out: Array<Array<{ text: string; ruby?: string }>> = [];
+  let at = 0;
+  for (const piece of pieces) {
+    const sound = sentenceRuby(jp, at, at + piece.length);
+    if (!sound) return undefined;
+    out.push(sound);
+    at += piece.length;
+  }
+  return out.some((s) => s.some((r) => r.ruby)) ? out : undefined;
 }

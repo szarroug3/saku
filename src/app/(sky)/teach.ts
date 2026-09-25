@@ -45,6 +45,7 @@ import { sentenceRuby, slotRuby } from "@/data/sentence-readings";
 import { lessonsForTier, positionedStepParts, stepPartOrder, type PositionedStepPart, type StepKey, type TierExample } from "@/lib/sentence-rule-walk";
 import { libEntry } from "@/lib/library/entries";
 import { standingFor } from "./learner";
+import { authoredReader, proseReader, proseSound, wordSound, type RunReader } from "./prose-sound";
 import { TSU_RULE } from "./observatory";
 import { type LessonTeach, type PartedSentence, type SoundLine as SkySoundLine, type TeachForm, type TeachPage, type TeachParagraph, type TeachTable } from "@/sky/lib/lesson";
 import { cutLine } from "@/sky/lib/sound-line";
@@ -204,17 +205,45 @@ function readingKind(base: string, row: KanjiRow | undefined, type: "on" | "kun"
   return type ?? "kun";
 }
 
-/** A word with its furigana (SAK-482): each kanji with its own reading in
- * this word (休日 is きゅう over 休 and じつ over 日), and the kana as they
- * are. A word that does not split by kanji (大人 is おとな, not 大 plus 人)
- * carries its reading over the whole word, and a word the vocabulary does not
- * have prints plain. */
-function wordSound(word: string): SkySoundLine {
-  const row = vocabRow(word);
-  if (!row) return [{ text: word }];
-  const pieces = piecesOf(row);
-  if (!pieces) return row.reb === word ? [{ text: word }] : [{ text: word, ruby: row.reb }];
-  return pieces.map((p) => (p.kind === "kanji" ? { text: p.written, ruby: p.reading } : { text: p.text }));
+/** The on'yomi to print over a piece a kanji's origin names for its sound
+ * (SAK-484): of the piece's own on'yomi, the one closest to the kanji's, since
+ * that likeness is what "the sound of" means (住 じゅう takes 主's しゅう, not
+ * its しゅ). Closest is the longest shared start once voicing is set aside,
+ * and the piece's first on'yomi when none share one. Undefined for a piece
+ * the kanji table has no on'yomi for, which is printed as it is. */
+function soundPartReading(kanji: string, part: string): string | undefined {
+  const ons = kanjiRow(part)?.on ?? [];
+  if (!ons.length) return undefined;
+  const mine = kanjiRow(kanji)?.on ?? [];
+  const plain = (s: string) => s.normalize("NFD").replace(/[゙゚]/g, "");
+  const shared = (a: string, b: string) => { let n = 0; while (n < a.length && n < b.length && a[n] === b[n]) n++; return n; };
+  let best = ons[0], score = 0;
+  for (const on of ons) {
+    for (const m of mine) {
+      const s = on === m ? Infinity : shared(plain(on), plain(m));
+      if (s > score) { best = on; score = s; }
+    }
+  }
+  return best;
+}
+
+/** A kanji's origin as runs, with the sound over each piece it names for its
+ * sound and gives no reading for (SAK-484). "the sound of 丁" on 可 had nothing
+ * over 丁 while 仕's "the sound of 士 (し)" had its reading written in; a piece
+ * whose reading already follows in brackets is left as written, and a piece
+ * named for its meaning is left alone. */
+function originSound(kanji: string, text: string): SkySoundLine {
+  const line: Array<{ text: string; ruby?: string }> = [];
+  let at = 0;
+  for (const m of text.matchAll(/the sound of ([一-鿿㐀-䶿])(?!\s*[(（])/g)) {
+    const reading = soundPartReading(kanji, m[1]);
+    if (!reading) continue;
+    const start = m.index + m[0].length - 1;
+    line.push({ text: text.slice(at, start) }, { text: m[1], ruby: reading });
+    at = start + 1;
+  }
+  line.push({ text: text.slice(at) });
+  return line.filter((r) => r.text);
 }
 
 const KANJI = /[々〆㐀-䶿一-鿿]/;
@@ -279,7 +308,7 @@ export function teachFor(item: SkyItem, scope: TeachScope = {}): LessonTeach {
     const row = kanjiRow(glyph);
     if (row) { t.meanings = row.meanings; t.strokes = row.strokes; }
     const e = etymologyOf(glyph);
-    if (e?.originText) t.etymology = e.originText;
+    if (e?.originText) t.etymology = originSound(glyph, e.originText);
     // on or kun by the kanji's own lists (SAK-482). This used to look for
     // katakana, but the readings arrive in hiragana, so every one of them
     // landed under kun'yomi, \u306b\u3061 and \u3058\u3064 on \u65e5 among them.
@@ -379,7 +408,9 @@ export function teachFor(item: SkyItem, scope: TeachScope = {}): LessonTeach {
     if (p) {
       const side = (m: typeof p.happens, role: string, note: string): TeachForm => ({
         role, note, word: m.word, reading: m.reading, pitch: wordPitch(m.word), sentence: m.en,
-        ...(m.example ? { example: marked(m.example.jp, m.example.highlightSpan) } : {}),
+        // with the furigana over お金 and the verb (SAK-484), the verb still
+        // the part picked out
+        ...(m.example ? { example: withFurigana(m.example.jp, marked(m.example.jp, m.example.highlightSpan)) } : {}),
       });
       t.forms = [
         side(p.happens, "It happens on its own", "No one is named as making it happen."),
@@ -404,8 +435,10 @@ export function teachFor(item: SkyItem, scope: TeachScope = {}): LessonTeach {
       // Particle is the one term the app can answer in full from its own
       // tables, so it does (SAK-466): every particle it teaches, listed.
       else if (term.id === PARTICLE_TERM) t.pages = [particleListPage()];
-      // the definition, unless a fuller page says the same thing
-      if (!mark && !concept) t.notes = [...term.body];
+      // the definition, unless a fuller page says the same thing, with the
+      // readings written for its Japanese (SAK-484)
+      const read = term.readings ? authoredReader(term.readings) : undefined;
+      if (!mark && !concept) t.notes = term.body.map((p) => (read ? withRuby(proseSound(p, read), p) : p));
     }
     return t;
   }
@@ -490,7 +523,8 @@ function sentenceRulePages(tier: SentenceOrderingTierId, readable?: ReadonlySet<
     eyebrow: "Intro",
     title: g.title,
     hook: g.hook,
-    paragraphs: g.body,
+    // the Japanese in the prose read as grammar prose is (SAK-484): と思う
+    paragraphs: g.body.map((p) => ({ lead: p.lead, ...proseParagraph(p.text, proseReader) })),
     ...(g.example ? { examples: [{ natural: [{ text: g.example.en }], ordered: [{ text: g.example.enOrdered }], japanese: withFurigana(g.example.jp, [{ text: g.example.jp }]) }] } : {}),
   };
   return [
@@ -499,7 +533,7 @@ function sentenceRulePages(tier: SentenceOrderingTierId, readable?: ReadonlySet<
       eyebrow: l.step,
       title: l.title,
       hook: g.hook,
-      paragraphs: l.details.map((text) => ({ text })),
+      paragraphs: l.details.map((text) => proseParagraph(text, proseReader)),
       examples: l.examples.map(({ example, activePart }) => threeWays(example, activePart)),
     })),
   ];
@@ -582,7 +616,7 @@ function particleListPage(): TeachPage {
       ]),
       opens: PARTICLE_ROWS.map((p) => p.entry),
     }],
-    after: PARTICLE_RULE.body.slice(0, 3).map((para, i) => ({ ...(i === 0 ? { heading: "How they are read" } : {}), text: para.text })),
+    after: PARTICLE_RULE.body.slice(0, 3).map((para, i) => ({ ...(i === 0 ? { heading: "How they are read" } : {}), ...proseParagraph(para.text, PARTICLE_RULE.readings ? authoredReader(PARTICLE_RULE.readings) : undefined) })),
   };
 }
 
@@ -625,11 +659,26 @@ function exampleLine(ex: ParticleNoteExample): SkySoundLine {
   return runs;
 }
 
-/** One paragraph of a particle's page, with its sentences. */
+/** The runs when any of them carries a reading, else the line as it was, so
+ * a paragraph with no kanji in it reaches the page as it always did. */
+function withRuby<T>(line: SkySoundLine, plain: T): SkySoundLine | T {
+  return line.some((r) => r.ruby) ? line : plain;
+}
+
+/** A paragraph's text, and its runs with the readings over its Japanese when
+ * `read` gives it any (SAK-484). The accented phrase stays picked out. */
+function proseParagraph(text: string, read: RunReader | undefined, accent?: string): Pick<TeachParagraph, "text" | "runs"> {
+  const runs = read ? withRuby(proseSound(text, read, accent), undefined) : undefined;
+  return { text, ...(runs ? { runs } : {}) };
+}
+
+/** One paragraph of a particle's page, with its sentences, and the readings
+ * over the Japanese inside its prose (SAK-484): 食べる from the vocabulary,
+ * 猫は好きです from the readings pass. */
 function notePara(para: ParticleNotePara): TeachParagraph {
   return {
     ...(para.heading ? { heading: para.heading } : {}),
-    text: para.text,
+    ...proseParagraph(para.text, proseReader),
     ...(para.examples
       ? { examples: para.examples.map((ex) => ({ jp: exampleLine(ex), en: ex.en })) }
       : {}),
@@ -688,6 +737,12 @@ function familyOpens(recipe: Recipe, members: readonly Recipe[]): ReadonlyArray<
   });
 }
 
+/** A Family row's pattern cell: the pattern, and the sense it is taken in
+ * when the pattern has more than one (〜から 理由). */
+function familyPattern(m: Recipe): string {
+  return m.sense ? `${m.pattern} ${m.sense}` : m.pattern;
+}
+
 /** A grammar pattern's pages: the app's own teaching (a form's authored
  * Library pages, or the generated pattern page: the meaning, the build
  * formula, the conjugation or derivation tables, the sentence), then its
@@ -695,17 +750,20 @@ function familyOpens(recipe: Recipe, members: readonly Recipe[]): ReadonlyArray<
  * shape into the Sky's, so the two show the same build by construction. */
 function grammarPages(recipe: Recipe): TeachPage[] {
   const intros = formLibraryPages(recipe.id);
-  const pages = (intros.length ? intros : [autoPatternPage(recipe)]).map((intro) => pageFromIntro(intro));
+  const pages = (intros.length ? intros : [autoPatternPage(recipe)]).map((intro) => pageFromIntro(intro, undefined, proseReader));
   const note = particleNotePage(recipe.id);
   if (note) pages.push(note);
   const family = recipe.cluster ? clusterById(recipe.cluster) : undefined;
   const members = family ? membersOf(family) : [];
   if (family && members.length > 1) {
+    // the pattern and its built form with the readings over their kanji
+    // (SAK-484): 行くから, 本は, and a sense named in kanji (〜そう 様態), read
+    // the way the page's prose is
     const rows = members.map((m) => {
       const built = buildRow(m)?.built ?? "";
       const me = m.id === recipe.id;
-      const pattern = m.sense ? `${m.pattern} ${m.sense}` : m.pattern;
-      return [[{ text: pattern, ...(me ? { accent: true } : {}) }], [{ text: m.gloss }], [{ text: built }]] as const;
+      const pattern = familyPattern(m);
+      return [proseSound(pattern, proseReader).map((r) => (me ? { ...r, accent: true } : r)), [{ text: m.gloss }], proseSound(built, proseReader)];
     });
     pages.push({
       eyebrow: "Family",
@@ -796,11 +854,21 @@ function countTable(g: IntroCountGroup): TeachTable {
   };
 }
 
-const paragraphs = (body: readonly IntroPara[] | undefined): TeachParagraph[] =>
-  (body ?? []).filter((p) => p.text.trim().length > 0).map((p) => ({ ...(p.heading ? { heading: p.heading } : {}), ...(p.lead ? { lead: p.lead } : {}), text: p.text, ...(p.accent ? { accent: p.accent } : {}) }));
-
-/** One of the app's teaching pages in the Sky's shape. */
-export function pageFromIntro(intro: PhaseIntro, mark?: string): TeachPage {
+/** One of the app's teaching pages in the Sky's shape.
+ *
+ * The Japanese in its prose and its worked examples carries the readings the
+ * card has written for it (`readings`, SAK-484), which is how a term's page
+ * gets them; `prose` reads whatever the card has not written a reading for, and
+ * is the grammar reader on a grammar page. A card with neither prints as it
+ * always has. */
+export function pageFromIntro(intro: PhaseIntro, mark?: string, prose?: RunReader): TeachPage {
+  const read = intro.readings ? authoredReader(intro.readings, prose) : prose;
+  const cell = (s: string, accent = false): SkySoundLine => {
+    const line = read ? proseSound(s, read) : [{ text: s }];
+    return accent ? line.map((r) => ({ ...r, accent: true })) : line;
+  };
+  const paragraphs = (body: readonly IntroPara[] | undefined): TeachParagraph[] =>
+    (body ?? []).filter((p) => p.text.trim().length > 0).map((p) => ({ ...(p.heading ? { heading: p.heading } : {}), ...(p.lead ? { lead: p.lead } : {}), ...proseParagraph(p.text, read, p.accent), ...(p.accent ? { accent: p.accent } : {}) }));
   const tables: TeachTable[] = [];
   // a punctuation catalogue: the marks, their names and their English jobs
   if (intro.punctuation?.length) tables.push({ title: "The marks", heads: ["Mark", "Name", "Works like", "Note"], rows: intro.punctuation.map((r) => [[{ text: r.mark }], [{ text: r.name }], [{ text: r.english }], [{ text: r.note }]]) });
@@ -826,7 +894,7 @@ export function pageFromIntro(intro: PhaseIntro, mark?: string): TeachPage {
     tables.push({
       title: "Examples",
       heads: ["Written", ...(anyReading ? ["Said"] : []), ...(anyGloss ? ["Meaning"] : [])],
-      rows: intro.examples.map((e) => [[{ text: `${e.from} ${e.op ?? "="} ` }, { text: e.to, accent: true }], ...(anyReading ? [[{ text: e.reading ?? "" }]] : []), ...(anyGloss ? [[{ text: e.gloss ?? "" }]] : [])]),
+      rows: intro.examples.map((e) => [[...cell(`${e.from} ${e.op ?? "="} `), ...cell(e.to, true)], ...(anyReading ? [[{ text: e.reading ?? "" }]] : []), ...(anyGloss ? [cell(e.gloss ?? "")] : [])]),
     });
   }
   const ex = intro.sentenceExample;

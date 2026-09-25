@@ -130,6 +130,13 @@ export interface Term {
    * not a dump of every adjacent word.
    */
   readonly related?: readonly string[];
+  /**
+   * The furigana for the Japanese in `body` (SAK-484), the same shape a card's
+   * `readings` has (PhaseIntro in src/data/phase-intros.ts): each run of
+   * Japanese as written, and its whole reading in kana. Only a term whose body
+   * has kanji in it needs one; every other term is written as before.
+   */
+  readonly readings?: Readonly<Record<string, string | null>>;
 }
 
 /**
@@ -376,6 +383,8 @@ export const TERMS: readonly Term[] = [
       "Which counter to use depends on the kind of thing, and a few of them change the number's sound as well.",
     ],
     searchAlso: ["counter", "counters", "counter word", "measure word", "josuushi"],
+    // as counters: 人 counting people is にん
+    readings: { "本": "ほん", "人": "にん" },
     // Just what a counter is. The sound-change explainer is dropped from the page:
     // each counter that shifts lists its own exceptions (一本 → いっぽん) on its own
     // page, so a general card here would explain what the specific pages already show.
@@ -411,6 +420,7 @@ export const TERMS: readonly Term[] = [
       "The line drawn over a reading shows where the voice stays high and where it drops.",
     ],
     searchAlso: ["pitch accent", "pitch", "accent", "downstep", "heiban", "atamadaka"],
+    readings: { "箸": "はし", "橋": "はし" },
     cards: [PITCH_INTRO],
   },
   {

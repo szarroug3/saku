@@ -189,6 +189,11 @@ const TE_FORM_PAGES: PhaseIntro[] = [
         text: "When a word is written with kanji followed by a separate い, like 高い, it is usually an い-adjective. This is not a guarantee: 嫌い has the same visible pattern but is a な-adjective.",
       },
     ],
+    // The furigana over the two words the clue is about (SAK-484).
+    readings: {
+      "高い": "たかい",
+      "嫌い": "きらい",
+    },
   },
   {
     // PAGE 4 — the first adjective FORM, separate from the class-identification
