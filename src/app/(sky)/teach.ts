@@ -384,7 +384,7 @@ export function teachFor(item: SkyItem, scope: TeachScope = {}): LessonTeach {
  * headline sentence stays whatever the guide wrote: it is what that page's
  * paragraphs are about, not one of a list.
  */
-function sentenceRulePages(tier: SentenceOrderingTierId, readable?: ReadonlySet<string>): TeachPage[] {
+export function sentenceRulePages(tier: SentenceOrderingTierId, readable?: ReadonlySet<string>): TeachPage[] {
   const g = SENTENCE_ORDERING_GUIDES[tier];
   const labels = CHUNK_ROLE_LABELS[tier];
   const order = stepPartOrder(tier);

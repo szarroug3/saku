@@ -21,7 +21,10 @@ documents it.
 This file does not reimplement any of that: it imports build_krd, align,
 is_kanji and kata2hira from the same modules. It only differs in what a row is
 keyed by (the sentence text, because most of these sentences are authored and
-have no Tatoeba id) and in the two override lists below.
+have no Tatoeba id), in the two override lists below, and in one slot shape
+the word pages do not have: a jukujikun (今日, 明日, 部屋) is one slot over the
+whole word. teach.test.ts holds the committed file to no null slot at all, so
+a kanji the pass cannot read is fixed here, not shipped bare.
 
 OVERRIDES, FOR A READING THE TAGGER GETS WRONG RATHER THAN MISSES
 =================================================================
@@ -57,6 +60,13 @@ TOKEN_READING_OVERRIDES = {
     "私": [["私", "わたし", "わたし"]],
     "言う": [["言", "い", "い"]],
     "日本": [["日", "に", "に"], ["本", "ほん", "ほん"]],
+    # A jukujikun: the word has a reading and its kanji do not, so the aligner
+    # refuses it. One slot spans the whole word, and the page prints one
+    # reading over all of it rather than leaving it bare. 明日 is あした, the
+    # everyday reading, where unidic-lite gives the formal あす.
+    "今日": [["今日", "きょう", "きょう"]],
+    "明日": [["明日", "あした", "あした"]],
+    "部屋": [["部屋", "へや", "へや"]],
 }
 
 # One kanji in one sentence, keyed by (sentence, kanji, 0-based occurrence of
@@ -81,12 +91,33 @@ SENTENCE_READING_OVERRIDES = {
     ("私は何を言う？", "何", 0): ["何", "なに", "なに"],
     ("一晩泊めてもらいたいんだけど。", "一", 0): ["一", "ひと", "ひと"],
     ("ケーキ一個で手を打ってあげるよ。", "一", 0): ["一", "いっ", "いち"],
+    # 土曜日: unidic-lite splits it 土曜 + 日 and reads the lone 日 ひ, missing
+    # the rendaku どようび has. The only split compound among these sentences
+    # whose second half changes sound (図書+館, 建築+物, 効率+的 do not).
+    ("土曜日までに本を返さなければなりません。", "日", 0): ["日", "び", "ひ"],
+    # Kanji whose reading vocab.json never attests, so the aligner refused
+    # them though they split cleanly: the kun reading of the word each is in.
+    ("インコを飼うために必要なものを揃えましょう。", "揃", 0): ["揃", "そろ", "そろ"],
+    ("言ってから、まゆちゃんは恥ずかしそうに俯いてしまう。", "俯", 0): ["俯", "うつむ", "うつむ"],
+    ("馬が亡くなってから鞍が淋しい。", "鞍", 0): ["鞍", "くら", "くら"],
+    ("馬が亡くなってから鞍が淋しい。", "淋", 0): ["淋", "さび", "さび"],
+    ("面白半分なら来ないで欲しい。", "来", 0): ["来", "こ", "く"],
+    ("路上の血痕は俺のものに違いない。", "血", 0): ["血", "けっ", "けつ"],
+    ("路上の血痕は俺のものに違いない。", "痕", 0): ["痕", "こん", "こん"],
+    # 亜美, a given name: 亜 あ and 美 み.
+    ("さっき入れ違いで亜美さんが出て行ったところです。", "亜", 0): ["亜", "あ", "あ"],
+    ("さっき入れ違いで亜美さんが出て行ったところです。", "美", 0): ["美", "み", "み"],
 }
 
 
 def sentence_slots(jp, tagger, krd):
     """[kanji, surface-reading, base-reading] | None per kanji in `jp`, left
-    to right: sentence_readings.analyze_sentence's `kr`, with the overrides."""
+    to right: sentence_readings.analyze_sentence's `kr`, with the overrides.
+
+    One exception to one-slot-per-kanji: a jukujikun override is ONE slot whose
+    first element is the whole word (今日), standing for all of its kanji.
+    src/data/sentence-readings.ts reads a slot's first element for how many
+    kanji it covers."""
     slots = []
     seen = {}
     for w in tagger(jp):
@@ -96,6 +127,9 @@ def sentence_slots(jp, tagger, krd):
             continue
         if surf in TOKEN_READING_OVERRIDES:
             triples = [list(t) for t in TOKEN_READING_OVERRIDES[surf]]
+            if len(triples) < len(kanji):  # a word-wide reading
+                slots.extend(triples)
+                continue
         else:
             kana = kata2hira(w.feature.kana or w.feature.pron or "")
             a = align(surf, kana, krd) if kana else None
@@ -121,8 +155,8 @@ def main():
     out = {}
     for jp in sorted(sentences):
         slots = sentence_slots(jp, tagger, krd)
-        total += len(slots)
-        ok += sum(1 for s in slots if s is not None)
+        total += sum(len(s[0]) if s else 1 for s in slots)
+        ok += sum(len(s[0]) for s in slots if s is not None)
         out[jp] = slots
 
     with open(path, "w", encoding="utf-8") as fh:

@@ -7,9 +7,14 @@
 // tokenizer and aligner the word pages' sentences are read with (SAK-95). One
 // slot per kanji in the sentence, left to right, each the same
 // [kanji, reading-here, base-reading] triple as word-examples.ts's
-// KanjiReadingSlot, or null where the reading could not be worked out
-// (今日, 明日, 部屋: a reading that belongs to the word, not its kanji). A null
-// slot prints as plain kanji: no reading beats a wrong one.
+// KanjiReadingSlot, or null where the reading could not be worked out (a null
+// slot prints as plain kanji: no reading beats a wrong one, and the test holds
+// the committed file to none).
+//
+// A jukujikun (今日 きょう, 明日 あした, 部屋 へや) has a reading that belongs to
+// the word and not to its kanji, so its one slot spans the word: the first
+// element is the whole word, it stands for that many kanji, and the page prints
+// one reading over all of them.
 
 import readingsJson from "./generated/sentence-readings.json" with { type: "json" };
 import type { KanjiReadingSlot } from "./word-examples";
@@ -29,12 +34,19 @@ export function hasSentenceReadings(jp: string): boolean {
   return jp in READINGS;
 }
 
+/** A sentence's slots as the readings pass wrote them, for the test that no
+ * kanji is left without a reading. */
+export function sentenceSlots(jp: string): readonly KanjiReadingSlot[] | undefined {
+  return READINGS[jp];
+}
+
 /** A stretch of a sentence as runs, each run of kanji carrying its reading.
  *
  * `from`/`to` pick out part of `jp` (a sentence part the page labels, "Topic"
  * over 私は), so a sentence split into parts gets its readings part by part and
  * the parts still join up into the sentence. Each kanji carries its own
- * reading (学 がく, 生 せい) rather than one reading over a run of them: a run
+ * reading (学 がく, 生 せい), a jukujikun its one reading over the whole word
+ * (今日 きょう), rather than one reading over a run of kanji: a run
  * of kanji is not a word (一晩泊めて is 一晩 and 泊めて, and ひとばんと over all
  * three reads as one word), and the slots say what each kanji says, not where
  * a word ends. Undefined when the sentence has no row,
@@ -45,10 +57,23 @@ export function sentenceRuby(jp: string, from = 0, to = jp.length): Array<{ text
   if (!slots) return undefined;
   // by UTF-16 unit, the unit a span into `jp` counts in
   const chars = jp.split("");
-  // the reading of each kanji, by its position in the sentence
-  const reading: Array<string | null> = [];
+  // what each position says: a kanji's reading, or a jukujikun's over the
+  // whole word, held at the word's first kanji with the word's length
+  const said: Array<{ ruby: string; length: number } | null> = chars.map(() => null);
   let n = 0;
-  for (const ch of chars) reading.push(isKanji(ch) ? slots[n++]?.[1] ?? null : null);
+  for (let i = 0; i < chars.length; i++) {
+    if (!isKanji(chars[i])) continue;
+    const slot = slots[n++];
+    if (slot === undefined) return undefined;
+    if (!slot) continue;
+    const word = slot[0];
+    if (word.length > 1) {
+      // a word-wide slot has to spell the kanji it stands on, or the row is stale
+      if (jp.slice(i, i + word.length) !== word) return undefined;
+      said[i] = { ruby: slot[1], length: word.length };
+      i += word.length - 1;
+    } else said[i] = { ruby: slot[1], length: 1 };
+  }
   if (n !== slots.length) return undefined;
 
   const runs: Array<{ text: string; ruby?: string }> = [];
@@ -58,9 +83,13 @@ export function sentenceRuby(jp: string, from = 0, to = jp.length): Array<{ text
     else runs.push({ text });
   };
   for (let i = from; i < to; i++) {
-    const r = reading[i];
-    if (r) runs.push({ text: chars[i], ruby: r });
-    else plain(chars[i]);
+    const r = said[i];
+    // a jukujikun cut by a part boundary would have to share one reading
+    // between two parts; it is printed plain, and the test catches it
+    if (r && i + r.length <= to) {
+      runs.push({ text: chars.slice(i, i + r.length).join(""), ruby: r.ruby });
+      i += r.length - 1;
+    } else plain(chars[i]);
   }
   return runs;
 }

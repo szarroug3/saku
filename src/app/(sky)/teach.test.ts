@@ -19,8 +19,8 @@ import { PARTICLE_ROWS } from "@/data/grammar/particles";
 import { autoPatternPage, sentenceExampleFor } from "@/data/grammar/auto-page";
 import { primaryPatternRecipe, RECIPES, recipe as recipeById } from "@/data/grammar/recipes";
 import { PARTICLE_RULE } from "@/data/phase-intros";
-import { hasSentenceReadings } from "@/data/sentence-readings";
-import { SENTENCE_ORDERING_GUIDES } from "@/data/sentence-ordering-guides";
+import { hasSentenceReadings, sentenceRuby, sentenceSlots } from "@/data/sentence-readings";
+import { SENTENCE_ORDERING_GUIDES, type SentenceOrderingTierId } from "@/data/sentence-ordering-guides";
 import { termEntry } from "@/data/terms";
 import { emptyHistory } from "@/lib/history-ops";
 import { knownFactsOf, libEntry } from "@/lib/library/entries";
@@ -29,7 +29,9 @@ import type { EntryId } from "@/types/facts";
 import type { HistoryFile } from "@/types/store";
 
 import { atlasEntryFromHistory } from "./atlas";
-import { pageFromIntro } from "./teach";
+import type { PartedSentence } from "@/sky/lib/lesson";
+
+import { pageFromIntro, sentenceRulePages } from "./teach";
 
 const NOW = Date.UTC(2026, 8, 8);
 const VERBS = grammarConceptEntry("verb-classes");
@@ -707,19 +709,54 @@ describe("the In a sentence block prints furigana over its kanji", () => {
     assert.deepEqual(missing, [], "rerun scripts/build-sentence-readings.ts and scripts/ingest/teach_sentence_readings.py");
   });
 
-  it("puts kana over kanji and nothing else, and every part still spells its text", () => {
+  // every Japanese line the block shows, from every page that has the block
+  const shownLines = () => {
+    const lines: Array<{ jp: string; line: PartedSentence }> = [];
     for (const r of RECIPES) {
-      const ex = sentenceExampleFor(r);
-      if (!ex) continue;
-      const line = pageFromIntro(autoPatternPage(r)).examples?.[0]?.japanese ?? [];
+      const line = pageFromIntro(autoPatternPage(r)).examples?.[0]?.japanese;
+      if (line) lines.push({ jp: line.map((run) => run.text).join(""), line });
+    }
+    for (const tier of Object.keys(SENTENCE_ORDERING_GUIDES) as SentenceOrderingTierId[]) {
+      for (const page of sentenceRulePages(tier)) {
+        for (const ex of page.examples ?? []) lines.push({ jp: ex.japanese.map((run) => run.text).join(""), line: ex.japanese });
+      }
+    }
+    return lines;
+  };
+  const KANJI = /[一-鿿㐀-䶿々]/;
+
+  it("puts kana over kanji and nothing else, and every part still spells its text", () => {
+    for (const { jp, line } of shownLines()) {
       for (const run of line) {
         if (!run.sound) continue;
-        assert.equal(run.sound.map((s) => s.text).join(""), run.text, `${ex.jp}: a part's readings do not spell it`);
+        assert.equal(run.sound.map((s) => s.text).join(""), run.text, `${jp}: a part's readings do not spell it`);
         for (const s of run.sound.filter((s) => s.ruby)) {
-          assert.match(s.text, /^[一-龯㐀-䶿々]+$/, `${ex.jp}: "${s.text}" is not kanji and has a reading over it`);
-          assert.match(s.ruby!, /^[぀-ゟ]+$/, `${ex.jp}: "${s.ruby}" is not kana`);
+          assert.match(s.text, /^[一-鿿㐀-䶿々]+$/, `${jp}: "${s.text}" is not kanji and has a reading over it`);
+          assert.match(s.ruby!, /^[぀-ゟ]+$/, `${jp}: "${s.ruby}" is not kana`);
         }
       }
+    }
+  });
+
+  // Coordinator review, 2026-09-25: a kanji the readings pass could not read
+  // used to print bare. None may now: a new sentence, or a regenerated file,
+  // that leaves one without its reading fails here.
+  it("leaves no kanji without a reading, in the file or on the page", () => {
+    for (const { jp, line } of shownLines()) {
+      const slots = sentenceSlots(jp);
+      assert.ok(slots, `${jp} has no readings row`);
+      assert.ok(slots.every((slot) => slot), `${jp} has a kanji the readings pass left without a reading`);
+      for (const run of line) {
+        const bare = (run.sound ?? [{ text: run.text }]).filter((s) => !s.ruby && KANJI.test(s.text));
+        assert.deepEqual(bare.map((s) => s.text), [], `${jp}: kanji printed with no reading over it`);
+      }
+    }
+  });
+
+  it("prints a jukujikun as one reading over the whole word", () => {
+    for (const [jp, word, ruby] of [["今日は暑いですね。", "今日", "きょう"], ["明日は休みだって。", "明日", "あした"], ["静かな部屋で休みたい。", "部屋", "へや"]] as const) {
+      const runs = sentenceRuby(jp);
+      assert.ok(runs?.some((s) => s.text === word && s.ruby === ruby), `${jp}: ${word} is not read ${ruby} as one word`);
     }
   });
 });
