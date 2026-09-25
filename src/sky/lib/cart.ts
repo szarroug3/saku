@@ -1,10 +1,13 @@
 // The Planetarium's cart: what tonight's picks cost, what each brings, what
 // is locked and what the cart itself opens. Tracked as SAK-303 and SAK-304.
 //
-// Reads the prerequisite graph and adds no arithmetic of its own: a pick
-// costs every distinct piece it adds (graph.costOf), the cart's total is
-// graph.pieceCount, and the two must agree, which the test pins. What this
-// file adds is the RULES of picking:
+// Reads the prerequisite graph: a pick costs every distinct piece it adds
+// (graph.costOf), the cart's count is graph.pieceCount, and the two must
+// agree, which the test pins. The lesson is measured by WEIGHT, not by that
+// count (SAK-477): each new piece adds its kind's weight (src/sky/lib/weight.ts),
+// over the same distinct pieces, so nothing is charged twice and learned
+// things stay free. The count stays here for the tests; no page shows it.
+// What this file adds is the RULES of picking:
 //
 //   - a part (a kanji, a radical, one kana of a row) never locks anything:
 //     it comes along with the pick and is charged. What locks is a
@@ -17,10 +20,11 @@
 
 import type { PickCost, PrerequisiteGraph, Learned } from "./graph";
 import type { SkyKind, SkyItem } from "./types";
+import { weightOf } from "./weight";
 
-/** A comfortable lesson, in pieces. A placeholder until there is data on how
- * often people go over and how long picked-but-unlearned things sit. */
-export const COMFORTABLE_PIECES = 12;
+/** A comfortable lesson, in weight. A placeholder until there is data on how
+ * often people go over and how long picked-but-unlearned things wait. */
+export const COMFORTABLE_WEIGHT = 12;
 
 /** Kinds that are picked as their own thing, and so can lock what needs them. */
 const PICKED_AS_OWN: ReadonlySet<SkyKind> = new Set(["word", "counter", "grammar", "sentence", "verbPair", "keigo"]);
@@ -67,16 +71,25 @@ interface PickLine {
 
 interface CartSummary {
   lines: PickLine[];
-  /** Distinct new pieces for the whole cart: what the lesson will teach. */
+  /** Distinct new pieces for the whole cart: what the lesson will teach.
+   * Never shown (SAK-477). */
   pieces: number;
-  /** How far past the cap, or 0. */
+  /** The same distinct new pieces, each at its kind's weight: how much the
+   * lesson asks. What the meter fills by. */
+  weight: number;
+  /** How far past the cap, in weight, or 0. */
   over: number;
 }
 
-export function cartSummary(graph: PrerequisiteGraph, picks: readonly string[], learned: Learned, cap = COMFORTABLE_PIECES): CartSummary {
+export function cartSummary(graph: PrerequisiteGraph, picks: readonly string[], learned: Learned, cap = COMFORTABLE_WEIGHT): CartSummary {
   const lines = picks.map((id, i) => ({ id, cost: graph.costOf(id, learned, picks.slice(0, i)) }));
   const pieces = graph.pieceCount(picks, learned);
-  return { lines, pieces, over: Math.max(0, pieces - cap) };
+  // each line's pieces are new beside the lines before it, so together they
+  // are the cart's distinct new pieces; the set covers the same pick twice
+  const brought = new Set(lines.flatMap((line) => line.cost.pieces));
+  let weight = 0;
+  for (const id of brought) { const item = graph.itemOf(id); if (item) weight += weightOf(item.kind); }
+  return { lines, pieces, weight, over: Math.max(0, weight - cap) };
 }
 
 /** The cart with `id` removed, and with it every pick that was open only

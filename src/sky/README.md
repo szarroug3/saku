@@ -170,7 +170,7 @@ The picker is `ItemSection`s of `ItemCard`s, English only, each priced in the
 real pieces it brings beside what is learned and what is already picked;
 what cannot be picked yet is not shown, nor a finished track, and a section
 says what its kind of thing is and when to start it until it is started. The rail is the preview sky (`SkyField` with `tonight` set to the
-picks: known stars lit, the rest faint), the `PieceMeter` against a
+picks: known stars lit, the rest faint), the `PieceMeter` (the `LessonMeter` since SAK-477) against a
 comfortable lesson (12, a placeholder), and tonight's picks with what each
 brings and a remove with undo. Every number comes from `src/sky/lib/cart.ts`
 over the graph: `cartSummary` (per-pick `costOf`, total `pieceCount`, the two
@@ -6971,3 +6971,40 @@ Three more things from the same sitting:
 ## Atlas tiles share one text style (SAK-476)
 
 Sam, 2026-09-21, on the を search: "it's fine to have a different size but the text looks different too. also even within words, the font is different." A wide tile drew its English line bold and white, and a square tile drew it small and muted. In a Words cut, を stood at 24px beside 顔を… at 15px. Now the line under a glyph is the same small muted line on every tile, and a glyph is drawn large only in a cut where every glyph is one character (Kana, Radicals, Kanji). Both rules are in `atlas-grid.tsx`.
+
+## The lesson meter fills by weight, not by count (SAK-477)
+
+Sam, 2026-09-24: "learning simple sentences is not the simple. same with wa and ga. they're counted as 1 bc technically it's 1 item but its difficulty is not worth the same as learning the definition of a word. i think maybe instead of doing x of 12 pieces, maybe we do a bar that fills up the more difficult the lesson is and not label it as pieces but have the bar be a gradient of easy to too much or something. you can keep the counter in the backend but don't show it to the user and then you can make things count as more than 1."
+
+**Weight.** Each kind has a weight, in `src/sky/lib/weight.ts` (`weightOf`). The table is Sam's proposal and hers to change:
+
+| Kind | Weight |
+| --- | --- |
+| kana, radical, word | 1 |
+| kanji, verb pair, keigo form, counter | 2 |
+| grammar pattern (a particle too) | 3 |
+| sentence type | 4 |
+
+A particle is a grammar pattern and weighs 3 like any other (Sam changed her mind on a 4 the same day). The pages (a term, a writing rule, a grammar concept) are never picked or charged; they have a weight of 1 only so every kind has one.
+
+`cartSummary` in `src/sky/lib/cart.ts` adds up the weights of the distinct new pieces, the same pieces the count uses: the `needed` walk behind `costOf`, so a kanji shared by two picks is charged once and anything learned is free. The cap is still 12, now in weight, as `COMFORTABLE_WEIGHT`. `over` is the weight past it.
+
+**The words.** `lessonSize` turns the weight into the word the "This lesson" panel shows beside its title, and the meter uses the same word as its `aria-label`:
+
+| Weight against a cap of 12 | Word | Note under the bar |
+| --- | --- | --- |
+| nothing picked | Nothing yet | Pick anything to start. |
+| under a third of the cap (1 to 3) | Light | Room for more. |
+| under two thirds (4 to 7) | Medium | Room for more. |
+| up to and including the cap (8 to 12) | Full | A full lesson, right at the limit. |
+| over the cap | Too much | That's more than a comfortable lesson. |
+
+Past the cap the button still reads "Start lesson anyway".
+
+**The meter** is `LessonMeter` in `src/sky/components/lesson-meter.tsx`, which replaced the segmented `PieceMeter`. It is one rounded bar. The fill is as wide as the weight's share of the cap, and its gradient (the Solid green, then the accent, then coral) is sized to the whole track, so a light lesson shows only the green end and a full one shows the whole run to coral. Past the cap the fill is plain coral. The fill has `data-lesson-fill` so a test can read its width.
+
+**Where the count went.** Nothing on the page shows a count of pieces now. The Tonight panel's aside is the number of picks alone ("3 Picks") and a pick's line has no number. The count still exists as `pieces` on `cartSummary` and as `graph.pieceCount`, and the unit tests check both, so the lesson still teaches what the cart says.
+
+**One thing the table does not do.** The card asked for one sentence type and two grammar patterns to fill the lesson to the cap. With these weights that is 4 + 3 + 3 = 10, which reads Full but is 2 short of the cap, and a third pattern goes over. The test pins it that way. If Sam wants that lesson right at 12, a sentence type at 6 or a pattern at 4 would do it.
+
+**Tests.** `weight.test.ts` checks that every kind has a weight of at least 1, that a sentence type weighs more than a word, the table itself, and the thresholds. `cart.test.ts` adds weight to the cart's own checks: a word alone is lighter than a sentence type alone, a sentence type and two patterns are Full, a kanji shared by two words is charged once, and learned parts are free. The e2e test in `e2e/sky.spec.ts` picks one word on `/observatory?sample`, reads the fill's width, takes it back out, picks a sentence type, and checks the fill is wider and that the panel shows no digit.

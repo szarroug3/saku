@@ -1951,10 +1951,10 @@ test("a sentence type is off the page until what it needs is learned or picked (
 
   // and taking one of them out takes the type with it, pick and all
   await simple.click();
-  await expect(page.getByText(/^4 Picks · /)).toBeVisible();
+  await expect(page.getByText("4 Picks", { exact: true })).toBeVisible();
   await ga.click();
   await expect(simple).toHaveCount(0);
-  await expect(page.getByText(/^2 Picks · /)).toBeVisible();
+  await expect(page.getByText("2 Picks", { exact: true })).toBeVisible();
 });
 
 test("the Sentences row waits on 〜な, and opens with は first (SAK-468)", async ({ page }) => {
@@ -1998,7 +1998,7 @@ test("the Sentences row waits on 〜な, and opens with は first (SAK-468)", as
   // and taking 〜な back out takes the row with it, picks and all
   await na.click();
   await expect(sentences).toHaveCount(0);
-  await expect(page.getByText(/^\d+ Picks? · /)).toHaveCount(0);
+  await expect(page.getByText(/^\d+ Picks?$/)).toHaveCount(0);
 });
 
 test("the observatory takes every pick back out in one press", async ({ page }) => {
@@ -2013,7 +2013,7 @@ test("the observatory takes every pick back out in one press", async ({ page }) 
 
   await cards.nth(0).click();
   await cards.nth(1).click();
-  await expect(page.getByText(/^2 Picks · /)).toBeVisible();
+  await expect(page.getByText("2 Picks", { exact: true })).toBeVisible();
   await expect(cards.nth(0)).toHaveAttribute("aria-pressed", "true");
   await expect(cards.nth(1)).toHaveAttribute("aria-pressed", "true");
   await expect(unselect).toBeVisible();
@@ -2021,14 +2021,57 @@ test("the observatory takes every pick back out in one press", async ({ page }) 
   await unselect.click();
   // the count is gone, no card is marked as picked, and the panel is back to
   // its empty state with the Start lesson that cannot be pressed
-  await expect(page.getByText(/^\d+ Picks? · /)).toHaveCount(0);
-  await expect(page.getByText("Nothing yet")).toBeVisible();
+  await expect(page.getByText(/^\d+ Picks?$/)).toHaveCount(0);
+  // on Tonight and on This lesson both (SAK-477)
+  await expect(page.getByText("Nothing yet")).toHaveCount(2);
   await expect(page.getByText("Nothing picked. Choose something to learn and it shows up here.")).toBeVisible();
   await expect(cards.nth(0)).toHaveAttribute("aria-pressed", "false");
   await expect(cards.nth(1)).toHaveAttribute("aria-pressed", "false");
   await expect(unselect).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Start lesson" })).toHaveCount(0);
   await expect(page.getByText("Start lesson", { exact: true })).toBeVisible();
+});
+
+test("the lesson meter fills by how hard the picks are, with no count shown (SAK-477)", async ({ page }) => {
+  // Sam, 2026-09-24: "learning simple sentences is not the simple ... its
+  // difficulty is not worth the same as learning the definition of a word."
+  // The panel said "7 of 12 Pieces", and a sentence type was one piece like
+  // any word.
+  await page.goto("/observatory?sample");
+  const lesson = page.locator("section", { has: page.getByRole("heading", { name: "This lesson", exact: true }) });
+  const fill = lesson.locator("[data-lesson-fill]");
+  const width = () => fill.evaluate((el) => parseFloat((el as HTMLElement).style.width));
+  await expect(lesson).toContainText("Nothing yet");
+  await expect(lesson).toContainText("Pick anything to start.");
+  expect(await width()).toBe(0);
+
+  // one word: a little of the bar, and a word for it rather than a number
+  const word = page.locator("section", { has: page.getByRole("heading", { name: "Words", exact: true }) }).locator("button[aria-pressed]").first();
+  await word.click();
+  await expect(word).toHaveAttribute("aria-pressed", "true");
+  await expect(lesson).toContainText("Light");
+  await expect(lesson).toContainText("Room for more.");
+  const afterWord = await width();
+  expect(afterWord).toBeGreaterThan(0);
+  await expect(lesson).not.toContainText(/\d/);
+  await word.click();
+  await expect(lesson).toContainText("Nothing yet");
+  await expect.poll(width).toBe(0);
+
+  // one sentence type: one thing, like the word, and it fills more of the bar
+  const type = page.locator("section", { has: page.getByRole("heading", { name: "Sentences", exact: true }) }).locator("button[aria-pressed]").last();
+  await expect(type).toContainText("sentence type");
+  await type.click();
+  await expect(type).toHaveAttribute("aria-pressed", "true");
+  await expect.poll(width).toBeGreaterThan(afterWord);
+  // no digit anywhere in the panel, the meter's own name included, and none
+  // on the pick's line in Tonight either
+  await expect(lesson).not.toContainText(/\d/);
+  await expect(lesson.getByRole("img")).toHaveAttribute("aria-label", /^\D+$/);
+  const tonight = page.locator("section", { has: page.getByRole("heading", { name: "Tonight", exact: true }) });
+  await expect(tonight.getByText("1 Pick", { exact: true })).toBeVisible();
+  await expect(tonight.locator("li")).toHaveCount(1);
+  await expect(tonight.locator("li")).not.toContainText(/\d/);
 });
 
 test("the atlas unselects everything in one press", async ({ page }) => {
@@ -2059,7 +2102,7 @@ test("the particles picked for tonight are moons, and nothing there is a planet"
   const cards = page.locator("section", { has: page.getByRole("heading", { name: "Sentences" }) }).getByRole("button");
   const particles = ["marks the topic", "marks the subject", "marks the direct object", "marks where something is or is going", "marks where an action happens"];
   for (const name of particles) await cards.filter({ hasText: name }).first().click();
-  await expect(page.getByText(/^5 Picks · /)).toBeVisible();
+  await expect(page.getByText("5 Picks", { exact: true })).toBeVisible();
 
   const sky = page.locator('svg[aria-label="Tonight\'s picks, as the constellations they will be"]');
   await expect(sky.locator('[data-body="moon"]')).toHaveCount(5);

@@ -1,18 +1,21 @@
-// The cart never lies: its total is the number of pieces the lesson will
-// teach, a shared part is charged once, a learned part is free, and removing
+// The cart never lies: its count is the number of pieces the lesson will
+// teach, its weight is those same pieces at their kinds' weights (SAK-477), a
+// shared part is charged once in both, a learned part is free, and removing
 // a pick takes down what it held open.
 
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
-import { cartSummary, pickState, withoutPick } from "@/sky/lib/cart";
+import { cartSummary, COMFORTABLE_WEIGHT, pickState, withoutPick } from "@/sky/lib/cart";
 import { buildGraph } from "@/sky/lib/graph";
 import type { SkyItem } from "@/sky/lib/types";
+import { lessonSize } from "@/sky/lib/weight";
 
 const item = (id: string, kind: SkyItem["kind"], extra: Partial<SkyItem> = {}): SkyItem => ({ id, kind, glyph: id, english: id, standing: "not-seen", ...extra });
 
 // 電車 = 電 (雨 田) + 車; 電気 shares 電; a verb pair hangs off the word 開く; a
-// kana row holds five kana and the ky row builds on the k row
+// kana row holds five kana and the ky row builds on the k row; the Simple
+// sentence type and the patterns it is taught with
 const ITEMS: SkyItem[] = [
   item("雨", "radical"), item("田", "radical"), item("車", "kanji"), item("気", "kanji"),
   item("電", "kanji", { components: ["雨", "田"] }),
@@ -22,6 +25,8 @@ const ITEMS: SkyItem[] = [
   ...["か", "き", "く", "け", "こ"].map((k) => item(k, "kana")),
   item("row:k", "kana", { group: true, components: ["か", "き", "く", "け", "こ"] }),
   item("row:ky", "kana", { group: true, components: ["row:k"] }),
+  item("は", "grammar", { particle: true }), item("が", "grammar", { particle: true }), item("を", "grammar", { particle: true }),
+  item("simple", "sentence"), item("はい", "word"),
 ];
 const graph = buildGraph(ITEMS);
 const none = new Set<string>();
@@ -38,6 +43,34 @@ describe("the cart", () => {
     assert.equal(two.lines.reduce((n, l) => n + l.cost.pieces.length, 0), two.pieces, "the rows add up to the total");
   });
 
+  it("weighs the same distinct pieces, a shared kanji once", () => {
+    // 雨 1 + 田 1 + 電 2 + 車 2 + 電車 1
+    assert.equal(cartSummary(graph, ["電車"], none).weight, 7);
+    // + 気 2 + 電気 1; 電 and its radicals are not charged again
+    assert.equal(cartSummary(graph, ["電車", "電気"], none).weight, 10);
+    assert.equal(cartSummary(graph, ["電気", "電車"], none).weight, 10, "the order of the picks changes nothing");
+    assert.equal(cartSummary(graph, ["電車"], new Set(["雨", "田", "車"])).weight, 3, "learned things stay free");
+    assert.equal(cartSummary(graph, [], none).weight, 0);
+  });
+
+  it("a word alone is lighter than a sentence type alone", () => {
+    const word = cartSummary(graph, ["はい"], none), type = cartSummary(graph, ["simple"], none);
+    assert.equal(word.pieces, type.pieces, "one piece each, so a count cannot tell them apart");
+    assert.ok(word.weight < type.weight, `a word weighs ${word.weight}, a sentence type ${type.weight}`);
+    assert.equal(lessonSize(word.weight, COMFORTABLE_WEIGHT), "Light");
+  });
+
+  it("a sentence type and two patterns make a full lesson, and a third goes over", () => {
+    const three = cartSummary(graph, ["は", "が", "simple"], none);
+    assert.equal(three.pieces, 3);
+    assert.equal(three.weight, 10);
+    assert.equal(three.over, 0);
+    assert.equal(lessonSize(three.weight, COMFORTABLE_WEIGHT), "Full");
+    const four = cartSummary(graph, ["は", "が", "を", "simple"], none);
+    assert.equal(four.over, 1);
+    assert.equal(lessonSize(four.weight, COMFORTABLE_WEIGHT), "Too much");
+  });
+
   it("charges nothing for what is already in the sky, and names it", () => {
     const learned = new Set(["雨", "田", "車"]);
     const s = cartSummary(graph, ["電車"], learned);
@@ -46,11 +79,12 @@ describe("the cart", () => {
     assert.deepEqual(new Set(s.lines[0].cost.free), new Set(["田", "車", "雨"]));
   });
 
-  it("warns past the cap and never blocks", () => {
+  it("warns past the cap, in weight, and never blocks", () => {
     const picks = ["電車", "電気", "row:k"];
     const s = cartSummary(graph, picks, none, 8);
     assert.equal(s.pieces, 12);
-    assert.equal(s.over, 4);
+    assert.equal(s.weight, 15);
+    assert.equal(s.over, 7);
   });
 
   it("parts never lock; a headword or a row does, and the cart can open it", () => {

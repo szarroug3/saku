@@ -7,26 +7,28 @@
 // picker is sections of ItemCards in English only, only what can be taken
 // now (nothing locked, nothing finished), each section saying what its kind
 // of thing is until it is started; the rail is the preview sky of tonight's
-// picks, the piece meter against a comfortable lesson, and the picks with
-// their cost, a way to take one out, "I already know these" and the way to
-// the lesson. Every number comes from src/sky/lib/cart.ts over the graph,
-// so the cart's total is what the lesson will teach.
+// picks, the lesson meter against a comfortable lesson, and the picks with
+// a way to take one out, "I already know these" and the way to the lesson.
+// The meter fills by the cart's weight from src/sky/lib/cart.ts over the
+// graph, and the page shows no count at all (SAK-477): the lesson is Light,
+// Medium, Full or Too much.
 
 import { useMemo, useState, useTransition } from "react";
 
 import { ItemCard } from "@/sky/components/item-card";
 import { ItemSection } from "@/sky/components/item-section";
-import { PieceMeter } from "@/sky/components/piece-meter";
+import { LessonMeter } from "@/sky/components/lesson-meter";
 import { ContinueButton } from "@/sky/components/quiz-resume";
 import { SkyField } from "@/sky/components/sky-field";
 import { SkyButton } from "@/sky/components/sky-button";
 import { SkyPageShell } from "@/sky/components/sky-page-shell";
 import { SkyPanel } from "@/sky/components/sky-panel";
 import { UndoLine } from "@/sky/components/undo-line";
-import { cartSummary, COMFORTABLE_PIECES, pickState, withoutPick } from "@/sky/lib/cart";
+import { cartSummary, COMFORTABLE_WEIGHT, pickState, withoutPick } from "@/sky/lib/cart";
 import { buildGraph } from "@/sky/lib/graph";
 import { NOTHING } from "@/sky/lib/select";
 import { typeLabel } from "@/sky/lib/tokens";
+import { lessonSize } from "@/sky/lib/weight";
 import type { PlaceEntry } from "@/sky/lib/place";
 import type { SkyItem } from "@/sky/lib/types";
 
@@ -90,7 +92,7 @@ interface SkyObservatoryProps {
   data: SkyObservatoryData;
   /** How tall the page is; the heading stays put and the picker scrolls. */
   height?: string;
-  /** A comfortable lesson, in pieces. */
+  /** A comfortable lesson, in weight. */
   cap?: number;
   /** Where "Start tonight's lesson" goes, given the picks. From the route
    * layer, which is the only thing that knows what a Sky URL looks like
@@ -111,7 +113,7 @@ interface SkyObservatoryProps {
 
 const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`;
 
-export function SkyObservatory({ data, cap = COMFORTABLE_PIECES, lessonHref, initialPicks = [], height, onClaim, resume }: SkyObservatoryProps) {
+export function SkyObservatory({ data, cap = COMFORTABLE_WEIGHT, lessonHref, initialPicks = [], height, onClaim, resume }: SkyObservatoryProps) {
   const graph = useMemo(() => buildGraph(data.items), [data.items]);
   // what is claimed this visit joins what is learned; without a route to
   // write to, that is the whole of the claim
@@ -183,13 +185,15 @@ export function SkyObservatory({ data, cap = COMFORTABLE_PIECES, lessonHref, ini
   };
 
   const nameOf = (id: string) => graph.itemOf(id)?.english ?? id;
-  const meterNote = summary.pieces === 0
-    ? "Pick anything to start."
-    : over
-      ? `That's ${summary.over} past a comfortable lesson.`
-      : summary.pieces === cap
-        ? "A full lesson, right at the limit."
-        : `${cap - summary.pieces} more ${cap - summary.pieces === 1 ? "piece" : "pieces"} before this lesson gets uncomfortably large.`;
+  // where the lesson is, in words: no count is shown anywhere (SAK-477)
+  const size = lessonSize(summary.weight, cap);
+  const meterNote = {
+    "Nothing yet": "Pick anything to start.",
+    Light: "Room for more.",
+    Medium: "Room for more.",
+    Full: "A full lesson, right at the limit.",
+    "Too much": "That's more than a comfortable lesson.",
+  }[size];
   const startLabel = over ? "Start lesson anyway" : "Start lesson";
 
   return (
@@ -229,12 +233,12 @@ export function SkyObservatory({ data, cap = COMFORTABLE_PIECES, lessonHref, ini
             </div>
           </SkyPanel>
 
-          <SkyPanel title="This lesson" aside={`${summary.pieces} of ${cap} Pieces`} className="shrink-0 !p-4">
-            <PieceMeter className="mt-3" pieces={summary.pieces} cap={cap} />
+          <SkyPanel title="This lesson" aside={size} className="shrink-0 !p-4">
+            <LessonMeter className="mt-3" weight={summary.weight} cap={cap} />
             <p className={`mt-2 text-[12.5px] ${over ? "text-sky-coral" : "text-sky-muted"}`}>{meterNote}</p>
           </SkyPanel>
 
-          <SkyPanel title="Tonight" aside={picks.length ? `${plural(picks.length, "Pick")} · ${plural(summary.pieces, "Piece")}` : "Nothing yet"} fit className="!p-4">
+          <SkyPanel title="Tonight" aside={picks.length ? plural(picks.length, "Pick") : "Nothing yet"} fit className="!p-4">
             {picks.length === 0 ? (
               <p className="mt-3 text-center text-[12.5px] text-sky-muted">Nothing picked. Choose something to learn and it shows up here.</p>
             ) : (
@@ -242,7 +246,6 @@ export function SkyObservatory({ data, cap = COMFORTABLE_PIECES, lessonHref, ini
                 {summary.lines.map((line) => (
                   <li key={line.id} className="flex items-baseline gap-2 rounded-lg bg-sky-card px-2.5 py-2">
                     <span className="flex-1 text-[13px] font-semibold">{nameOf(line.id)}</span>
-                    <span className="text-[11px] tabular-nums text-sky-muted">{line.cost.pieces.length}</span>
                     <button type="button" aria-label={`Remove ${nameOf(line.id)}`} onClick={() => toggle(line.id)} className="pl-1.5 text-[14px] leading-none text-sky-muted hover:text-sky-coral">×</button>
                   </li>
                 ))}
