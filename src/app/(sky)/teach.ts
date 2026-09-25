@@ -15,6 +15,7 @@ import { wordContrastNoteFor } from "@/data/word-contrast-notes";
 import { builtPieces } from "@/data/kanji-etymology";
 import { teachablePieceMeaning } from "@/lib/kanji-parts";
 import { usedAsPartIn } from "@/lib/library/components";
+import { piecesOf } from "@/lib/library/word-pieces";
 import { derivePosition } from "@/lib/radical-position";
 import { formsOfWord, wordFormKind } from "@/lib/word-forms";
 import { COUNTER_CURRICULUM, counterForm, counterRoleNote } from "@/data/counters";
@@ -33,7 +34,7 @@ import { contextPronunciation } from "@/data/kana-context";
 import { keigoSetForEntry } from "@/data/keigo";
 import { pairForEntry } from "@/data/transitivity-facts";
 import { etymologyOf } from "@/data/kanji-etymology";
-import { kanjiRow, READINGS } from "@/data/kanji";
+import { kanjiRow, READINGS, type KanjiRow } from "@/data/kanji";
 import { getMnemonic, type SoundLine } from "@/data/mnemonics";
 import { numberConstructionFor } from "@/data/number-construction";
 import { wordPitch } from "@/data/pitch";
@@ -189,6 +190,32 @@ export function readablePatterns(history: HistoryFile, picks: readonly string[] 
   return out;
 }
 
+/** Where a kanji's reading goes on its card, by the kanji's own on and kun
+ * lists: on'yomi, kun'yomi, or both when the dictionary lists it under both
+ * (the card then shows it under both headings). The reading row's own type
+ * answers for a reading on neither list, which as shipped is none of them. */
+function readingKind(base: string, row: KanjiRow | undefined, type: "on" | "kun" | "both" | undefined): "on" | "kun" | "both" {
+  const on = row?.on.includes(base) ?? false;
+  const kun = row?.kun.includes(base) ?? false;
+  if (on && kun) return "both";
+  if (on) return "on";
+  if (kun) return "kun";
+  return type ?? "kun";
+}
+
+/** A word with its furigana (SAK-482): each kanji with its own reading in
+ * this word (休日 is きゅう over 休 and じつ over 日), and the kana as they
+ * are. A word that does not split by kanji (大人 is おとな, not 大 plus 人)
+ * carries its reading over the whole word, and a word the vocabulary does not
+ * have prints plain. */
+function wordSound(word: string): SkySoundLine {
+  const row = vocabRow(word);
+  if (!row) return [{ text: word }];
+  const pieces = piecesOf(row);
+  if (!pieces) return row.reb === word ? [{ text: word }] : [{ text: word, ruby: row.reb }];
+  return pieces.map((p) => (p.kind === "kanji" ? { text: p.written, ruby: p.reading } : { text: p.text }));
+}
+
 export function teachFor(item: SkyItem, scope: TeachScope = {}): LessonTeach {
   const t: LessonTeach = {};
   const glyph = item.glyph;
@@ -216,8 +243,14 @@ export function teachFor(item: SkyItem, scope: TeachScope = {}): LessonTeach {
     if (row) { t.meanings = row.meanings; t.strokes = row.strokes; }
     const e = etymologyOf(glyph);
     if (e?.originText) t.etymology = e.originText;
-    // on'yomi are written in katakana, kun'yomi in hiragana, the dictionary's own convention
-    t.readings = READINGS.filter((r) => r.k === glyph).map((r) => ({ reading: r.base, kind: /[\u30a0-\u30ff]/.test(r.base) ? "on" as const : "kun" as const, words: r.words.slice(0, 4) }));
+    // on or kun by the kanji's own lists (SAK-482). This used to look for
+    // katakana, but the readings arrive in hiragana, so every one of them
+    // landed under kun'yomi, \u306b\u3061 and \u3058\u3064 on \u65e5 among them.
+    t.readings = READINGS.filter((r) => r.k === glyph).map((r) => ({
+      reading: r.base,
+      kind: readingKind(r.base, row, r.type),
+      words: r.words.slice(0, 4).map((w) => ({ word: w, sound: wordSound(w) })),
+    }));
     // what each piece does in it, the app's "Built from" labels: a phonetic
     // piece gives its sound, a semantic one its sense (or its own meaning)
     const parts = builtPieces(glyph).map((p) => ({

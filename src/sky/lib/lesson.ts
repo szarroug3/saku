@@ -52,8 +52,12 @@ export interface LessonTeach {
   notes?: readonly string[];
   /** Where the character comes from, for a kanji. */
   etymology?: string;
-  /** A kanji's readings, on'yomi and kun'yomi, each with words it is read that way in. */
-  readings?: ReadonlyArray<{ reading: string; kind: "on" | "kun"; words: readonly string[] }>;
+  /** A kanji's readings, on'yomi and kun'yomi, each with words it is read
+   * that way in. A reading the dictionary lists as both is shown under both.
+   * Each word carries its furigana as runs (SAK-482): each kanji with its own
+   * reading in that word, or one reading over the whole word when it does not
+   * split by kanji. */
+  readings?: ReadonlyArray<{ reading: string; kind: "on" | "kun" | "both"; words: ReadonlyArray<{ word: string; sound: SoundLine }> }>;
   /** What kind of word it is, for a word that conjugates: "る-verb",
    * "う-verb", "irregular verb", "い-adjective", "な-adjective". The forms
    * folds showed every form a word takes without ever saying which group it

@@ -210,7 +210,7 @@ describe("a kanji reading with no word behind it", () => {
     assert.ok(rows.length > 1, "面 has only one reading");
     const taught = rows.filter((r) => r.words.length > 0);
     assert.ok(taught.length > 0, "not one of 面's readings has a word");
-    for (const r of taught) assert.ok(r.words.every((w) => w.includes("面")), `${r.reading} is attested by a word without 面 in it`);
+    for (const r of taught) assert.ok(r.words.every((w) => w.word.includes("面")), `${r.reading} is attested by a word without 面 in it`);
   });
 
   it("is how the other five read too", () => {
@@ -222,6 +222,53 @@ describe("a kanji reading with no word behind it", () => {
       if (find(glyph, reading)?.words.length === 0) empty.push(`${glyph}/${reading}`);
     }
     assert.deepEqual(empty, ["仏/ふつ", "埋/うず", "畳/じょう", "背/せい", "開/ひら", "面/おもて"]);
+  });
+});
+
+// ===========================================================================
+// SAK-482: the kanji card's Readings fold.
+//
+// The fold printed its example words bare (期日 休日 近日 元日 beside じつ),
+// and it sorted on from kun by looking for katakana in readings that arrive
+// in hiragana, so all of 日's readings sat under kun'yomi. The kind comes from
+// the kanji's own on and kun lists now, and each word carries its furigana.
+// ===========================================================================
+describe("a kanji card's Readings fold", () => {
+  const readingsOf = (glyph: string) => atlasEntryFromHistory(emptyHistory(), `kanji:${glyph}`, NOW)?.teach?.readings ?? [];
+  const find = (glyph: string, reading: string) => readingsOf(glyph).find((r) => r.reading === reading);
+
+  it("puts 日's にち and じつ under on'yomi and ひ under kun'yomi", () => {
+    assert.equal(find("日", "にち")?.kind, "on");
+    assert.equal(find("日", "じつ")?.kind, "on");
+    assert.equal(find("日", "ひ")?.kind, "kun");
+  });
+
+  it("gives each word its furigana, each kanji with its own reading in that word", () => {
+    const kyuujitsu = find("日", "じつ")?.words.find((w) => w.word === "休日");
+    assert.ok(kyuujitsu, "休日 is not one of じつ's words");
+    assert.deepEqual(kyuujitsu.sound, [{ text: "休", ruby: "きゅう" }, { text: "日", ruby: "じつ" }]);
+  });
+
+  it("leaves the kana in a word plain and puts the reading over the kanji only", () => {
+    // お誕生日おめでとうございます is one of び's words: its お and its
+    // おめでとうございます print as they are, with nothing over them
+    for (const r of readingsOf("日")) {
+      for (const w of r.words) {
+        assert.equal(w.sound.map((s) => s.text).join(""), w.word, `${w.word}'s runs do not spell it`);
+        for (const s of w.sound) {
+          if (s.ruby) assert.match(s.ruby, /^[぀-ゟ]+$/, `${w.word}: "${s.ruby}" is not kana`);
+          else assert.doesNotMatch(s.text, /[一-鿿]/, `${w.word}: "${s.text}" is kanji with no reading over it`);
+        }
+      }
+    }
+  });
+
+  it("gives every word a reading, on a spread of common kanji", () => {
+    const bare: string[] = [];
+    for (const glyph of new Set(["日", "人", "大", "生", "面", "今", "一", "時", "出", "行"])) {
+      for (const r of readingsOf(glyph)) for (const w of r.words) if (!w.sound.some((s) => s.ruby)) bare.push(`${glyph}/${r.reading}/${w.word}`);
+    }
+    assert.deepEqual(bare, []);
   });
 });
 

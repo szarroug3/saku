@@ -1801,6 +1801,32 @@ test("a lesson card's readings line up in three columns", async ({ page }) => {
   expect(row.reading!).toBeLessThan(row.words!);
 });
 
+test("a kanji card's Readings fold puts on'yomi under its own heading and gives each word its furigana", async ({ page }) => {
+  // SAK-482. Every reading on 日 sat under kun'yomi, and the words beside
+  // them had no readings over their kanji.
+  await lessonOnStepOne(page, `/lesson?picks=${encodeURIComponent("kanji:日")}`);
+  await page.getByRole("button", { name: "Open Readings" }).first().click();
+  const panel = page.locator(`[id="${await page.getByRole("button", { name: "Close Readings" }).first().getAttribute("aria-controls")}"]`);
+  await expect(panel).toBeVisible();
+
+  // the headings and the readings in the order the fold shows them
+  const order = await panel.evaluate((box) => {
+    const grid = box.querySelector(".grid");
+    return [...(grid?.children ?? [])].flatMap((el) => el.tagName === "UL"
+      ? [...el.querySelectorAll("li")].map((li) => li.querySelectorAll(":scope > span")[0]?.textContent ?? "")
+      : [el.textContent ?? ""]);
+  });
+  const at = (text: string) => order.findIndex((t) => t.startsWith(text));
+  expect(at("On'yomi")).toBe(0);
+  expect(at("にち")).toBeLessThan(at("Kun'yomi"));
+  expect(at("じつ")).toBeLessThan(at("Kun'yomi"));
+  expect(at("ひ")).toBeGreaterThan(at("Kun'yomi"));
+
+  // 休日 with きゅう over 休 and じつ over 日
+  const kyuujitsu = panel.locator("span.whitespace-nowrap").filter({ hasText: "休" });
+  await expect(kyuujitsu.locator("rt")).toHaveText(["きゅう", "じつ"]);
+});
+
 test("every line on the sky is the same line, and none of them is dashed", async ({ page }) => {
   // SAK-338. A line used to take its dash and its fade from the standing of
   // the star it pointed AT, so the same edge read differently depending on

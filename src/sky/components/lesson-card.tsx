@@ -156,8 +156,9 @@ export function LessonCard({ item, teach, madeOf, partOf, onSelect, onRead, writ
   const byId = new Map(madeOf.map((m) => [m.glyph, m]));
   // what each piece does in the character: "lends セイ", "water"
   const partSense = new Map((teach?.parts ?? []).filter((p) => p.sense).map((p) => [p.glyph, p.sense]));
-  const on = teach?.readings?.filter((r) => r.kind === "on") ?? [];
-  const kun = teach?.readings?.filter((r) => r.kind === "kun") ?? [];
+  // a reading the dictionary lists as both goes under both headings
+  const on = teach?.readings?.filter((r) => r.kind !== "kun") ?? [];
+  const kun = teach?.readings?.filter((r) => r.kind !== "on") ?? [];
   // The readings are a table, so they are laid out as one (SAK-413). Three
   // columns: the hear button, then the reading, then the words it is read that
   // way in. The button leads because it is the one cell the same width on every
@@ -194,7 +195,13 @@ export function LessonCard({ item, teach, madeOf, partOf, onSelect, onRead, writ
             <span className={`font-sky-display text-[16px] ${untaught ? "text-sky-muted" : "text-sky-ink"} ${japaneseFont(r.reading)}`}>{r.reading}</span>
             {untaught
               ? <span className="text-sky-muted">No word in Saku uses this reading.</span>
-              : <span className={`font-sky-display ${japaneseFont(r.words[0])}`}>{r.words.join("  ")}</span>}
+              : (
+                // each word with its furigana over its kanji (SAK-482), one
+                // word to a box so a word never breaks across two lines
+                <span className={`flex flex-wrap items-baseline gap-x-3.5 leading-[2.1] font-sky-display ${japaneseFont(r.words[0].word)}`}>
+                  {r.words.map((w) => <span key={w.word} className="whitespace-nowrap"><Sound line={w.sound} /></span>)}
+                </span>
+              )}
           </li>
         );
       })}
