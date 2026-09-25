@@ -1631,11 +1631,17 @@ test("a word's example sentence underlines the word itself", async ({ page }) =>
   await page.goto(`/atlas?sample&entry=${encodeURIComponent("word:仕事")}`);
   await page.getByRole("button", { name: "Open In a sentence" }).click();
 
-  const underlined = page.locator("span.underline").filter({ hasText: "仕事" });
+  // the text without the furigana over it (SAK-481), which is what a reader sees
+  const bare = (el: Element) => {
+    const copy = el.cloneNode(true) as Element;
+    copy.querySelectorAll("rt").forEach((rt) => rt.remove());
+    return copy.textContent;
+  };
+  const underlined = page.locator("span.underline").filter({ hasText: "仕" });
   await expect(underlined).toHaveCount(1);
-  await expect(underlined).toHaveText("仕事");
+  expect(await underlined.evaluate(bare)).toBe("仕事");
   // the whole sentence is still there around it
-  await expect(page.getByText("今から仕事ですよ。")).toBeVisible();
+  expect(await underlined.locator("xpath=ancestor::p[1]").evaluate(bare)).toBe("今から仕事ですよ。");
 
   // drawn in the accent, the color Sam keeps for the word being pointed at,
   // and really underlined rather than only carrying the class
@@ -1650,6 +1656,31 @@ test("a word's example sentence underlines the word itself", async ({ page }) =>
   });
   expect(drawn.color).toBe(drawn.accent);
   expect(drawn.line).toContain("underline");
+});
+
+test("a word's example sentence has the furigana over its kanji", async ({ page }) => {
+  // SAK-481. The readings were stored with the sentence and the payload
+  // dropped them, so 今から仕事ですよ。 printed with its kanji bare.
+  await page.goto(`/atlas?sample&entry=${encodeURIComponent("word:仕事")}`);
+  // open the fold if it is folded, once the card has drawn it
+  const fold = page.getByRole("button", { name: /^(Open|Close) In a sentence$/ });
+  await expect(fold).toBeVisible();
+  if ((await fold.getAttribute("aria-expanded")) !== "true") await fold.click();
+  await expect(fold).toHaveAttribute("aria-expanded", "true");
+  const controls = await fold.getAttribute("aria-controls");
+  const sentence = page.locator(`[id="${controls}"] p`).first();
+  await expect(sentence.locator("ruby")).toHaveCount(3);
+  await expect(sentence.locator("ruby rt")).toHaveText(["いま", "し", "ごと"]);
+  // the reading sits over its kanji, not beside it
+  const box = await sentence.locator("ruby").nth(1).evaluate((el) => {
+    const rt = el.querySelector("rt")!.getBoundingClientRect();
+    const range = document.createRange();
+    range.selectNodeContents(el.firstChild!);
+    const base = range.getBoundingClientRect();
+    return { above: base.top - rt.bottom, off: Math.abs((rt.left + rt.right) / 2 - (base.left + base.right) / 2) };
+  });
+  expect(box.above).toBeGreaterThanOrEqual(-2);
+  expect(box.off).toBeLessThan(4);
 });
 
 test("the why behind writing early folds open under the card that raises it", async ({ page }) => {

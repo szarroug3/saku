@@ -14,7 +14,7 @@
 
 import { isJapanese } from "./japanese";
 import { shuffled } from "./random";
-import type { LessonTeach } from "./lesson";
+import type { LessonTeach, SoundLine } from "./lesson";
 import type { SkyItem } from "./types";
 
 export type Grade = "clean" | "help" | "missed";
@@ -58,6 +58,11 @@ export interface QuizOption {
    * cannot name honestly carries nothing and is simply not listed, since a
    * vague reason is worse than none. Never set on the answer. */
   why?: string;
+  /** The label with the reading over its kanji (SAK-481), for the reveal's
+   * "Why the others were there" list: 選んでから with えら over 選. Set only
+   * on a card drilled on a word the learner knows in kanji. The choices
+   * themselves are drawn plain while the card is open. */
+  sound?: SoundLine;
 }
 
 /** One of a character's readings, as the reveal's breakdown lists it. */
@@ -114,8 +119,12 @@ export interface QuizCard {
   hint?: { text?: string; image?: string; reading?: string };
   /** How the answer is built, an equation to the line ("げんき + な →
    * げんきな"). Shown under the answer once the card is answered, never in
-   * the hint: its last line IS the answer (SAK-454). */
-  built?: readonly string[];
+   * the hint: its last line IS the answer (SAK-454).
+   *
+   * Each line is runs, so a word drawn in kanji carries its reading over the
+   * kanji (SAK-481): 選ぶ − ぶ + んで → 選んで with えら over each 選. A card
+   * drawn in kana has one plain run to the line. */
+  built?: readonly SoundLine[];
   /** What kind of answer is wanted, for the box's placeholder. */
   answerIs: "reading" | "meaning" | "other";
   /** Opens on the box; false opens on the options (a card only ever asked

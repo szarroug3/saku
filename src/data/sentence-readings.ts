@@ -54,7 +54,19 @@ export function sentenceSlots(jp: string): readonly KanjiReadingSlot[] | undefin
  * plain. */
 export function sentenceRuby(jp: string, from = 0, to = jp.length): Array<{ text: string; ruby?: string }> | undefined {
   const slots = READINGS[jp];
-  if (!slots) return undefined;
+  return slots ? slotRuby(jp, slots, from, to) : undefined;
+}
+
+/** The same runs from slots handed in rather than looked up (SAK-481): a
+ * word's own sentence carries its slots on the row (`WordExample.kr`, the same
+ * shape and the same one-slot-per-kanji count), so the word card reads them
+ * from there. Undefined when the slots do not match the sentence's kanji. */
+export function slotRuby(
+  jp: string,
+  slots: readonly KanjiReadingSlot[],
+  from = 0,
+  to = jp.length,
+): Array<{ text: string; ruby?: string }> | undefined {
   // by UTF-16 unit, the unit a span into `jp` counts in
   const chars = jp.split("");
   // what each position says: a kanji's reading, or a jukujikun's over the

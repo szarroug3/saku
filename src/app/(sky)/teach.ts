@@ -41,12 +41,13 @@ import { wordPitch } from "@/data/pitch";
 import { TERMS, termEntry } from "@/data/terms";
 import { readingUnits, vocabRow } from "@/data/vocab";
 import { exampleFor } from "@/data/word-examples";
-import { sentenceRuby } from "@/data/sentence-readings";
+import { sentenceRuby, slotRuby } from "@/data/sentence-readings";
 import { lessonsForTier, positionedStepParts, stepPartOrder, type PositionedStepPart, type StepKey, type TierExample } from "@/lib/sentence-rule-walk";
 import { libEntry } from "@/lib/library/entries";
 import { standingFor } from "./learner";
 import { TSU_RULE } from "./observatory";
 import { type LessonTeach, type PartedSentence, type SoundLine as SkySoundLine, type TeachForm, type TeachPage, type TeachParagraph, type TeachTable } from "@/sky/lib/lesson";
+import { cutLine } from "@/sky/lib/sound-line";
 import type { SkyItem } from "@/sky/lib/types";
 
 import type { EntryId } from "@/types/facts";
@@ -282,8 +283,14 @@ export function teachFor(item: SkyItem, scope: TeachScope = {}): LessonTeach {
     // the span comes across with the sentence (SAK-443): the payload used to
     // drop it, so the card had no way to underline the word it is showing the
     // learner and printed the sentence plain
+    // and its furigana (SAK-481): the readings were stored with the sentence
+    // (`kr`) and the payload dropped them too, so 今から仕事ですよ。 printed
+    // bare. A sentence with no readings to print prints as it did.
     const ex = exampleFor(glyph);
-    if (ex) t.example = { jp: ex.jp, en: ex.en, ...(ex.span ? { span: ex.span } : {}) };
+    if (ex) {
+      const sound = slotRuby(ex.jp, ex.kr);
+      t.example = { jp: ex.jp, en: ex.en, ...(ex.span ? { span: ex.span } : {}), ...(sound?.some((s) => s.ruby) ? { sound } : {}) };
+    }
     t.pitch = wordPitch(glyph);
     // how it differs from the word it is weighed against, and every form
     // it takes, grouped as the app's word page groups them
@@ -496,9 +503,14 @@ export const PARTICLE_TERM = "particle";
  * pieces with a word between them), which leaves the line plain rather than
  * marking the wrong part of it. */
 function withParticleMarked(jp: string, particle: string): SkySoundLine {
+  // with the furigana over its kanji (SAK-481), from the readings the "In a
+  // sentence" block reads the same sentences with; a particle is kana, so the
+  // cut never lands inside a reading
+  const line = sentenceRuby(jp) ?? [{ text: jp }];
   const at = jp.indexOf(particle);
-  if (at < 0) return [{ text: jp }];
-  return [{ text: jp.slice(0, at) }, { text: particle, accent: true }, { text: jp.slice(at + particle.length) }].filter((r) => r.text);
+  if (at < 0) return line;
+  const [before, mark, after] = cutLine(line, at, at + particle.length);
+  return [...before, ...mark.map((r) => ({ ...r, accent: true })), ...after];
 }
 
 /**

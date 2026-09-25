@@ -9,7 +9,7 @@
 
 import { answerKeyFor, buildMcOptions } from "@/lib/engine";
 import { hintFor } from "@/lib/engine/hint";
-import { derivationLines } from "@/lib/grammar/derivation";
+import { derivationLines, type Derivation } from "@/lib/grammar/derivation";
 import { rollConstructionItem } from "@/lib/engine/number-quiz";
 import { pitchFactId, PITCH_SUBJECT } from "@/data/pitch-facts";
 import { pitchInstruction, rollPitchQuestion } from "@/lib/pitch-quiz";
@@ -33,6 +33,7 @@ import { quizzableFacts } from "@/lib/library/reading-proof-facts";
 import { answerIsMeaning, isSound, quizInstruction } from "@/lib/quiz-instruction";
 import { dueFacts } from "@/lib/selection";
 import { buildGraph } from "@/sky/lib/graph";
+import type { SoundLine as SkySoundLine } from "@/sky/lib/lesson";
 import { shuffleDeck, type AnswerKey, type QuizCard, type QuizOption } from "@/sky/lib/quiz";
 import type { SkyItem } from "@/sky/lib/types";
 import type { EntryId, FactId } from "@/types/facts";
@@ -326,6 +327,50 @@ function hintFields(hint: ReturnType<typeof hintFor>, reading: string): { hint?:
   return Object.keys(out).length ? { hint: out } : {};
 }
 
+const KANJI = /[一-鿿㐀-䶿々]/;
+
+/**
+ * A line in kanji with its readings over the kanji, from the same line drawn
+ * in kana (SAK-481): 選んでから against えらんでから puts えら over 選.
+ *
+ * Word by word, a word being what the line puts spaces between (an equation's
+ * "選ぶ − ぶ + んで" is five of them). In each word the kana between the kanji
+ * has to be the same in both spellings, which pins down what each run of
+ * kanji says, 来て against きて included, where 来 is read three ways. A
+ * word the two spellings do not agree on leaves the whole line plain, since
+ * no reading beats a wrong one. Undefined when nothing in the line is kanji.
+ */
+function rubyOver(kanji: string, kana: string): SkySoundLine | undefined {
+  if (!KANJI.test(kanji)) return undefined;
+  const words = kanji.split(" "), said = kana.split(" ");
+  if (words.length !== said.length) return undefined;
+  const runs: Array<{ text: string; ruby?: string }> = [];
+  const plain = (text: string) => {
+    const last = runs[runs.length - 1];
+    if (last && last.ruby === undefined) last.text += text;
+    else if (text) runs.push({ text });
+  };
+  for (let w = 0; w < words.length; w++) {
+    if (w > 0) plain(" ");
+    // kana, kanji, kana, kanji, ... with the kanji at the odd places
+    const parts = words[w].split(/([一-鿿㐀-䶿々]+)/);
+    const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const read = new RegExp(`^${parts.map((p, i) => (i % 2 ? "(.+?)" : esc(p))).join("")}$`).exec(said[w]);
+    if (!read) return undefined;
+    parts.forEach((p, i) => (i % 2 ? runs.push({ text: p, ruby: read[(i + 1) / 2] }) : plain(p)));
+  }
+  return runs;
+}
+
+/** How a grammar answer is built, one line to the equation, with the readings
+ * over the kanji when the card is drawn in kanji: `kana` is the same hint for
+ * the same showing drawn in kana (SAK-481). */
+function builtLines(derivation: Derivation, kana: ReturnType<typeof hintFor> | undefined): SkySoundLine[] {
+  const lines = derivationLines(derivation);
+  const said = kana?.kind === "derivation" ? derivationLines(kana.derivation) : [];
+  return lines.map((line, i) => (said[i] !== undefined ? rubyOver(line, said[i]) : undefined) ?? [{ text: line }]);
+}
+
 /** The cards for some facts, in order. With `audio`, a card that has a
  * sound to ask by becomes a listening card half the time. */
 export function quizCards(history: HistoryFile, facts: readonly FactId[], now = Date.now(), opts: QuizOptions = {}): QuizCard[] {
@@ -375,11 +420,17 @@ export function quizCards(history: HistoryFile, facts: readonly FactId[], now = 
     const ctx: PromptContext | undefined = construction ? { numberItem: construction } : vehicle ? { grammarVehicle: vehicle } : undefined;
     const prompt = questionsFor(fact).prompt(fact, dir, ctx);
     const qt = questionsFor(fact);
+    // The same showing drawn in kana, for the readings over a known word's
+    // kanji once the card is answered (SAK-481). The vehicle's `known` flag
+    // only changes how the showing is drawn, so this is the card above, word
+    // for word, in kana.
+    const kanaCtx: PromptContext | undefined = vehicle?.known && KANJI.test(vehicle.surface) ? { grammarVehicle: { ...vehicle, known: false } } : undefined;
     const options: QuizOption[] = buildMcOptions(fact, dir, ctx, known).map((f) => {
       const label = qt.optionLabel?.(f, dir, ctx) ?? revealFor(f, dir, ctx);
       // and why it was there, for the reveal to name (SAK-315)
       const why = whyOption(fact, f, !!vehicle);
-      return { id: f, label, jp: /[぀-ヿ一-龯]/.test(label), ...(why ? { why } : {}) };
+      const sound = why && kanaCtx ? rubyOver(label, qt.optionLabel?.(f, dir, kanaCtx) ?? revealFor(f, dir, kanaCtx)) : undefined;
+      return { id: f, label, jp: /[぀-ヿ一-龯]/.test(label), ...(why ? { why } : {}), ...(sound ? { sound } : {}) };
     });
     // the answer is always among the options; the engine sees to it, but a
     // card with no board at all would be unanswerable by recognition
@@ -452,7 +503,7 @@ export function quizCards(history: HistoryFile, facts: readonly FactId[], now = 
       // reading is a field of its own so the hint can say it in a sentence
       // (SAK-453).
       ...hintFields(hint, readingHint),
-      ...(hint?.kind === "derivation" ? { built: derivationLines(hint.derivation) } : {}),
+      ...(hint?.kind === "derivation" ? { built: builtLines(hint.derivation, kanaCtx && hintFor(fact, dir, undefined, false, kanaCtx.grammarVehicle)) } : {}),
       answerIs: construction ? "reading" : answerIsMeaning(fact, dir) ? "meaning" : isSound(fact, dir) ? "reading" : "other",
       typed: typedCard,
       ...(inKana ? { answerInKana: isKatakana(answer) ? "katakana" as const : "hiragana" as const } : {}),

@@ -23,7 +23,8 @@ import { Eyebrow } from "@/sky/components/sky-card";
 import { StandingChip } from "@/sky/components/standing-legend";
 import { Pager, Parted, Sound, Table, TeachPageView } from "@/sky/components/teach-page";
 import { japaneseFont } from "@/sky/lib/japanese";
-import type { LessonTeach, TeachPage } from "@/sky/lib/lesson";
+import type { LessonTeach, SoundLine, TeachPage } from "@/sky/lib/lesson";
+import { cutLine } from "@/sky/lib/sound-line";
 import { typeLabel } from "@/sky/lib/tokens";
 import type { SkyItem } from "@/sky/lib/types";
 
@@ -407,7 +408,7 @@ export function LessonCard({ item, teach, madeOf, partOf, onSelect, onRead, writ
         {teach?.example && (
           <Fold title="In a sentence">
             <p className={`font-sky-display text-[17px] text-sky-ink ${japaneseFont(teach.example.jp)}`}>
-              <ExampleSentence jp={teach.example.jp} span={teach.example.span} />
+              <ExampleSentence jp={teach.example.jp} span={teach.example.span} sound={teach.example.sound} />
             </p>
             <p className="mt-1">{teach.example.en}</p>
           </Fold>
@@ -432,14 +433,21 @@ export function LessonCard({ item, teach, madeOf, partOf, onSelect, onRead, writ
  * hidden: 今から仕事ですよ。printed plain leaves the learner to find 仕事 in
  * it. The span is the data's, so the underline follows the word as the
  * sentence inflects it rather than looking for the dictionary spelling, and a
- * sentence whose word could not be found is still printed, just plain. */
-function ExampleSentence({ jp, span }: { jp: string; span?: readonly [number, number] }) {
-  if (!span || span[0] >= span[1] || span[1] > jp.length) return <>{jp}</>;
+ * sentence whose word could not be found is still printed, just plain.
+ *
+ * And with the furigana over its kanji when the sentence has readings
+ * (SAK-481), drawn the way the teach page draws a sentence. The span counts
+ * characters of the sentence, so the runs are cut at it and the underline
+ * goes around the word's runs, readings and all. */
+function ExampleSentence({ jp, span, sound }: { jp: string; span?: readonly [number, number]; sound?: SoundLine }) {
+  const line = sound ?? [{ text: jp }];
+  if (!span || span[0] >= span[1] || span[1] > jp.length) return <Sound line={line} />;
+  const [before, word, after] = cutLine(line, span[0], span[1]);
   return (
     <>
-      {jp.slice(0, span[0])}
-      <span className="text-sky-accent underline underline-offset-4">{jp.slice(span[0], span[1])}</span>
-      {jp.slice(span[1])}
+      <Sound line={before} />
+      <span className="text-sky-accent underline underline-offset-4"><Sound line={word} /></span>
+      <Sound line={after} />
     </>
   );
 }

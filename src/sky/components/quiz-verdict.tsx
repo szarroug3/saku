@@ -30,7 +30,9 @@ import type { PitchComponent } from "@/sky/components/lesson-card";
 import { Mixed } from "@/sky/components/mixed-text";
 import { SkySurface } from "@/sky/components/sky-panel";
 import { VERDICT } from "@/sky/components/quiz-results";
+import { Sound } from "@/sky/components/teach-page";
 import { japaneseFont } from "@/sky/lib/japanese";
+import type { SoundLine } from "@/sky/lib/lesson";
 import { answerLine, GRADE, triedBefore, type QuizAnswer, type QuizCard, type QuizRule } from "@/sky/lib/quiz";
 
 /** The attempts as a sentence: "A", "A, then B", "A, B, then C". Struck
@@ -159,7 +161,7 @@ export function QuizWhy({ card, pitch: Pitch }: { card: QuizCard; pitch?: PitchC
         {others.map((o) => (
           <li key={o.id} className="flex flex-wrap items-baseline gap-x-2 text-[13px]">
             <span className={`text-sky-ink ${japaneseFont(o.label)}`}>
-              {o.pitch !== undefined && Pitch ? <Pitch reading={o.label} downstep={o.pitch} /> : o.label}
+              {o.pitch !== undefined && Pitch ? <Pitch reading={o.label} downstep={o.pitch} /> : o.sound ? <Sound line={o.sound} /> : o.label}
             </span>
             <span className="text-sky-muted">{o.why}</span>
           </li>
@@ -209,13 +211,15 @@ export function QuizHint({ hint }: { hint: NonNullable<QuizCard["hint"]> }) {
  * (SAK-454). It used to be the second half of the hint, where its last line
  * gave the answer away; here it explains the answer instead. One equation to
  * the line, down the page, so the second reads as the first one continued. */
-export function QuizBuilt({ lines }: { lines: readonly string[] }) {
+export function QuizBuilt({ lines }: { lines: readonly SoundLine[] }) {
   if (!lines.length) return null;
+  // A word drawn in kanji has its reading over the kanji (SAK-481). The card
+  // is answered by now, so the reading gives nothing away.
   return (
     <div className="mt-4 text-left">
       <Eyebrow>How it is built</Eyebrow>
       <div className="flex flex-col gap-1">
-        {lines.map((line) => <span key={line} className="text-[17px] leading-snug text-sky-ink"><Mixed text={line} /></span>)}
+        {lines.map((line, i) => <span key={i} className="text-[17px] leading-snug text-sky-ink"><Sound line={line} /></span>)}
       </div>
     </div>
   );

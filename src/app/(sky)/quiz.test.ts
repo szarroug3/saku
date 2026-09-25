@@ -8,7 +8,7 @@ import { describe, it } from "node:test";
 import { GRAMMAR_SUBJECT } from "@/data/grammar";
 import { kanjiRow } from "@/data/kanji";
 import { pitchFactId } from "@/data/pitch-facts";
-import { VOCAB, VOCAB_SUBJECT, wordUnitFacts } from "@/data/vocab";
+import { VOCAB, VOCAB_SUBJECT, wordMeaningFactId, wordUnitFacts } from "@/data/vocab";
 import { interchangeableReadings } from "@/lib/engine/question";
 import { factInfo, factsOf } from "@/lib/facts";
 import { emptyHistory } from "@/lib/history-ops";
@@ -137,7 +137,7 @@ describe("the verb a grammar card is drilled on", () => {
     const derived = fresh.filter((c) => c.built?.length);
     assert.ok(derived.length > 0, "no card carried a derivation for its reveal");
     for (const card of derived) {
-      for (const line of card.built!) assert.match(line, / → /, card.id);
+      for (const line of card.built!) assert.match(line.map((r) => r.text).join(""), / → /, card.id);
       const hint = card.hint?.text ?? "";
       assert.ok(!hint.includes("→"), `${card.id} hinted an equation: ${hint}`);
       assert.ok(!hint.includes(card.answer), `${card.id} hinted its own answer: ${hint}`);
@@ -154,6 +154,46 @@ describe("the verb a grammar card is drilled on", () => {
       if (kanji) assert.ok(grade(card, kanji), `${card.id} rejected ${kanji}`);
       assert.ok(!grade(card, "たべた"), `${card.id} accepted an unrelated form`);
     }
+  });
+});
+
+// SAK-481: a card drilled on a word the learner knows draws it in kanji, and
+// the reveal's "How it is built" and "Why the others were there" printed 選 with
+// no reading over it. The card is answered by then, so the reading gives
+// nothing away.
+describe("the readings over a known word's kanji, once the card is answered", () => {
+  const knows = (...words: string[]): HistoryFile => ({ ...emptyHistory(), claims: Object.fromEntries(words.map((w) => [wordMeaningFactId(w), NOW])) });
+  const cardOn = (fact: string, history: HistoryFile) => quizCards(history, [fact as FactId], NOW)[0];
+  const show = (line: ReadonlyArray<{ text: string; ruby?: string }>) => line.map((r) => (r.ruby ? `${r.text}(${r.ruby})` : r.text)).join("");
+
+  it("puts えら over 選 in every line of how 選んで is built", () => {
+    const card = cardOn("grammar:te-sequence/production@v5b", knows("選ぶ"));
+    assert.equal(card?.meta?.vehicle, "選ぶ");
+    assert.deepEqual(card.built?.map(show), ["選(えら)ぶ − ぶ + んで → 選(えら)んで"]);
+  });
+
+  it("puts the reading over the kanji of every other choice the reveal lists", () => {
+    const card = cardOn("grammar:te-sequence/production@v5b", knows("選ぶ"));
+    const others = card!.options.filter((o) => o.why);
+    assert.ok(others.length > 0, "no other choice to list");
+    for (const o of others) {
+      assert.ok(o.sound, `${o.label} came without its reading`);
+      assert.equal(o.sound.map((r) => r.text).join(""), o.label);
+      assert.deepEqual(o.sound.filter((r) => r.ruby).map((r) => [r.text, r.ruby]), [["選", "えら"]]);
+    }
+  });
+
+  it("reads 来 by the form it is in", () => {
+    const card = cardOn("grammar:te-request/production@kuru", knows("来る"));
+    assert.equal(card?.meta?.vehicle, "来る");
+    assert.deepEqual(card.built?.map(show), ["来(く)る → 来(き)て", "来(き)て + ください → 来(き)てください"]);
+  });
+
+  it("draws a card in kana with one plain run to the line and nothing over its choices", () => {
+    const card = cardOn("grammar:te-sequence/production@v5b", emptyHistory());
+    assert.equal(card?.meta?.vehicleKnown, "");
+    for (const line of card.built ?? []) assert.ok(line.length === 1 && !line[0].ruby, show(line));
+    assert.ok(card.options.every((o) => !o.sound));
   });
 });
 

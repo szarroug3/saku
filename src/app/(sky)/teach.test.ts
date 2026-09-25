@@ -25,6 +25,7 @@ import { termEntry } from "@/data/terms";
 import { emptyHistory } from "@/lib/history-ops";
 import { knownFactsOf, libEntry } from "@/lib/library/entries";
 import { readableTierExamples, TIER_EXAMPLES } from "@/lib/sentence-rule-walk";
+import { CURRICULUM_KEBS_ORDERED } from "@/lib/word-rank";
 import type { EntryId } from "@/types/facts";
 import type { HistoryFile } from "@/types/store";
 
@@ -176,13 +177,40 @@ describe("a word's example sentence says where the word is", () => {
     }
   });
 
-  it("carries the sentence, its English and the span, and nothing else", () => {
+  it("carries the sentence, its English, the span and its readings, and nothing else", () => {
     // a sentence whose word could not be found carries no span at all rather
     // than a guessed one, so the key is optional and the card prints such a
     // sentence plain
     const ex = exampleOf("仕事");
     assert.ok(ex);
-    assert.deepEqual(Object.keys(ex).sort(), ["en", "jp", "span"]);
+    assert.deepEqual(Object.keys(ex).sort(), ["en", "jp", "sound", "span"]);
+  });
+
+  // SAK-481: the readings were stored with the sentence (`kr`, SAK-95) and the
+  // payload dropped them, so 今から仕事ですよ。 printed with no furigana.
+  it("carries the furigana over the sentence's kanji", () => {
+    const ex = exampleOf("仕事");
+    assert.ok(ex?.sound, "仕事's sentence came across without its readings");
+    assert.equal(ex.sound.map((r) => r.text).join(""), ex.jp, "the runs do not spell the sentence");
+    assert.deepEqual(ex.sound.filter((r) => r.ruby).map((r) => [r.text, r.ruby]), [["今", "いま"], ["仕", "し"], ["事", "ごと"]]);
+  });
+
+  it("spells the sentence and puts kana over kanji only, on the first 300 words taught", () => {
+    // a kanji the readings pass could not read has no slot to print and is
+    // left bare; a sentence with none at all carries no `sound` and prints as
+    // it did before
+    let read = 0;
+    for (const glyph of CURRICULUM_KEBS_ORDERED.slice(0, 300)) {
+      const ex = exampleOf(glyph);
+      if (!ex?.sound) continue;
+      read++;
+      assert.equal(ex.sound.map((r) => r.text).join(""), ex.jp, `${glyph}: the runs do not spell the sentence`);
+      for (const r of ex.sound.filter((r) => r.ruby)) {
+        assert.match(r.text, /^[一-鿿㐀-䶿々]+$/, `${glyph}: "${r.text}" is not kanji and has a reading over it`);
+        assert.match(r.ruby!, /^[぀-ゟ]+$/, `${glyph}: "${r.ruby}" is not kana`);
+      }
+    }
+    assert.ok(read > 200, `only ${read} of the first 300 words' sentences came with readings`);
   });
 });
 
@@ -398,6 +426,25 @@ describe("the Particle page lists every particle Saku teaches", () => {
     for (const id of table()?.opens ?? []) {
       assert.ok(sent.has(id!), `${id} did not travel with the Particle page, so its row would open nothing`);
     }
+  });
+
+  // SAK-481: 13 sentences with their kanji bare. The readings are the ones the
+  // "In a sentence" block has for the same sentences.
+  it("prints the furigana over every kanji in its sentences, and still picks out the particle", () => {
+    const t = table();
+    assert.ok(t);
+    const KANJI = /[一-鿿㐀-䶿々]/;
+    PARTICLE_ROWS.forEach((p, i) => {
+      const line = t.rows[i][2];
+      if (!p.example) return;
+      assert.equal(cell(line), p.example.jp, `${p.particle}: the runs do not spell the sentence`);
+      const bare = line.filter((r) => !r.ruby && KANJI.test(r.text)).map((r) => r.text);
+      assert.deepEqual(bare, [], `${p.particle}: ${p.example.jp} has kanji with no reading over it`);
+      // しか〜ない is two pieces with a word between them and is never marked
+      if (p.example.jp.includes(p.particle)) assert.ok(line.some((r) => r.accent && r.text === p.particle), `${p.particle} is not picked out in ${p.example.jp}`);
+    });
+    const wa = t.rows[PARTICLE_ROWS.findIndex((p) => p.particle === "は")][2];
+    assert.deepEqual(wa.filter((r) => r.ruby).map((r) => [r.text, r.ruby]), [["私", "わたし"], ["学", "がく"], ["生", "せい"]]);
   });
 
   it("says how は and へ are read when they do the job", () => {

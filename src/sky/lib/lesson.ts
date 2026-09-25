@@ -73,8 +73,13 @@ export interface LessonTeach {
    * The sentence writes the word as it is inflected there, so the span is
    * often not the dictionary spelling: くすぐる is underlined inside
    * くすぐらないで. Absent when nothing in the sentence resolved to the word,
-   * which is the data's own answer and never a guess. */
-  example?: { jp: string; en: string; span?: readonly [number, number] };
+   * which is the data's own answer and never a guess.
+   *
+   * `sound` is the same sentence with the furigana over its kanji (SAK-481),
+   * from the readings the word's sentence was stored with. Its runs spell
+   * `jp`, so the span still counts into it. Absent when the sentence has no
+   * readings, and the card prints `jp` as it is. */
+  example?: { jp: string; en: string; span?: readonly [number, number]; sound?: SoundLine };
   /** A word's pitch pattern, when known. */
   pitch?: number | null;
   /** How many strokes a character takes. */
