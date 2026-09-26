@@ -53,6 +53,24 @@
 // src/app/(sky)/teach.test.ts counts the runs against the readings, so a
 // sentence added without them fails rather than printing bare kanji.
 //
+// THE WORDS UNDER AN EXAMPLE
+// ==========================
+// Sam, 2026-09-26, on the が page's 雨が降っています: "the user might not know
+// what the word means so maybe we should put a definition on the words that
+// matter in all examples in all particles." So every example carries `words`:
+// the content words, in the order the sentence has them, each with a meaning
+// of a word or two. Left out: the particle the example is there for, the
+// other particles, です, ます and だ, and a word the paragraph right above
+// already gives a meaning for in brackets or quotes (水がほしいです lists 水
+// and not ほしい, because the paragraph says "ほしい (want)"). A word the
+// prose only names without a meaning (猫は好きです "is about cats") is listed.
+// The meaning is the vocabulary's first sense shortened, except where that
+// sense is not the one the sentence uses: いる is "to be needed" there (that
+// is 要る), なる "to bear fruit", 五分 "half" (ごぶ), 遅い "slow" and 休み
+// "rest". Those, and the words the vocabulary does not have (田中さん, 東京,
+// きれい, 勉強する, the clock times), are written by hand. The test beside the
+// readings checks each word is in its sentence and carries its furigana.
+//
 // HOW IT IS READ
 // ==============
 // は, へ and を are read one way as kana and another as particles. The words
@@ -114,6 +132,25 @@ export interface ParticleNoteExample {
   /** One reading per run of kanji in `jp`, left to right, for the furigana
    * over it. Absent only for a sentence written in kana. */
   readonly readings?: readonly string[];
+  /** The words a beginner needs to read the sentence, in the order they come
+   * in it, each with a short meaning (SAK-488). Empty only where the paragraph
+   * above already gives every word, with a comment saying so. */
+  readonly words: readonly ParticleNoteWord[];
+}
+
+/** One word under an example, and what it means.
+ *
+ * A verb or adjective is written in its dictionary form (降る, not 降って); a
+ * noun as the sentence writes it. The furigana over its kanji is the reading
+ * the sentence gives the same run of kanji, so 家 reads いえ here as it does in
+ * 家にいます. `reading` is for a word whose dictionary form reads its kanji
+ * another way: 来る is くる, where 来ました gives 来 the reading き. */
+export interface ParticleNoteWord {
+  readonly word: string;
+  readonly meaning: string;
+  /** The whole word's reading in kana, only where the sentence's reading of
+   * its kanji is not the word's own. */
+  readonly reading?: string;
 }
 
 /** One idea, and the sentence or two that show it. */
@@ -171,7 +208,7 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
           "Everything after it says something about that thing. English has no " +
           "small word that does only this, so a word-for-word translation " +
           "usually starts with \"as for\".",
-        examples: [{ jp: "私は学生です。", mark: "は", en: "As for me, I am a student.", readings: ["わたし", "がくせい"] }],
+        examples: [{ jp: "私は学生です。", mark: "は", en: "As for me, I am a student.", readings: ["わたし", "がくせい"], words: [{ word: "私", meaning: "I, me" }, { word: "学生", meaning: "student" }] }],
       },
       {
         for: "wa",
@@ -185,7 +222,7 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
         text:
           "は tells you nothing about what the word in front of it does. That " +
           "word can be the one acting, the thing acted on, or a day of the week.",
-        examples: [{ jp: "日曜日は家にいます。", mark: "は", en: "On Sunday, I am at home.", readings: ["にちようび", "いえ"] }],
+        examples: [{ jp: "日曜日は家にいます。", mark: "は", en: "On Sunday, I am at home.", readings: ["にちようび", "いえ"], words: [{ word: "日曜日", meaning: "Sunday" }, { word: "家", meaning: "house, home" }, { word: "いる", meaning: "be (living things)" }] }],
       },
       {
         for: "wa",
@@ -193,14 +230,14 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
           "What a sentence is about is usually something both people already " +
           "know. So は goes on whatever has already come up, like the bread you " +
           "are both looking at.",
-        examples: [{ jp: "このパンはおいしいですね。", mark: "は", en: "This bread is good." }],
+        examples: [{ jp: "このパンはおいしいですね。", mark: "は", en: "This bread is good.", words: [{ word: "この", meaning: "this" }, { word: "パン", meaning: "bread" }, { word: "おいしい", meaning: "tasty" }] }],
       },
       {
         for: "wa",
         text:
           "Two は in one sentence almost always means a comparison. One thing " +
           "goes with each は, and the sentence is about how the two differ.",
-        examples: [{ jp: "夏は暑いですが、冬は寒いです。", mark: "は", en: "Summer is hot, but winter is cold.", readings: ["なつ", "あつ", "ふゆ", "さむ"] }],
+        examples: [{ jp: "夏は暑いですが、冬は寒いです。", mark: "は", en: "Summer is hot, but winter is cold.", readings: ["なつ", "あつ", "ふゆ", "さむ"], words: [{ word: "夏", meaning: "summer" }, { word: "暑い", meaning: "hot" }, { word: "冬", meaning: "winter" }, { word: "寒い", meaning: "cold" }] }],
       },
       {
         for: "ga",
@@ -209,7 +246,7 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
           "Put が after a word and that word is the one doing something, or the " +
           "one that something is true of. What comes after が can be a verb, an " +
           "adjective, or a noun with です.",
-        examples: [{ jp: "雨が降っています。", mark: "が", en: "It is raining.", readings: ["あめ", "ふ"] }],
+        examples: [{ jp: "雨が降っています。", mark: "が", en: "It is raining.", readings: ["あめ", "ふ"], words: [{ word: "雨", meaning: "rain" }, { word: "降る", meaning: "fall" }] }],
       },
       {
         heading: "が picks one out",
@@ -224,8 +261,8 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
           "猫は好きです is about cats and says nothing about dogs. 猫が好きです " +
           "picks cats out and leaves dogs out.",
         examples: [
-          { jp: "猫は好きです。", mark: "は", en: "I like cats.", readings: ["ねこ", "す"] },
-          { jp: "猫が好きです。", mark: "が", en: "Cats are the ones I like.", readings: ["ねこ", "す"] },
+          { jp: "猫は好きです。", mark: "は", en: "I like cats.", readings: ["ねこ", "す"], words: [{ word: "猫", meaning: "cat" }, { word: "好き", meaning: "liked" }] },
+          { jp: "猫が好きです。", mark: "が", en: "Cats are the ones I like.", readings: ["ねこ", "す"], words: [{ word: "猫", meaning: "cat" }, { word: "好き", meaning: "liked" }] },
         ],
       },
       {
@@ -236,8 +273,8 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
           "so it sounds like an answer to a question. An introduction would use " +
           "は.",
         examples: [
-          { jp: "私は学生です。", mark: "は", en: "I am a student.", readings: ["わたし", "がくせい"] },
-          { jp: "私が学生です。", mark: "が", en: "I am the student.", readings: ["わたし", "がくせい"] },
+          { jp: "私は学生です。", mark: "は", en: "I am a student.", readings: ["わたし", "がくせい"], words: [{ word: "私", meaning: "I, me" }, { word: "学生", meaning: "student" }] },
+          { jp: "私が学生です。", mark: "が", en: "I am the student.", readings: ["わたし", "がくせい"], words: [{ word: "私", meaning: "I, me" }, { word: "学生", meaning: "student" }] },
         ],
       },
       {
@@ -246,7 +283,7 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
           "が goes on the part your listener does not know yet. は goes on " +
           "something you have both already talked about. Your listener does not " +
           "know yet that anyone came, so 誰か takes が.",
-        examples: [{ jp: "誰かが来ました。", mark: "が", en: "Someone came.", readings: ["だれ", "き"] }],
+        examples: [{ jp: "誰かが来ました。", mark: "が", en: "Someone came.", readings: ["だれ", "き"], words: [{ word: "誰か", meaning: "someone" }, { word: "来る", meaning: "come", reading: "くる" }] }],
       },
       {
         for: "ga",
@@ -256,7 +293,7 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
           "(dislike), ほしい (want), わかる (understand), できる (can do). In " +
           "Japanese, the thing you like or want is what が marks. The person who " +
           "likes or wants it often goes unsaid.",
-        examples: [{ jp: "水がほしいです。", mark: "が", en: "I want some water.", readings: ["みず"] }],
+        examples: [{ jp: "水がほしいです。", mark: "が", en: "I want some water.", readings: ["みず"], words: [{ word: "水", meaning: "water" }] }],
       },
       {
         for: "ga",
@@ -264,7 +301,7 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
         text:
           "A question word never takes は. You cannot be talking about something " +
           "you do not know yet, so 誰 (who), 何 (what) and どれ (which one) take が.",
-        examples: [{ jp: "誰が来ましたか。", mark: "が", en: "Who came?", readings: ["だれ", "き"] }],
+        examples: [{ jp: "誰が来ましたか。", mark: "が", en: "Who came?", readings: ["だれ", "き"], words: [{ word: "来る", meaning: "come", reading: "くる" }] }],
       },
       {
         for: "ga",
@@ -272,7 +309,7 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
           "The answer keeps が. The question asked which one of them it was, and " +
           "picking one out is what が does. 田中さんは来ました would be about " +
           "Tanaka instead, and who came would still be an open question.",
-        examples: [{ jp: "田中さんが来ました。", mark: "が", en: "Tanaka came.", readings: ["たなか", "き"] }],
+        examples: [{ jp: "田中さんが来ました。", mark: "が", en: "Tanaka came.", readings: ["たなか", "き"], words: [{ word: "田中さん", meaning: "Mr. or Ms. Tanaka" }, { word: "来る", meaning: "come", reading: "くる" }] }],
       },
       {
         heading: "Sentences with both",
@@ -282,7 +319,12 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
           "describes. In the sentence below, は is on 妹 (my sister), so the " +
           "sentence is about her. が is on 歌 (singing), the thing that 上手 (good " +
           "at) is said of.",
-        examples: [{ jp: "妹は歌が上手です。", mark: ["は", "が"], en: "My sister is good at singing.", readings: ["いもうと", "うた", "じょうず"] }],
+        examples: [{
+          jp: "妹は歌が上手です。", mark: ["は", "が"], en: "My sister is good at singing.", readings: ["いもうと", "うた", "じょうず"],
+          // empty on purpose: the paragraph right above gives all three
+          // words their meaning, 妹 (my sister), 歌 (singing), 上手 (good at)
+          words: [],
+        }],
       },
       {
         for: "ga",
@@ -292,7 +334,7 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
           "sentence and comes after a whole statement. The が this page is about " +
           "comes after a single word, so what comes in front of it " +
           "tells you which one you have.",
-        examples: [{ jp: "寒いですが、行きます。", mark: "が", en: "It is cold, but I am going.", readings: ["さむ", "い"] }],
+        examples: [{ jp: "寒いですが、行きます。", mark: "が", en: "It is cold, but I am going.", readings: ["さむ", "い"], words: [{ word: "寒い", meaning: "cold" }, { word: "行く", meaning: "go" }] }],
       },
       {
         heading: "Where beginners go wrong",
@@ -306,13 +348,13 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
           "Putting は on a time word changes more than you mean it to. 今日は " +
           "compares today with every other day, so a compliment built on it can " +
           "sound like the other days were worse.",
-        examples: [{ jp: "今日はきれいですね。", mark: "は", en: "You look nice today.", readings: ["きょう"] }],
+        examples: [{ jp: "今日はきれいですね。", mark: "は", en: "You look nice today.", readings: ["きょう"], words: [{ word: "今日", meaning: "today" }, { word: "きれい", meaning: "pretty" }] }],
       },
       {
         text:
           "は does not go next to が or を. It takes the place of whichever one " +
           "the word would have had.",
-        examples: [{ jp: "本は読みます。", mark: "は", en: "I do read books.", readings: ["ほん", "よ"] }],
+        examples: [{ jp: "本は読みます。", mark: "は", en: "I do read books.", readings: ["ほん", "よ"], words: [{ word: "本", meaning: "book" }, { word: "読む", meaning: "read" }] }],
       },
       {
         text:
@@ -332,7 +374,7 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
     body: [
       {
         text: "Put を after a word and that word is what the verb happens to.",
-        examples: [{ jp: "パンを食べます。", mark: "を", en: "I eat bread.", readings: ["た"] }],
+        examples: [{ jp: "パンを食べます。", mark: "を", en: "I eat bread.", readings: ["た"], words: [{ word: "パン", meaning: "bread" }, { word: "食べる", meaning: "eat" }] }],
       },
       {
         text:
@@ -344,13 +386,13 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
           "Not every verb takes one. 食べる (eat) and 飲む (drink) happen to " +
           "something. 起きる (get up) and 寝る (sleep) do not, so neither of them has " +
           "a を in front of it.",
-        examples: [{ jp: "水を飲みます。", mark: "を", en: "I drink water.", readings: ["みず", "の"] }],
+        examples: [{ jp: "水を飲みます。", mark: "を", en: "I drink water.", readings: ["みず", "の"], words: [{ word: "水", meaning: "water" }] }],
       },
       {
         text:
           "を also goes on a road or a path you move along. The word in front of " +
           "it is the route you took.",
-        examples: [{ jp: "道を歩きます。", mark: "を", en: "I walk along the road.", readings: ["みち", "ある"] }],
+        examples: [{ jp: "道を歩きます。", mark: "を", en: "I walk along the road.", readings: ["みち", "ある"], words: [{ word: "道", meaning: "road" }, { word: "歩く", meaning: "walk" }] }],
       },
       {
         heading: "を on a place",
@@ -358,8 +400,8 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
           "を and で both come after a place, and they say different things. を " +
           "marks the place you moved through. で marks where you were while you did it.",
         examples: [
-          { jp: "公園を走ります。", mark: "を", en: "I run through the park.", readings: ["こうえん", "はし"] },
-          { jp: "公園で走ります。", mark: "で", en: "I run in the park.", readings: ["こうえん", "はし"] },
+          { jp: "公園を走ります。", mark: "を", en: "I run through the park.", readings: ["こうえん", "はし"], words: [{ word: "公園", meaning: "park" }, { word: "走る", meaning: "run" }] },
+          { jp: "公園で走ります。", mark: "で", en: "I run in the park.", readings: ["こうえん", "はし"], words: [{ word: "公園", meaning: "park" }, { word: "走る", meaning: "run" }] },
         ],
       },
       {
@@ -367,14 +409,14 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
         text:
           "English puts a thing after some verbs that Japanese does not. In " +
           "Japanese a bus is something you get on, so 乗る (get on) takes に.",
-        examples: [{ jp: "バスに乗ります。", mark: "に", en: "I get on the bus.", readings: ["の"] }],
+        examples: [{ jp: "バスに乗ります。", mark: "に", en: "I get on the bus.", readings: ["の"], words: [{ word: "バス", meaning: "bus" }] }],
       },
       {
         text:
           "開く is a verb for something that happens by itself, so it does not " +
           "take を. In ドアが開きます, the door opens by itself. When you are the " +
           "one opening it, you need the other verb, 開ける, and that one takes を.",
-        examples: [{ jp: "ドアを開けます。", mark: "を", en: "I open the door.", readings: ["あ"] }],
+        examples: [{ jp: "ドアを開けます。", mark: "を", en: "I open the door.", readings: ["あ"], words: [{ word: "ドア", meaning: "door" }, { word: "開ける", meaning: "open" }] }],
       },
     ],
     link: {
@@ -399,37 +441,37 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
         text:
           "Put に after a place and you have named one spot. With いる and ある, " +
           "the two verbs for being somewhere, that spot is where the thing already is.",
-        examples: [{ jp: "学校にいます。", mark: "に", en: "I am at school.", readings: ["がっこう"] }],
+        examples: [{ jp: "学校にいます。", mark: "に", en: "I am at school.", readings: ["がっこう"], words: [{ word: "学校", meaning: "school" }] }],
       },
       {
         for: "ni",
         text: "A verb of going puts に on the place you end up at.",
-        examples: [{ jp: "東京に行きます。", mark: "に", en: "I am going to Tokyo.", readings: ["とうきょう", "い"] }],
+        examples: [{ jp: "東京に行きます。", mark: "に", en: "I am going to Tokyo.", readings: ["とうきょう", "い"], words: [{ word: "東京", meaning: "Tokyo" }, { word: "行く", meaning: "go" }] }],
       },
       {
         for: "ni",
         text:
           "に goes on a time as well, as long as you could point at it on a " +
           "clock or a calendar.",
-        examples: [{ jp: "七時に起きます。", mark: "に", en: "I get up at seven.", readings: ["しちじ", "お"] }],
+        examples: [{ jp: "七時に起きます。", mark: "に", en: "I get up at seven.", readings: ["しちじ", "お"], words: [{ word: "七時", meaning: "seven o'clock" }, { word: "起きる", meaning: "get up" }] }],
       },
       {
         for: "de",
         heading: "What で does",
         text: "Put で after a place and that is where the action happens.",
-        examples: [{ jp: "図書館で勉強します。", mark: "で", en: "I study at the library.", readings: ["としょかん", "べんきょう"] }],
+        examples: [{ jp: "図書館で勉強します。", mark: "で", en: "I study at the library.", readings: ["としょかん", "べんきょう"], words: [{ word: "図書館", meaning: "library" }, { word: "勉強する", meaning: "study" }] }],
       },
       {
         for: "de",
         text: "で also marks what you used to do something.",
-        examples: [{ jp: "ペンで書きます。", mark: "で", en: "I write with a pen.", readings: ["か"] }],
+        examples: [{ jp: "ペンで書きます。", mark: "で", en: "I write with a pen.", readings: ["か"], words: [{ word: "ペン", meaning: "pen" }, { word: "書く", meaning: "write" }] }],
       },
       {
         for: "de",
         text:
           "How you got somewhere counts as something you used, so a bus or a " +
           "train takes で.",
-        examples: [{ jp: "バスで行きます。", mark: "で", en: "I go by bus.", readings: ["い"] }],
+        examples: [{ jp: "バスで行きます。", mark: "で", en: "I go by bus.", readings: ["い"], words: [{ word: "バス", meaning: "bus" }, { word: "行く", meaning: "go" }] }],
       },
       {
         heading: "The same room, two particles",
@@ -438,8 +480,8 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
           "that says something is there. で goes with a verb that says something " +
           "is happening.",
         examples: [
-          { jp: "教室にいます。", mark: "に", en: "I am in the classroom.", readings: ["きょうしつ"] },
-          { jp: "教室で話します。", mark: "で", en: "We talk in the classroom.", readings: ["きょうしつ", "はな"] },
+          { jp: "教室にいます。", mark: "に", en: "I am in the classroom.", readings: ["きょうしつ"], words: [{ word: "教室", meaning: "classroom" }, { word: "いる", meaning: "be (living things)" }] },
+          { jp: "教室で話します。", mark: "で", en: "We talk in the classroom.", readings: ["きょうしつ", "はな"], words: [{ word: "教室", meaning: "classroom" }, { word: "話す", meaning: "talk" }] },
         ],
       },
       {
@@ -450,7 +492,7 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
           "point you end up at, and へ marks the way there. After 行く (go), the two " +
           "mean much the same. As a particle, へ is read \"e\", so 学校へ is said " +
           "\"gakkou e\".",
-        examples: [{ jp: "学校へ行きます。", mark: "へ", en: "I am going to school.", readings: ["がっこう", "い"] }],
+        examples: [{ jp: "学校へ行きます。", mark: "へ", en: "I am going to school.", readings: ["がっこう", "い"], words: [{ word: "学校", meaning: "school" }] }],
       },
       {
         heading: "Where beginners go wrong",
@@ -458,17 +500,17 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
           "歩く (walk) and 走る (run) say nothing about arriving anywhere, so 学校に歩きます " +
           "is not something a Japanese speaker says. Put 行く on the end of it " +
           "and the sentence works.",
-        examples: [{ jp: "学校に歩いて行きます。", mark: "に", en: "I walk to school.", readings: ["がっこう", "ある", "い"] }],
+        examples: [{ jp: "学校に歩いて行きます。", mark: "に", en: "I walk to school.", readings: ["がっこう", "ある", "い"], words: [{ word: "学校", meaning: "school" }, { word: "行く", meaning: "go" }] }],
       },
       {
         text:
           "A thing that is somewhere takes に. で looks like \"in\", so beginners " +
           "write 部屋でいます.",
-        examples: [{ jp: "犬が部屋にいます。", mark: "に", en: "The dog is in the room.", readings: ["いぬ", "へや"] }],
+        examples: [{ jp: "犬が部屋にいます。", mark: "に", en: "The dog is in the room.", readings: ["いぬ", "へや"], words: [{ word: "犬", meaning: "dog" }, { word: "部屋", meaning: "room" }, { word: "いる", meaning: "be (living things)" }] }],
       },
       {
         text: "今日 and 毎日 do not take に. They say when without it.",
-        examples: [{ jp: "今日、学校に行きます。", mark: "に", en: "I am going to school today.", readings: ["きょう", "がっこう", "い"] }],
+        examples: [{ jp: "今日、学校に行きます。", mark: "に", en: "I am going to school today.", readings: ["きょう", "がっこう", "い"], words: [{ word: "今日", meaning: "today" }, { word: "学校", meaning: "school" }, { word: "行く", meaning: "go" }] }],
       },
     ],
     link: {
@@ -483,7 +525,7 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
     body: [
       {
         text: "Put へ after a place and you have said which way you are going.",
-        examples: [{ jp: "日本へ行きます。", mark: "へ", en: "I am going to Japan.", readings: ["にほん", "い"] }],
+        examples: [{ jp: "日本へ行きます。", mark: "へ", en: "I am going to Japan.", readings: ["にほん", "い"], words: [{ word: "日本", meaning: "Japan" }, { word: "行く", meaning: "go" }] }],
       },
       {
         text:
@@ -494,7 +536,7 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
         text:
           "歩く (walk) says nothing about where you are going. Put a place with へ on it " +
           "in front of 歩く and the walking has a direction.",
-        examples: [{ jp: "学校へ歩きます。", mark: "へ", en: "I walk to school.", readings: ["がっこう", "ある"] }],
+        examples: [{ jp: "学校へ歩きます。", mark: "へ", en: "I walk to school.", readings: ["がっこう", "ある"], words: [{ word: "学校", meaning: "school" }] }],
       },
       {
         heading: "に and へ",
@@ -508,7 +550,7 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
         text:
           "へ marks somewhere you are heading. A place you are already at takes " +
           "に.",
-        examples: [{ jp: "学校にいます。", mark: "に", en: "I am at school.", readings: ["がっこう"] }],
+        examples: [{ jp: "学校にいます。", mark: "に", en: "I am at school.", readings: ["がっこう"], words: [{ word: "学校", meaning: "school" }, { word: "いる", meaning: "be (living things)" }] }],
       },
     ],
     link: {
@@ -532,19 +574,19 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
         text:
           "Put まで after a time or a place and that is where the stretch ends. " +
           "から often marks where it started.",
-        examples: [{ jp: "一時から二時まで勉強します。", mark: ["から", "まで"], en: "I study from one until two.", readings: ["いちじ", "にじ", "べんきょう"] }],
+        examples: [{ jp: "一時から二時まで勉強します。", mark: ["から", "まで"], en: "I study from one until two.", readings: ["いちじ", "にじ", "べんきょう"], words: [{ word: "一時", meaning: "one o'clock" }, { word: "二時", meaning: "two o'clock" }, { word: "勉強する", meaning: "study" }] }],
       },
       {
         for: "made",
         text: "から can be left out when you both know where the stretch began.",
-        examples: [{ jp: "駅まで歩きます。", mark: "まで", en: "I walk as far as the station.", readings: ["えき", "ある"] }],
+        examples: [{ jp: "駅まで歩きます。", mark: "まで", en: "I walk as far as the station.", readings: ["えき", "ある"], words: [{ word: "駅", meaning: "station" }, { word: "歩く", meaning: "walk" }] }],
       },
       {
         for: "made",
         text:
           "まで goes after a verb too, and there it means until that has " +
           "happened.",
-        examples: [{ jp: "終わるまで待ちます。", mark: "まで", en: "I will wait until it is over.", readings: ["お", "ま"] }],
+        examples: [{ jp: "終わるまで待ちます。", mark: "まで", en: "I will wait until it is over.", readings: ["お", "ま"], words: [{ word: "終わる", meaning: "end" }, { word: "待つ", meaning: "wait" }] }],
       },
       {
         for: "made-ni",
@@ -552,7 +594,7 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
         text:
           "Put までに after a time and you have set a deadline. Any moment " +
           "before that time counts.",
-        examples: [{ jp: "金曜日までに本を返します。", mark: "までに", en: "I will return the book by Friday.", readings: ["きんようび", "ほん", "かえ"] }],
+        examples: [{ jp: "金曜日までに本を返します。", mark: "までに", en: "I will return the book by Friday.", readings: ["きんようび", "ほん", "かえ"], words: [{ word: "金曜日", meaning: "Friday" }, { word: "本", meaning: "book" }, { word: "返す", meaning: "give back" }] }],
       },
       {
         heading: "Telling the two apart",
@@ -561,8 +603,8 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
           "moment before it. 待つ (wait) goes on and on, so it takes まで. 帰る (go home) happens " +
           "once, so it takes までに.",
         examples: [
-          { jp: "六時まで待ちます。", mark: "まで", en: "I will wait until six.", readings: ["ろくじ", "ま"] },
-          { jp: "六時までに帰ります。", mark: "までに", en: "I will be home by six.", readings: ["ろくじ", "かえ"] },
+          { jp: "六時まで待ちます。", mark: "まで", en: "I will wait until six.", readings: ["ろくじ", "ま"], words: [{ word: "六時", meaning: "six o'clock" }] },
+          { jp: "六時までに帰ります。", mark: "までに", en: "I will be home by six.", readings: ["ろくじ", "かえ"], words: [{ word: "六時", meaning: "six o'clock" }] },
         ],
       },
       {
@@ -570,7 +612,7 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
         text:
           "A verb that goes on takes まで. 六時までに待ちます asks you to finish " +
           "the waiting before six, and nobody waits that way.",
-        examples: [{ jp: "春まで待ちます。", mark: "まで", en: "I will wait until spring.", readings: ["はる", "ま"] }],
+        examples: [{ jp: "春まで待ちます。", mark: "まで", en: "I will wait until spring.", readings: ["はる", "ま"], words: [{ word: "春", meaning: "spring" }, { word: "待つ", meaning: "wait" }] }],
       },
     ],
     link: {
@@ -585,15 +627,15 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
     body: [
       {
         text: "Put から after a word and that word is where something starts.",
-        examples: [{ jp: "東京から来ました。", mark: "から", en: "I am from Tokyo.", readings: ["とうきょう", "き"] }],
+        examples: [{ jp: "東京から来ました。", mark: "から", en: "I am from Tokyo.", readings: ["とうきょう", "き"], words: [{ word: "東京", meaning: "Tokyo" }, { word: "来る", meaning: "come", reading: "くる" }] }],
       },
       {
         text: "まで often follows it and marks where the stretch ends.",
-        examples: [{ jp: "家から学校まで歩きます。", mark: ["から", "まで"], en: "I walk from home to school.", readings: ["いえ", "がっこう", "ある"] }],
+        examples: [{ jp: "家から学校まで歩きます。", mark: ["から", "まで"], en: "I walk from home to school.", readings: ["いえ", "がっこう", "ある"], words: [{ word: "家", meaning: "house, home" }, { word: "学校", meaning: "school" }, { word: "歩く", meaning: "walk" }] }],
       },
       {
         text: "A time works the same way.",
-        examples: [{ jp: "九時から始まります。", mark: "から", en: "It starts from nine.", readings: ["くじ", "はじ"] }],
+        examples: [{ jp: "九時から始まります。", mark: "から", en: "It starts from nine.", readings: ["くじ", "はじ"], words: [{ word: "九時", meaning: "nine o'clock" }, { word: "始まる", meaning: "start" }] }],
       },
       {
         heading: "から and に on a time",
@@ -601,8 +643,8 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
           "Both particles go on a time. に names the moment something happens. " +
           "から names the moment something starts.",
         examples: [
-          { jp: "九時に始まります。", mark: "に", en: "It starts at nine.", readings: ["くじ", "はじ"] },
-          { jp: "今日から勉強します。", mark: "から", en: "I start studying today.", readings: ["きょう", "べんきょう"] },
+          { jp: "九時に始まります。", mark: "に", en: "It starts at nine.", readings: ["くじ", "はじ"], words: [{ word: "九時", meaning: "nine o'clock" }, { word: "始まる", meaning: "start" }] },
+          { jp: "今日から勉強します。", mark: "から", en: "I start studying today.", readings: ["きょう", "べんきょう"], words: [{ word: "今日", meaning: "today" }, { word: "勉強する", meaning: "study" }] },
         ],
       },
       {
@@ -610,7 +652,7 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
         text:
           "The same から comes after a whole sentence and gives the reason for " +
           "what follows it.",
-        examples: [{ jp: "寒いから、家にいます。", mark: "から", en: "It is cold, so I am staying home.", readings: ["さむ", "いえ"] }],
+        examples: [{ jp: "寒いから、家にいます。", mark: "から", en: "It is cold, so I am staying home.", readings: ["さむ", "いえ"], words: [{ word: "寒い", meaning: "cold" }, { word: "家", meaning: "house, home" }, { word: "いる", meaning: "be (living things)" }] }],
       },
       {
         heading: "Telling the two apart",
@@ -623,7 +665,7 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
         text:
           "A noun needs だ in front of a reason から. 学生から on its own reads as " +
           "\"from a student\".",
-        examples: [{ jp: "学生だから、お金がありません。", mark: "から", en: "I am a student, so I have no money.", readings: ["がくせい", "かね"] }],
+        examples: [{ jp: "学生だから、お金がありません。", mark: "から", en: "I am a student, so I have no money.", readings: ["がくせい", "かね"], words: [{ word: "学生", meaning: "student" }, { word: "お金", meaning: "money" }, { word: "ある", meaning: "have, be" }] }],
       },
     ],
     link: {
@@ -640,26 +682,26 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
         text:
           "Put と between two nouns and you have joined them. English " +
           "would use \"and\" there.",
-        examples: [{ jp: "パンとりんごを食べます。", mark: "と", en: "I eat bread and an apple.", readings: ["た"] }],
+        examples: [{ jp: "パンとりんごを食べます。", mark: "と", en: "I eat bread and an apple.", readings: ["た"], words: [{ word: "パン", meaning: "bread" }, { word: "りんご", meaning: "apple" }, { word: "食べる", meaning: "eat" }] }],
       },
       {
         text:
           "After a person, と is closer to \"with\". The person in front of it did " +
           "the thing with you.",
-        examples: [{ jp: "友達と行きます。", mark: "と", en: "I am going with a friend.", readings: ["ともだち", "い"] }],
+        examples: [{ jp: "友達と行きます。", mark: "と", en: "I am going with a friend.", readings: ["ともだち", "い"], words: [{ word: "友達", meaning: "friend" }, { word: "行く", meaning: "go" }] }],
       },
       {
         heading: "と meaning \"whenever\"",
         text:
           "There is another と, and it comes after a whole sentence. It says " +
           "that the second half happens every time the first half does.",
-        examples: [{ jp: "雨が降ると、寒くなります。", mark: "と", en: "When it rains, it gets cold.", readings: ["あめ", "ふ", "さむ"] }],
+        examples: [{ jp: "雨が降ると、寒くなります。", mark: "と", en: "When it rains, it gets cold.", readings: ["あめ", "ふ", "さむ"], words: [{ word: "雨", meaning: "rain" }, { word: "降る", meaning: "fall" }, { word: "寒い", meaning: "cold" }, { word: "なる", meaning: "become" }] }],
       },
       {
         text:
           "The second half has to happen by itself. Nothing you decide to do can " +
           "come after this と, so a plan or a request takes たら.",
-        examples: [{ jp: "春になると、暖かくなります。", mark: "と", en: "When spring comes, it gets warm.", readings: ["はる", "あたた"] }],
+        examples: [{ jp: "春になると、暖かくなります。", mark: "と", en: "When spring comes, it gets warm.", readings: ["はる", "あたた"], words: [{ word: "春", meaning: "spring" }, { word: "なる", meaning: "become" }, { word: "暖かい", meaning: "warm" }] }],
       },
       {
         heading: "Telling the two apart",
@@ -672,7 +714,7 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
         text:
           "と joins nouns only. Two adjectives are joined with the て-form, so " +
           "安いとおいしいです is not Japanese. 安くておいしいです is.",
-        examples: [{ jp: "私と妹は学生です。", mark: "と", en: "My sister and I are students.", readings: ["わたし", "いもうと", "がくせい"] }],
+        examples: [{ jp: "私と妹は学生です。", mark: "と", en: "My sister and I are students.", readings: ["わたし", "いもうと", "がくせい"], words: [{ word: "私", meaning: "I, me" }, { word: "妹", meaning: "younger sister" }, { word: "学生", meaning: "student" }] }],
       },
     ],
     link: {
@@ -689,17 +731,17 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
         text:
           "Put も after a word and that word joins the ones already named. " +
           "English says \"too\" or \"also\".",
-        examples: [{ jp: "田中さんも先生です。", mark: "も", en: "Tanaka is a teacher too.", readings: ["たなか", "せんせい"] }],
+        examples: [{ jp: "田中さんも先生です。", mark: "も", en: "Tanaka is a teacher too.", readings: ["たなか", "せんせい"], words: [{ word: "田中さん", meaning: "Mr. or Ms. Tanaka" }, { word: "先生", meaning: "teacher" }] }],
       },
       {
         text:
           "も takes the place of は, が and を. It does not go next to them, so " +
           "私はも行きます is not Japanese.",
-        examples: [{ jp: "私も行きます。", mark: "も", en: "I am going too.", readings: ["わたし", "い"] }],
+        examples: [{ jp: "私も行きます。", mark: "も", en: "I am going too.", readings: ["わたし", "い"], words: [{ word: "私", meaning: "I, me" }, { word: "行く", meaning: "go" }] }],
       },
       {
         text: "The other particles stay where they are, and も follows them.",
-        examples: [{ jp: "学校にも行きます。", mark: "も", en: "I go to school too.", readings: ["がっこう", "い"] }],
+        examples: [{ jp: "学校にも行きます。", mark: "も", en: "I go to school too.", readings: ["がっこう", "い"], words: [{ word: "学校", meaning: "school" }, { word: "行く", meaning: "go" }] }],
       },
       {
         heading: "は and も",
@@ -708,23 +750,23 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
           "what is true of the others is true of this one as well. The same " +
           "sentence works with either particle.",
         examples: [
-          { jp: "妹は学生です。", mark: "は", en: "My sister is a student.", readings: ["いもうと", "がくせい"] },
-          { jp: "妹も学生です。", mark: "も", en: "My sister is a student too.", readings: ["いもうと", "がくせい"] },
+          { jp: "妹は学生です。", mark: "は", en: "My sister is a student.", readings: ["いもうと", "がくせい"], words: [{ word: "妹", meaning: "younger sister" }, { word: "学生", meaning: "student" }] },
+          { jp: "妹も学生です。", mark: "も", en: "My sister is a student too.", readings: ["いもうと", "がくせい"], words: [{ word: "妹", meaning: "younger sister" }, { word: "学生", meaning: "student" }] },
         ],
       },
       {
         text: "In a negative sentence, English says \"either\" for も.",
-        examples: [{ jp: "私も行きません。", mark: "も", en: "I am not going either.", readings: ["わたし", "い"] }],
+        examples: [{ jp: "私も行きません。", mark: "も", en: "I am not going either.", readings: ["わたし", "い"], words: [{ word: "私", meaning: "I, me" }, { word: "行く", meaning: "go" }] }],
       },
       {
         text: "も on a number says the number is more than you would expect.",
-        examples: [{ jp: "三時間も待ちました。", mark: "も", en: "I waited three whole hours.", readings: ["さんじかん", "ま"] }],
+        examples: [{ jp: "三時間も待ちました。", mark: "も", en: "I waited three whole hours.", readings: ["さんじかん", "ま"], words: [{ word: "三時間", meaning: "three hours" }, { word: "待つ", meaning: "wait" }] }],
       },
       {
         text:
           "A question word with も on it covers everything at once. 何も with a " +
           "negative verb is \"nothing at all\".",
-        examples: [{ jp: "何も食べませんでした。", mark: "も", en: "I ate nothing.", readings: ["なに", "た"] }],
+        examples: [{ jp: "何も食べませんでした。", mark: "も", en: "I ate nothing.", readings: ["なに", "た"], words: [{ word: "食べる", meaning: "eat" }] }],
       },
     ],
     link: {
@@ -746,13 +788,13 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
         for: "dake",
         heading: "What だけ does",
         text: "Put だけ after a word and that word is all there is.",
-        examples: [{ jp: "水だけ飲みます。", mark: "だけ", en: "I drink only water.", readings: ["みず", "の"] }],
+        examples: [{ jp: "水だけ飲みます。", mark: "だけ", en: "I drink only water.", readings: ["みず", "の"], words: [{ word: "水", meaning: "water" }, { word: "飲む", meaning: "drink" }] }],
       },
       {
         for: "dake",
         text:
           "だけ goes after a verb as well. There it limits what you are doing.",
-        examples: [{ jp: "見るだけです。", mark: "だけ", en: "I am only looking.", readings: ["み"] }],
+        examples: [{ jp: "見るだけです。", mark: "だけ", en: "I am only looking.", readings: ["み"], words: [{ word: "見る", meaning: "look, see" }] }],
       },
       {
         for: "shika-nai",
@@ -760,7 +802,7 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
         text:
           "Put しか after a word and put the verb into the negative. 飲みません " +
           "with しか in front of it still says you drink something.",
-        examples: [{ jp: "水しか飲みません。", mark: "しか", en: "I drink only water.", readings: ["みず", "の"] }],
+        examples: [{ jp: "水しか飲みません。", mark: "しか", en: "I drink only water.", readings: ["みず", "の"], words: [{ word: "水", meaning: "water" }, { word: "飲む", meaning: "drink" }] }],
       },
       {
         heading: "Telling the two apart",
@@ -769,8 +811,8 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
           "is small, so it can sound like a complaint or like a boast about how " +
           "little it took.",
         examples: [
-          { jp: "一時間だけ勉強しました。", mark: "だけ", en: "I studied for one hour.", readings: ["いちじかん", "べんきょう"] },
-          { jp: "一時間しか勉強しませんでした。", mark: "しか", en: "I only studied for one hour.", readings: ["いちじかん", "べんきょう"] },
+          { jp: "一時間だけ勉強しました。", mark: "だけ", en: "I studied for one hour.", readings: ["いちじかん", "べんきょう"], words: [{ word: "一時間", meaning: "one hour" }, { word: "勉強する", meaning: "study" }] },
+          { jp: "一時間しか勉強しませんでした。", mark: "しか", en: "I only studied for one hour.", readings: ["いちじかん", "べんきょう"], words: [{ word: "一時間", meaning: "one hour" }, { word: "勉強する", meaning: "study" }] },
         ],
       },
       {
@@ -778,7 +820,7 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
         text:
           "しか with a plain verb is the mistake to watch for. 水しか飲みます is " +
           "not Japanese, because しか needs 飲みません at the end.",
-        examples: [{ jp: "五分しかかかりません。", mark: "しか", en: "It only takes five minutes.", readings: ["ごふん"] }],
+        examples: [{ jp: "五分しかかかりません。", mark: "しか", en: "It only takes five minutes.", readings: ["ごふん"], words: [{ word: "五分", meaning: "five minutes" }, { word: "かかる", meaning: "take (time)" }] }],
       },
       {
         text:
@@ -800,13 +842,13 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
         text:
           "A sentence with か on the end of it is a question. Nothing else in " +
           "the sentence moves.",
-        examples: [{ jp: "これは何ですか。", mark: "か", en: "What is this?", readings: ["なん"] }],
+        examples: [{ jp: "これは何ですか。", mark: "か", en: "What is this?", readings: ["なん"], words: [{ word: "これ", meaning: "this" }, { word: "何", meaning: "what" }] }],
       },
       {
         text:
           "English swaps two words around to ask something. Japanese leaves the " +
           "sentence as it was and adds か.",
-        examples: [{ jp: "学生ですか。", mark: "か", en: "Are you a student?", readings: ["がくせい"] }],
+        examples: [{ jp: "学生ですか。", mark: "か", en: "Are you a student?", readings: ["がくせい"], words: [{ word: "学生", meaning: "student" }] }],
       },
       {
         text:
@@ -818,18 +860,18 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
         text:
           "誰 is \"who\". Put か after it and you have 誰か, \"someone\". 何 (what) and どこ (where) " +
           "work the same way.",
-        examples: [{ jp: "誰かが来ました。", mark: "か", en: "Someone came.", readings: ["だれ", "き"] }],
+        examples: [{ jp: "誰かが来ました。", mark: "か", en: "Someone came.", readings: ["だれ", "き"], words: [{ word: "来る", meaning: "come", reading: "くる" }] }],
       },
       {
         text:
           "誰 on its own is still the question word, and the question's own か " +
           "goes at the end.",
-        examples: [{ jp: "誰が来ましたか。", mark: "か", en: "Who came?", readings: ["だれ", "き"] }],
+        examples: [{ jp: "誰が来ましたか。", mark: "か", en: "Who came?", readings: ["だれ", "き"], words: [{ word: "誰", meaning: "who" }, { word: "来る", meaning: "come", reading: "くる" }] }],
       },
       {
         heading: "か between two things",
         text: "か between two nouns offers a choice. English says \"or\".",
-        examples: [{ jp: "コーヒーかお茶を飲みます。", mark: "か", en: "I drink coffee or tea.", readings: ["ちゃ", "の"] }],
+        examples: [{ jp: "コーヒーかお茶を飲みます。", mark: "か", en: "I drink coffee or tea.", readings: ["ちゃ", "の"], words: [{ word: "コーヒー", meaning: "coffee" }, { word: "お茶", meaning: "tea" }, { word: "飲む", meaning: "drink" }] }],
       },
       {
         heading: "Where beginners go wrong",
@@ -859,13 +901,13 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
         text:
           "Put ね on the end and you are asking the other person to agree. " +
           "English adds a short question at the end: \"isn't it?\", \"right?\".",
-        examples: [{ jp: "今日は暑いですね。", mark: "ね", en: "Hot today, don't you think?", readings: ["きょう", "あつ"] }],
+        examples: [{ jp: "今日は暑いですね。", mark: "ね", en: "Hot today, don't you think?", readings: ["きょう", "あつ"], words: [{ word: "今日", meaning: "today" }, { word: "暑い", meaning: "hot" }] }],
       },
       {
         for: "ne",
         text:
           "ね is also how you check something you are fairly sure of already.",
-        examples: [{ jp: "田中さんですね。", mark: "ね", en: "You are Tanaka, right?", readings: ["たなか"] }],
+        examples: [{ jp: "田中さんですね。", mark: "ね", en: "You are Tanaka, right?", readings: ["たなか"], words: [{ word: "田中さん", meaning: "Mr. or Ms. Tanaka" }] }],
       },
       {
         for: "yo",
@@ -873,12 +915,12 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
         text:
           "Put よ on the end and you are telling the other person something they " +
           "did not know.",
-        examples: [{ jp: "電車が来ますよ。", mark: "よ", en: "The train is coming.", readings: ["でんしゃ", "き"] }],
+        examples: [{ jp: "電車が来ますよ。", mark: "よ", en: "The train is coming.", readings: ["でんしゃ", "き"], words: [{ word: "電車", meaning: "train" }, { word: "来る", meaning: "come", reading: "くる" }] }],
       },
       {
         for: "yo",
         text: "An opinion is new to whoever hears it, so an opinion often ends in よ.",
-        examples: [{ jp: "もう遅いよ。", mark: "よ", en: "It is late already.", readings: ["おそ"] }],
+        examples: [{ jp: "もう遅いよ。", mark: "よ", en: "It is late already.", readings: ["おそ"], words: [{ word: "もう", meaning: "already" }, { word: "遅い", meaning: "late" }] }],
       },
       {
         heading: "The same sentence both ways",
@@ -886,8 +928,8 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
           "暑いですね says you are both feeling it. 暑いですよ says the other " +
           "person has not noticed yet.",
         examples: [
-          { jp: "暑いですね。", mark: "ね", en: "Hot, isn't it?", readings: ["あつ"] },
-          { jp: "暑いですよ。", mark: "よ", en: "It's hot, you know.", readings: ["あつ"] },
+          { jp: "暑いですね。", mark: "ね", en: "Hot, isn't it?", readings: ["あつ"], words: [{ word: "暑い", meaning: "hot" }] },
+          { jp: "暑いですよ。", mark: "よ", en: "It's hot, you know.", readings: ["あつ"], words: [{ word: "暑い", meaning: "hot" }] },
         ],
       },
       {
@@ -895,7 +937,7 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
         text:
           "よね puts the two together. You are telling the other person " +
           "something and checking it with them at the same time.",
-        examples: [{ jp: "田中さんですよね。", mark: "よね", en: "You're Tanaka, aren't you?", readings: ["たなか"] }],
+        examples: [{ jp: "田中さんですよね。", mark: "よね", en: "You're Tanaka, aren't you?", readings: ["たなか"], words: [{ word: "田中さん", meaning: "Mr. or Ms. Tanaka" }] }],
       },
       {
         heading: "Where beginners go wrong",
@@ -923,17 +965,17 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
         text:
           "Put って on the end of a sentence and you are repeating what you " +
           "heard. Who said it often goes unsaid.",
-        examples: [{ jp: "明日は休みだって。", mark: "って", en: "I hear tomorrow is a day off.", readings: ["あした", "やす"] }],
+        examples: [{ jp: "明日は休みだって。", mark: "って", en: "I hear tomorrow is a day off.", readings: ["あした", "やす"], words: [{ word: "明日", meaning: "tomorrow" }, { word: "休み", meaning: "day off" }] }],
       },
       {
         text:
           "って is the spoken form of と. 行くと言いました becomes 行くって言いました " +
           "in conversation.",
-        examples: [{ jp: "行くって言いました。", mark: "って", en: "He said he is going.", readings: ["い", "い"] }],
+        examples: [{ jp: "行くって言いました。", mark: "って", en: "He said he is going.", readings: ["い", "い"], words: [{ word: "行く", meaning: "go" }, { word: "言う", meaning: "say" }] }],
       },
       {
         text: "A noun keeps its だ in front of って, the way it does in front of と.",
-        examples: [{ jp: "田中さんは学生だって。", mark: "って", en: "I hear Tanaka is a student.", readings: ["たなか", "がくせい"] }],
+        examples: [{ jp: "田中さんは学生だって。", mark: "って", en: "I hear Tanaka is a student.", readings: ["たなか", "がくせい"], words: [{ word: "田中さん", meaning: "Mr. or Ms. Tanaka" }, { word: "学生", meaning: "student" }] }],
       },
       {
         heading: "Where beginners go wrong",

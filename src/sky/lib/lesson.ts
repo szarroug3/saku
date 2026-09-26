@@ -156,14 +156,16 @@ export interface TeachPage {
  * with (SAK-470): the Japanese with the piece being taught in the accent, the
  * English under it. It is a list because one idea is sometimes the difference
  * between two sentences (猫は好きです beside 猫が好きです), and a page that had to
- * spend an empty paragraph on the second one would read as a gap. */
+ * spend an empty paragraph on the second one would read as a gap. An example's
+ * `words` are drawn under its English, each word with its furigana and a
+ * short meaning (SAK-488). */
 export interface TeachParagraph {
   heading?: string;
   lead?: string;
   text: string;
   accent?: string;
   runs?: SoundLine;
-  examples?: ReadonlyArray<{ jp: SoundLine; en: string }>;
+  examples?: ReadonlyArray<{ jp: SoundLine; en: string; words?: ReadonlyArray<{ word: SoundLine; meaning: string }> }>;
 }
 
 /** A build formula: the form in a box, what is trimmed off it, what is

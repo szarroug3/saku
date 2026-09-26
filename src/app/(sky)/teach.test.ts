@@ -783,6 +783,94 @@ describe("a particle's page says what the particle means", () => {
     assert.equal(kyou?.ruby, "きょう");
   });
 
+  // SAK-488, Sam, on 雨が降っています: "the user might not know what the word
+  // means so maybe we should put a definition on the words that matter in all
+  // examples in all particles." Every example lists the words a beginner needs
+  // to read it, each with a meaning, under the English.
+  describe("the words under each example", () => {
+    const examples = PARTICLE_NOTES.flatMap((note) => note.body.flatMap((para) => para.examples ?? []));
+    /** Where the paragraph above gives every word its meaning, and the list is
+     * empty with a comment saying so beside it in the data. */
+    const EMPTY_ON_PURPOSE = ["妹は歌が上手です。"];
+    /** What stands for a word in its sentence: its kanji, which a dictionary
+     * form keeps (降る in 降っています), or else its first two kana, one where
+     * the word is only two long (いる in います, なる in なります). */
+    const stems = (word: string): string[] => {
+      const runs = kanjiRuns(word);
+      if (runs.length > 0) return [...runs];
+      return [word.slice(0, word.length > 2 ? 2 : 1)];
+    };
+    const marksOf = (ex: (typeof examples)[number]) => (typeof ex.mark === "string" ? [ex.mark] : [...ex.mark]);
+
+    it("gives every example its words, each with a meaning", () => {
+      assert.ok(examples.length >= 80, `only ${examples.length} examples on the particle pages`);
+      for (const ex of examples) {
+        if (EMPTY_ON_PURPOSE.includes(ex.jp)) {
+          assert.deepEqual(ex.words, [], `${ex.jp} was left empty on purpose and now lists words`);
+          continue;
+        }
+        assert.ok(ex.words.length > 0, `${ex.jp} has no words under it`);
+        for (const w of ex.words) {
+          assert.ok(w.meaning.trim().length > 0, `${w.word} in ${ex.jp} has no meaning`);
+          assert.ok(!/[\u2014\u2013]/.test(w.meaning), `${w.word}'s meaning has a dash in it`);
+          assert.ok(w.meaning.split(/[ ,]+/).filter(Boolean).length <= 4, `${w.word}'s meaning "${w.meaning}" is more than a few words`);
+        }
+      }
+    });
+
+    it("lists only words in the sentence, in the order it has them", () => {
+      for (const ex of examples) {
+        let at = 0;
+        for (const w of ex.words) {
+          for (const stem of stems(w.word)) {
+            const found = ex.jp.indexOf(stem, at);
+            assert.ok(found >= 0, `${w.word} is not in ${ex.jp} (looked for ${stem} from ${at})`);
+            at = found;
+          }
+        }
+      }
+    });
+
+    it("never lists the particle the example marks, or です, ます and だ", () => {
+      for (const ex of examples) {
+        const leftOut = [...marksOf(ex), "です", "ます", "だ"];
+        for (const w of ex.words) assert.ok(!leftOut.includes(w.word), `${ex.jp} lists ${w.word}`);
+      }
+    });
+
+    it("reaches the page with the reading over every kanji in each word", () => {
+      let words = 0;
+      for (const note of PARTICLE_NOTES) {
+        const shown = proseOf(note.recipes[0]).flatMap((p) => p.examples ?? []);
+        const written = note.body.flatMap((para) => para.examples ?? []);
+        // every sentence of the note reaches this card with its words
+        assert.deepEqual(
+          shown.map((ex) => (ex.words ?? []).map((w) => w.word.map((r) => r.text).join(""))).sort(),
+          written.map((ex) => ex.words.map((w) => w.word)).sort(),
+          `${note.eyebrow}: the words on the page are not the words written`,
+        );
+        for (const ex of shown) {
+          for (const w of ex.words ?? []) {
+            words++;
+            const plain = w.word.map((r) => r.text).join("");
+            const bare = w.word.filter((r) => /[一-龯㐀-䶿]/.test(r.text) && !r.ruby);
+            assert.deepEqual(bare.map((r) => r.text), [], `${plain} has kanji with no reading over it`);
+            for (const r of w.word) if (r.ruby) assert.match(r.ruby, /^[぀-ゟ]+$/, `${plain}: "${r.ruby}" is not kana`);
+            assert.ok(w.meaning.length > 0);
+          }
+        }
+      }
+      assert.ok(words >= 150, `only ${words} words reached the pages`);
+      // the sentence's own reading, and the word's own where its dictionary
+      // form reads the kanji another way
+      const said = proseOf("wa").flatMap((p) => p.examples ?? []).flatMap((ex) => ex.words ?? []);
+      const reading = (text: string) => said.find((w) => w.word.map((r) => r.text).join("") === text)?.word.find((r) => r.ruby)?.ruby;
+      assert.equal(reading("家"), "いえ");
+      assert.equal(reading("来る"), "く");
+      assert.equal(reading("日曜日"), "にちようび");
+    });
+  });
+
   it("leaves the family page of a shared pair to link nothing, so the article is named once a page", () => {
     // Both clusters sat one turn after a page that now links the same article
     // and now states the rule the note used to say did not exist.

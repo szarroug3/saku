@@ -4,6 +4,7 @@
 // Atlas shows the same pages as reference. One renderer, so the two can
 // never drift.
 
+import { Fragment } from "react";
 import { SkyChip, SkyTextButton } from "@/sky/components/sky-button";
 import { Eyebrow } from "@/sky/components/sky-card";
 import { Mixed } from "@/sky/components/mixed-text";
@@ -85,6 +86,27 @@ function Example({ example, n, count }: { example: TeachExample; n: number; coun
   );
 }
 
+/** The words under an example sentence and what they mean (SAK-488), as one
+ * small muted line: "雨 rain · 降る fall". Each word keeps its furigana, so the
+ * Japanese is drawn a step larger than the meanings, at the size where the
+ * reading over it is still one a reader can make out. A word and its meaning
+ * stay together when the line wraps. */
+function ExampleWords({ words }: { words: NonNullable<NonNullable<TeachParagraph["examples"]>[number]["words"]> }) {
+  return (
+    <p className="mt-1 text-[12.5px] leading-[2] text-sky-muted">
+      {words.map((w, i) => (
+        <Fragment key={i}>
+          {i > 0 && " · "}
+          <span className="whitespace-nowrap">
+            <span className={`text-[14.5px] ${japaneseFont(w.word.map((r) => r.text).join(""))}`}><Sound line={w.word} /></span>
+            {" "}{w.meaning}
+          </span>
+        </Fragment>
+      ))}
+    </p>
+  );
+}
+
 /** A paragraph of the teaching: a heading over it, a bold lead, the text
  * with a phrase picked out in the accent. */
 function Paragraph({ para }: { para: TeachParagraph }) {
@@ -103,6 +125,7 @@ function Paragraph({ para }: { para: TeachParagraph }) {
         <div key={i} className="mt-2 border-l-2 border-sky-line pl-3">
           <p className={`font-sky-display text-[16px] leading-snug text-sky-ink ${japaneseFont(ex.jp.map((r) => r.text).join(""))}`}><Sound line={ex.jp} /></p>
           <p className="text-[13.5px] leading-relaxed text-sky-muted">{ex.en}</p>
+          {ex.words && ex.words.length > 0 && <ExampleWords words={ex.words} />}
         </div>
       ))}
     </div>

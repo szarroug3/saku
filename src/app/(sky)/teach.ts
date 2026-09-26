@@ -24,7 +24,7 @@ import { patternEntry } from "@/data/grammar";
 import { autoPatternPage } from "@/data/grammar/auto-page";
 import { cluster as clusterById, membersOf } from "@/data/grammar/clusters";
 import { formLibraryPages } from "@/data/grammar/lessons";
-import { kanjiRuns, PARTICLE_NOTES, type ParticleNoteExample, type ParticleNotePara } from "@/data/grammar/particle-notes";
+import { kanjiRuns, PARTICLE_NOTES, type ParticleNoteExample, type ParticleNotePara, type ParticleNoteWord } from "@/data/grammar/particle-notes";
 import { PARTICLE_ROWS } from "@/data/grammar/particles";
 import { primaryPatternRecipe, RECIPES, type Recipe } from "@/data/grammar/recipes";
 import { PARTICLE_RULE, type BuildHeads, type CountBuildPiece, type IntroBuildRule, type IntroCountGroup, type IntroDeriveRow, type IntroPara, type PhaseIntro } from "@/data/phase-intros";
@@ -49,7 +49,7 @@ import { standingFor } from "./learner";
 import { authoredReader, proseReader, proseSound, wordSound, type RunReader } from "./prose-sound";
 import { TSU_RULE } from "./observatory";
 import { type LessonTeach, type PartedSentence, type SoundLine as SkySoundLine, type TeachForm, type TeachPage, type TeachParagraph, type TeachTable } from "@/sky/lib/lesson";
-import { cutLine } from "@/sky/lib/sound-line";
+import { cutLine, rubyFromReading } from "@/sky/lib/sound-line";
 import type { SkyItem } from "@/sky/lib/types";
 
 import type { EntryId } from "@/types/facts";
@@ -662,6 +662,28 @@ function exampleLine(ex: ParticleNoteExample): SkySoundLine {
   return runs;
 }
 
+/** A word under an example (SAK-488), with the furigana over its kanji. Each
+ * run of kanji in the word takes the reading the sentence gives the same run,
+ * so 家 under 家にいます reads いえ, the way the line above it has it. A word
+ * whose dictionary form reads its kanji another way (来る under 来ました)
+ * carries its own `reading`. A run the sentence does not have and no reading
+ * written for it prints plain, and the test beside the readings catches it. */
+function exampleWord(w: ParticleNoteWord, ex: ParticleNoteExample): SkySoundLine {
+  if (w.reading) return rubyFromReading(w.word, w.reading) ?? [{ text: w.word }];
+  const runs = kanjiRuns(ex.jp);
+  const line: Array<{ text: string; ruby?: string }> = [];
+  let at = 0;
+  for (const run of kanjiRuns(w.word)) {
+    const from = w.word.indexOf(run, at);
+    if (from > at) line.push({ text: w.word.slice(at, from) });
+    const reading = ex.readings?.[runs.indexOf(run)];
+    line.push(reading ? { text: run, ruby: reading } : { text: run });
+    at = from + run.length;
+  }
+  if (at < w.word.length) line.push({ text: w.word.slice(at) });
+  return line;
+}
+
 /** The runs when any of them carries a reading, else the line as it was, so
  * a paragraph with no kanji in it reaches the page as it always did. */
 function withRuby<T>(line: SkySoundLine, plain: T): SkySoundLine | T {
@@ -677,13 +699,20 @@ function proseParagraph(text: string, read: RunReader | undefined, accent?: stri
 
 /** One paragraph of a particle's page, with its sentences, and the readings
  * over the Japanese inside its prose (SAK-484): 食べる from the vocabulary,
- * 猫は好きです from the readings pass. */
+ * 猫は好きです from the readings pass. Each sentence carries the words a
+ * beginner needs to read it, with their meanings (SAK-488). */
 function notePara(para: ParticleNotePara): TeachParagraph {
   return {
     ...(para.heading ? { heading: para.heading } : {}),
     ...proseParagraph(para.text, proseReader),
     ...(para.examples
-      ? { examples: para.examples.map((ex) => ({ jp: exampleLine(ex), en: ex.en })) }
+      ? {
+          examples: para.examples.map((ex) => ({
+            jp: exampleLine(ex),
+            en: ex.en,
+            ...(ex.words.length > 0 ? { words: ex.words.map((w) => ({ word: exampleWord(w, ex), meaning: w.meaning })) } : {}),
+          })),
+        }
       : {}),
   };
 }
