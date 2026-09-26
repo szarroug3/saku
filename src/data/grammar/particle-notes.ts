@@ -177,6 +177,11 @@ export interface ParticleNote {
   readonly recipes: readonly string[];
   readonly eyebrow: string;
   readonly title: string;
+  /** A shared note's one-line meaning, for the tile and the card head of the
+   * item the two particles make together (SAK-491): "まで marks until, までに
+   * marks by". A pair that is also a family uses the family's gloss instead,
+   * so this is written only where there is no family. */
+  readonly meaning?: string;
   readonly body: readonly ParticleNotePara[];
   /** The one Read more link, naming the page it drew on. Absent where Tofugu
    * has no page for the particle, and then `noLinkReason` says so. */
@@ -562,6 +567,7 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
   {
     recipes: ["made", "made-ni"],
     eyebrow: "まで vs までに",
+    meaning: "まで marks until, までに marks by",
     title: "Telling まで and までに apart",
     body: [
       {
@@ -778,6 +784,7 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
   {
     recipes: ["dake", "shika-nai"],
     eyebrow: "だけ vs しか",
+    meaning: "だけ and しか both mean only",
     title: "Telling だけ and しか apart",
     body: [
       {
@@ -889,6 +896,7 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
   {
     recipes: ["ne", "yo"],
     eyebrow: "ね vs よ",
+    meaning: "ね asks for agreement, よ tells something new",
     title: "Telling ね and よ apart",
     body: [
       {

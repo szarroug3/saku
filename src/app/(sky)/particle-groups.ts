@@ -39,16 +39,14 @@ export interface ParticleGroup {
 }
 
 /** The meaning line: the family's gloss when the two are a family of exactly
- * these two, else each particle (as the eyebrow writes it) with its own
- * meaning line. */
-function meaningOf(recipes: readonly string[], eyebrow: string): string {
+ * these two, else the line the note writes for itself. Joining the two
+ * particles' own meaning lines came out long ("だけ only, しか only X (nothing
+ * but)"), so a pair with no family says it in one authored line instead. */
+function meaningOf(recipes: readonly string[], meaning: string | undefined): string {
   const family = CLUSTERS.find((c) => c.members.length === recipes.length && recipes.every((r) => c.members.includes(r)));
   if (family) return family.gloss;
-  const names = eyebrow.split(" vs ");
-  return recipes.map((id, i) => {
-    const r = RECIPES.find((x) => x.id === id);
-    return [names[i] ?? r?.pattern.replace(/^〜/, ""), r?.gloss].filter(Boolean).join(" ");
-  }).join(", ");
+  if (meaning) return meaning;
+  return recipes.map((id) => RECIPES.find((x) => x.id === id)?.gloss).filter(Boolean).join(", ");
 }
 
 /** Every group, one per shared note, in the Particle page's order. */
@@ -57,7 +55,7 @@ export const PARTICLE_GROUPS: readonly ParticleGroup[] = PARTICLE_NOTES.filter((
   recipes: note.recipes,
   parts: note.recipes.map((r) => patternEntry(r) as string),
   glyph: note.eyebrow,
-  english: meaningOf(note.recipes, note.eyebrow),
+  english: meaningOf(note.recipes, note.meaning),
 }));
 
 const BY_ID: ReadonlyMap<string, ParticleGroup> = new Map(PARTICLE_GROUPS.map((g) => [g.id, g]));
