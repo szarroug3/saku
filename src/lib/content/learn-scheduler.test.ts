@@ -166,16 +166,23 @@ test("nextSentenceTierId — an unmet grammar prerequisite blocks the tier (and 
     gate({
       tierId: "simple",
       entry: entry("s-simple"),
-      grammarPrereqFacts: [fact("grammar:wa/meaning")],
+      grammarPrereqFacts: [fact("grammar:wa/meaning"), fact("grammar:ga/meaning")],
     }),
     gate({ tierId: "conditional", entry: entry("s-conditional") }),
   ];
   assert.equal(nextSentenceTierId({ sentenceGates: gates }, emptyHistory()), null);
-  const history = applyClaims(emptyHistory(), [fact("grammar:wa/meaning")], 1);
+  // SAK-490: one of them used to be enough, and now every one is needed
+  const one = applyClaims(emptyHistory(), [fact("grammar:wa/meaning")], 1);
   assert.equal(
-    nextSentenceTierId({ sentenceGates: gates }, history),
+    nextSentenceTierId({ sentenceGates: gates }, one),
+    null,
+    "knowing one of the grammar prereqs does not admit the tier",
+  );
+  const both = applyClaims(one, [fact("grammar:ga/meaning")], 2);
+  assert.equal(
+    nextSentenceTierId({ sentenceGates: gates }, both),
     "simple",
-    "knowing any ONE of the ANY-of grammar prereqs admits the tier",
+    "knowing every one of them does",
   );
 });
 

@@ -63,7 +63,7 @@ export interface IndexSentenceGate {
   readonly tierId: string;
   readonly entry: EntryId;
   readonly minReadable: number;
-  /** ANY one must be known; empty means no grammar prerequisite. */
+  /** EVERY one must be known (SAK-490); empty means no grammar prerequisite. */
   readonly grammarPrereqFacts: readonly FactId[];
   /** How many assembly items this tier's structural filter admits. */
   readonly poolSize: number;

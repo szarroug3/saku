@@ -4,6 +4,7 @@
 // (claims, fact aggregates with recent runs, quiz sessions with confusions),
 // so the adapter treats it exactly like a real history file.
 
+import { SENTENCE_ORDERING_TIERS } from "@/data/assembly";
 import { KANA_SUBJECT } from "@/data/characters";
 import { COUNTER_CURRICULUM, counterEntry } from "@/data/counters";
 import { patternEntry } from "@/data/grammar";
@@ -74,6 +75,13 @@ export function sampleHistory(now = Date.now()): HistoryFile {
     ...KEIGO_SETS.slice(0, 1).map((k, i) => [keigoSetEntry(k) as string, i] as [string, number]),
     // the first two sentence tiers, so the Planetarium has a sentence planet
     ...(LIB_ENTRIES_BY_KIND.get(SENTENCE_RULE_KIND) ?? []).slice(0, 2).map((e, i) => [e.id as string, i] as [string, number]),
+    // every pattern the Sequential type needs, so the Observatory's Sentences
+    // row ends on a type this learner can pick: a type opens only once all of
+    // its patterns are known (SAK-490), and the first five above hold just
+    // one of the five (〜ている)
+    ...(SENTENCE_ORDERING_TIERS.find((t) => t.id === "sequential")?.grammarPrereqs ?? [])
+      .filter((id) => !CURRICULUM_PATTERNS.slice(0, 5).some((r) => r.id === id))
+      .map((id, i) => [patternEntry(id) as string, i] as [string, number]),
   ];
   for (const [id, i] of started) {
     const entry = id ? libEntry(id as Parameters<typeof libEntry>[0]) : undefined;

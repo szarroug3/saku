@@ -722,7 +722,8 @@ export interface AssemblyTier {
   readonly minReadable: number;
   /**
    * Grammar pattern IDs that must have been taught in the grammar track before
-   * this tier unlocks. At least ONE must be learned (seen, claimed or tested).
+   * this tier unlocks. EVERY one must be learned (seen, claimed or tested);
+   * it was any one of them until SAK-490.
    *
    * For every tier the prereqs are the patterns that describe the sentence
    * structure this tier practices, so the learner knows what the pattern means
@@ -736,8 +737,8 @@ export interface AssemblyTier {
  * The ordered sentence-structure tiers the sentence-ordering track teaches.
  *
  * Each tier needs enough sentences in its structural pool to clear
- * `minReadable`; the planner also applies the `grammarPrereqs` ANY-of gate
- * below. The tiers are ordered from structurally simplest to most complex,
+ * `minReadable`; the planner also applies the `grammarPrereqs` gate below,
+ * which wants every one of them (SAK-490). The tiers are ordered from structurally simplest to most complex,
  * so the learner always encounters simple particle-marked SOV sentences
  * first. Every tier after that
  * follows the first point at which one of its prerequisite patterns appears in

@@ -52,11 +52,19 @@
 // Simple, and every one of Simple's curated examples turns on it. Her call:
 // "let's make wo required instead." So を is one of Simple's `grammarPrereqs`
 // with は and が, and Simple reads は, が, を, Simple, に, で, だけ (SAK-487).
-// For a learner who has met none of the three, the Observatory's Simple tile
-// stays hidden until all three are learned or picked: the same SAK-464 rule
-// (`waitingOn` in observatory.ts) with one more pattern in it. A learner who
-// has already met one of them waits on nothing, as before, because the app's
-// own unlock rule (`sentenceTierBlock`) still wants any one.
+// The Observatory's Simple tile stays hidden until all three are learned or
+// picked: the SAK-464 rule (`waitingOn` in observatory.ts) with one more
+// pattern in it.
+//
+// EVERY PATTERN, FOR EVERY LEARNER
+// ================================
+// The app's own unlock rule (`sentenceTierBlock`) used to want any one of a
+// type's patterns, so a learner who had met は waited on nothing and saw
+// Simple without が and を. Sam, 2026-09-26: "the sentence rule should be
+// blocked until all of its requirements are known." A type now opens only
+// when every one of its `grammarPrereqs` is learned, claimed or picked
+// tonight, for all ten types (SAK-490). This order already put all of them
+// before the type, so nothing here moved.
 //
 // The adjective and noun form (〜な) no longer leads the list either. It is
 // grammar, not a sentence rule, and it is already the first thing the grammar

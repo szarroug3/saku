@@ -10,11 +10,12 @@
 // meaning facts, since ordering practice is not the same as knowing the pattern).
 // This file only re-expresses that data as the shared content model.
 //
-// UNLOCK. A tier's real gate (structural pool-size count + ANY of its grammar
-// patterns taught) lives in sentence-ordering-plan.ts and is ANY-of, which the
-// content model's all-of `blockedBy` can't express. The build script serializes
-// its exact fact-id structure into learn-index.json, where /learn applies it
-// before exposing a tier. The tiers stay ordered simplest→complex.
+// UNLOCK. A tier's real gate (structural pool-size count + EVERY one of its
+// grammar patterns taught, SAK-490; it was any one of them before) lives in
+// sentence-ordering-plan.ts. The build script serializes its exact fact-id
+// structure into learn-index.json, where /learn applies the same rule
+// (learn-scheduler.ts's `nextSentenceTierId`) before exposing a tier. The
+// tiers stay ordered simplest→complex.
 
 import { contentTypeLabel } from "./item";
 import {

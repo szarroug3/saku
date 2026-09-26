@@ -640,11 +640,13 @@ export const TIER_LESSONS: Record<SentenceOrderingTierId, readonly LessonDefinit
  * WHEN NOTHING IS READABLE YET. Simple's examples all turn on を. Simple
  * used to require only は and が, so a learner reached it with none of them
  * readable; since SAK-487 (2026-09-26) を is required too, and a learner who
- * knows the three can read every one. The app still opens a type on any ONE
- * of its requirements, though, so a learner who knew は before the rest can
- * reach a page with nothing readable. A page of steps with no sentence under
- * any of them teaches nothing, so the fallback is the examples that are
- * CLOSEST, the ones missing the fewest patterns, rather than none. The page
+ * knows the three can read every one. The app used to open a type on any ONE
+ * of its requirements, so a learner who knew は before the rest could reach a
+ * page with nothing readable; since SAK-490 it waits for every one of them.
+ * A type's page can still be opened on its own (the Atlas shows any entry),
+ * and a page of steps with no sentence under any of them teaches nothing, so
+ * the fallback stays: the examples that are CLOSEST, the ones missing the
+ * fewest patterns, rather than none. This filter did not change. The page
  * says nothing about the ones held back either way (Sam's rule from SAK-464:
  * no line about what is shut).
  */

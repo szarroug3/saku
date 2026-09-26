@@ -147,13 +147,15 @@ describe("the sentence rules on offer", () => {
       const waits = s.needs?.[simple] ?? [];
       return waits.every((id) => o.learned.has(id) || picks.includes(id)) && pickState(graph, simple, o.learned, picks).available;
     };
-    /** は met, which is how the learner's own sky says it: the same reading
-     * the section uses to drop a pattern it no longer offers. */
-    const knows = (id: string): HistoryFile => {
+    /** These patterns met, which is how the learner's own sky says it: the
+     * same reading the section uses to drop a pattern it no longer offers. */
+    const knows = (...ids: readonly string[]): HistoryFile => {
       const history = emptyHistory();
-      const entry = libEntry(patternEntry(id));
-      assert.ok(entry, `${id} is a pattern`);
-      for (const f of knownFactsOf(entry)) history.claims = { ...history.claims, [f]: NOW };
+      for (const id of ids) {
+        const entry = libEntry(patternEntry(id));
+        assert.ok(entry, `${id} is a pattern`);
+        for (const f of knownFactsOf(entry)) history.claims = { ...history.claims, [f]: NOW };
+      }
       return history;
     };
 
@@ -200,13 +202,49 @@ describe("the sentence rules on offer", () => {
     });
 
     it("opens for good once the app's own rule opens it", () => {
-      // the sample learner has met te-iru, one of the sequential type's
-      // patterns, and the app's rule wants any one of them. They have met 〜な
-      // too, so the row itself waits on nothing either.
+      // the sample learner has met all five of the sequential type's
+      // patterns, and the app's rule wants every one of them (SAK-490). They
+      // have met 〜な too, so the row itself waits on nothing either.
       const { s, items } = section(sampleHistory(NOW));
       const type = items.find((it) => it.kind === "sentence")!;
       assert.equal(type.id, "writing-rule:sentence-rule-sequential");
       assert.deepEqual(s.needs, {}, "nothing left to wait on");
+    });
+
+    // SAK-490. Sam, 2026-09-26: "the sentence rule should be blocked until
+    // all of its requirements are known." A learner who had met は waited on
+    // nothing and was shown Simple without が and を.
+    it("with は learned and not が or を, is not offered and waits on が and を", () => {
+      const history = knows("wa", "prenominal-form");
+      const { s } = section(history);
+      assert.deepEqual(s.needs?.[simple], ["grammar:ga", "grammar:wo"]);
+      assert.equal(open(history, []), false, "not offered on は alone");
+      assert.equal(open(history, ["grammar:ga"]), false, "nor with が picked");
+      assert.equal(open(history, ["grammar:ga", "grammar:wo"]), true, "offered once が and を are picked too");
+    });
+
+    it("with は, が and を learned, is offered and waits on nothing", () => {
+      const history = knows("wa", "ga", "wo", "prenominal-form");
+      const { s, items } = section(history);
+      assert.equal(s.needs?.[simple], undefined);
+      assert.ok(items.some((it) => it.id === simple), "Simple is in the row");
+      assert.equal(open(history, []), true);
+    });
+
+    it("the same for a later type: Sequential waits on each of its five it has not met", () => {
+      const sequential = "writing-rule:sentence-rule-sequential";
+      /** Simple done, 〜な met, and these patterns. */
+      const past = (...ids: readonly string[]): HistoryFile => {
+        const history = knows("prenominal-form", "wa", "ga", "wo", ...ids);
+        for (const f of knownFactsOf(libEntry(simple as LibEntry["id"])!)) history.claims = { ...history.claims, [f]: NOW };
+        return history;
+      };
+      // one of its five met, 〜てから
+      const { s, items } = section(past("te-kara"));
+      assert.ok(items.some((it) => it.id === sequential), "Sequential is the type in the row");
+      assert.deepEqual(s.needs?.[sequential], ["grammar:te-iru", "grammar:te-shimau", "grammar:te-oku", "grammar:te-miru"]);
+      const all = past("te-kara", "te-iru", "te-shimau", "te-oku", "te-miru");
+      assert.equal(section(all).s.needs?.[sequential], undefined, "and on nothing once all five are met");
     });
   });
 

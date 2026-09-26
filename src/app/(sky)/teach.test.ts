@@ -532,9 +532,11 @@ describe("a sentence type's page shows the examples the learner can read", () =>
     assert.deepEqual(shown, ["私はそれを言う。", "私は何を言う？", "私はこれを食べる。"]);
   });
 
-  // The app still opens a type on any ONE of its requirements, so a learner
-  // can reach Simple without を. A page of steps with nothing under them
-  // teaches nothing, so it shows the closest examples instead of none.
+  // The app opens a type only once every one of its requirements is known
+  // (SAK-490), but a type's page can still be opened on its own, from the
+  // Atlas, without を. A page of steps with nothing under them teaches
+  // nothing, so it shows the closest examples instead of none. SAK-468's
+  // filter is unchanged.
   it("shows the closest examples when none is readable yet", () => {
     const withoutWo = examplesOn("simple", claiming("wa", "ga"));
     assert.deepEqual(withoutWo, examplesOn("simple", claiming("wa", "ga", "wo")), "the same three, one を away");

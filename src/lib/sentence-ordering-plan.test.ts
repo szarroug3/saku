@@ -40,21 +40,31 @@ describe("nextSentenceOrderingLesson", () => {
   // SAK-87 round 5 dropped the vocabulary-known half of the tier-unlock gate:
   // a tier's structural pool (piece count, tier match, curated + generated
   // items) is available regardless of history, so only the grammar-prereq
-  // ANY-of check below is left to exercise.
-  test("opens Simple once one of wa/ga is taught, with no vocabulary claimed", () => {
-    const history = applyClaims(emptyHistory(), [patternMeaningFactId("wa")], 1);
-    assert.equal(nextSentenceOrderingLesson(true, history)?.tierId, "simple");
+  // check below is left to exercise. It wants EVERY one of a tier's patterns
+  // since SAK-490; it used to open Simple on は alone.
+  test("does not offer Simple with only は taught, and offers it with は, が and を", () => {
+    const wa = applyClaims(emptyHistory(), [patternMeaningFactId("wa")], 1);
+    assert.equal(nextSentenceOrderingLesson(true, wa), null, "は alone is not enough");
+    const waGa = applyClaims(wa, [patternMeaningFactId("ga")], 2);
+    assert.equal(nextSentenceOrderingLesson(true, waGa), null, "nor are は and が");
+    const all = applyClaims(waGa, [patternMeaningFactId("wo")], 3);
+    assert.equal(nextSentenceOrderingLesson(true, all)?.tierId, "simple");
   });
 
-  test("later tiers need their own grammar lesson, not just the earlier tier's", () => {
+  test("later tiers need every one of their own patterns, not just the earlier tier's", () => {
     let history = applyClaims(
       emptyHistory(),
-      [patternMeaningFactId("wa"), sentenceTierMarkerFact("simple")],
+      [...["wa", "ga", "wo"].map(patternMeaningFactId), sentenceTierMarkerFact("simple")],
       1,
     );
     assert.equal(nextSentenceOrderingLesson(true, history), null);
 
+    // one of Sequential's five used to open it
     history = applyClaims(history, [patternMeaningFactId("te-kara")], 2);
+    assert.equal(nextSentenceOrderingLesson(true, history), null, "〜てから alone is not enough");
+
+    const sequential = SENTENCE_ORDERING_TIERS.find((t) => t.id === "sequential")!;
+    history = applyClaims(history, sequential.grammarPrereqs.map(patternMeaningFactId), 3);
     assert.equal(nextSentenceOrderingLesson(true, history)?.tierId, "sequential");
   });
 });
@@ -92,14 +102,44 @@ describe("sentenceLessonFacts", () => {
 // a tier it cannot start yet and says on the card what opens it. The yes-or-no
 // the planner uses is this same function, so the two cannot drift apart.
 describe("sentenceTierBlock", () => {
-  test("names the patterns any one of which opens the tier", () => {
+  // SAK-490. Sam, 2026-09-26: "the sentence rule should be blocked until all
+  // of its requirements are known." The block names what is still missing.
+  test("with は learned and not が or を, Simple waits on が and を", () => {
     const simple = SENTENCE_ORDERING_TIERS[0];
+    assert.equal(simple.id, "simple");
     assert.deepEqual(sentenceTierBlock(simple, EMPTY), {
       kind: "grammar",
       patterns: simple.grammarPrereqs,
     });
-    const taught = applyClaims(emptyHistory(), [patternMeaningFactId("wa")], 1);
-    assert.equal(sentenceTierBlock(simple, taught), null);
+    const wa = applyClaims(emptyHistory(), [patternMeaningFactId("wa")], 1);
+    assert.deepEqual(sentenceTierBlock(simple, wa), { kind: "grammar", patterns: ["ga", "wo"] });
+    const all = applyClaims(wa, [patternMeaningFactId("ga"), patternMeaningFactId("wo")], 2);
+    assert.equal(sentenceTierBlock(simple, all), null);
+  });
+
+  test("with one of Causal's two learned, Causal waits on the other", () => {
+    const causal = SENTENCE_ORDERING_TIERS.find((t) => t.id === "causal")!;
+    assert.deepEqual([...causal.grammarPrereqs], ["kara-reason", "node"]);
+    const kara = applyClaims(emptyHistory(), [patternMeaningFactId("kara-reason")], 1);
+    assert.deepEqual(sentenceTierBlock(causal, kara), { kind: "grammar", patterns: ["node"] });
+    const both = applyClaims(kara, [patternMeaningFactId("node")], 2);
+    assert.equal(sentenceTierBlock(causal, both), null);
+  });
+
+  test("every one of the ten types opens on all of its patterns and on nothing less", () => {
+    assert.equal(SENTENCE_ORDERING_TIERS.length, 10);
+    for (const tier of SENTENCE_ORDERING_TIERS) {
+      const all = tier.grammarPrereqs.map(patternMeaningFactId);
+      assert.equal(sentenceTierBlock(tier, applyClaims(emptyHistory(), all, 1)), null, `${tier.id} opens on all of them`);
+      for (const left of tier.grammarPrereqs) {
+        const others = applyClaims(emptyHistory(), all.filter((f) => f !== patternMeaningFactId(left)), 1);
+        assert.deepEqual(
+          sentenceTierBlock(tier, others),
+          { kind: "grammar", patterns: [left] },
+          `${tier.id} waits on ${left} when it is the one left`,
+        );
+      }
+    }
   });
 
   test("says how far short the pool is when the tier has too few sentences", () => {

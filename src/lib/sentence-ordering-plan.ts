@@ -47,7 +47,9 @@ export function sentenceLessonFacts(
  * shut (SAK-430), and a second opinion about what unlocks a tier is exactly
  * the drift that would let the picker offer a lesson the planner refuses. */
 export type SentenceTierBlock =
-  /** Not one of these patterns has been taught yet. Any ONE of them opens it. */
+  /** These of the tier's patterns are not taught yet. The tier opens once
+   * EVERY one of its patterns is (SAK-490), so only the missing ones are
+   * listed. */
   | { readonly kind: "grammar"; readonly patterns: readonly string[] }
   /** Too few sentences in the tier's structural pool for a real drill. */
   | { readonly kind: "sentences"; readonly have: number; readonly need: number };
@@ -61,23 +63,23 @@ export function sentenceTierBlock(
     return { kind: "sentences", have: readable.length, need: tier.minReadable };
   }
 
-  // Grammar prereq: at least one of this tier's patterns must have been
-  // taught in the grammar track (seen, claimed or tested). Tiers with no
-  // prereqs listed skip this check entirely.
-  if (tier.grammarPrereqs.length > 0) {
-    const prereqMet = tier.grammarPrereqs.some((id) => {
-      const fid = patternMeaningFactId(id);
-      const st = effectiveState(
-        history.facts[fid],
-        history.claims?.[fid],
-        history.seen?.[fid],
-      );
-      return st.lastTested > 0;
-    });
-    if (!prereqMet) return { kind: "grammar", patterns: tier.grammarPrereqs };
-  }
+  // Grammar prereqs: EVERY one of this tier's patterns must have been taught
+  // in the grammar track (seen, claimed or tested). It used to be any one of
+  // them, so a learner who had met は was offered Simple without が and を.
+  // Sam, 2026-09-26: "the sentence rule should be blocked until all of its
+  // requirements are known" (SAK-490). A tier with no prereqs listed skips
+  // this check.
+  const missing = tier.grammarPrereqs.filter((id) => !patternTaught(id, history));
+  if (missing.length > 0) return { kind: "grammar", patterns: missing };
 
   return null;
+}
+
+/** Whether a grammar pattern has been taught: its meaning fact seen, claimed
+ * or tested. */
+function patternTaught(id: string, history: HistoryFile): boolean {
+  const fid = patternMeaningFactId(id);
+  return effectiveState(history.facts[fid], history.claims?.[fid], history.seen?.[fid]).lastTested > 0;
 }
 
 function sentenceTierUnlocked(

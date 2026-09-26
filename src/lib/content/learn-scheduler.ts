@@ -83,10 +83,9 @@ export function nextSentenceTierId(
 ): string | null {
   for (const gate of index.sentenceGates) {
     if (gate.poolSize < gate.minReadable) return null;
-    if (
-      gate.grammarPrereqFacts.length > 0 &&
-      !gate.grammarPrereqFacts.some((fact) => factKnown(fact, history))
-    ) {
+    // every one of the tier's patterns must be known, as in the planner's
+    // `sentenceTierBlock` (SAK-490)
+    if (!gate.grammarPrereqFacts.every((fact) => factKnown(fact, history))) {
       return null;
     }
 

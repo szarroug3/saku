@@ -2293,11 +2293,13 @@ test("the particles picked for tonight are moons, and nothing there is a planet"
 });
 
 test("a grammar pattern is a comet in the lesson sky, tail and all", async ({ page }) => {
-  // SAK-465, the other half: 〜てから is a pattern and not a particle, so it
-  // draws as a comet rather than as a moon or as a planet.
+  // SAK-465, the other half: 〜てはいけない is a pattern and not a particle,
+  // so it draws as a comet rather than as a moon or as a planet. It was
+  // 〜てから from the Sentences row; the sample learner knows all of
+  // Sequential's patterns now (SAK-490), so this one comes from Grammar.
   await page.goto("/observatory?sample");
-  const cards = page.locator("section", { has: page.getByRole("heading", { name: "Sentences" }) }).getByRole("button");
-  await cards.filter({ hasText: "after doing X" }).first().click();
+  const cards = page.locator("section", { has: page.getByRole("heading", { name: "Grammar", exact: true }) }).getByRole("button");
+  await cards.filter({ hasText: "must not do X" }).first().click();
   await page.getByRole("link", { name: "Start lesson" }).click();
   await expect(page).toHaveURL(/\/lesson\?/);
 

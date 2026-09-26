@@ -151,13 +151,14 @@ function tierOf(entryId: string) {
  * The patterns a sentence type is still waiting on, as entry ids, or nothing
  * when it is open (SAK-464).
  *
- * The app's unlock rule is `sentenceTierBlock`, which wants ANY ONE of the
- * type's patterns. So a type with one of them already met waits on nothing,
- * and a type with none of them waits on all of them, which is what Sam asked
- * for on 2026-09-17: "don't show simple until either both are learned or both
- * are selected". Asking for all of them is only ever stricter than the
- * planner, so nothing is offered here that a lesson would then refuse to
- * build.
+ * The app's unlock rule is `sentenceTierBlock`, which wants EVERY one of the
+ * type's patterns (SAK-490). So a type waits on each of its patterns the
+ * learner has not met yet, and on nothing once all of them are. Sam asked for
+ * this on 2026-09-17 for a learner who had met none of them ("don't show
+ * simple until either both are learned or both are selected"), and on
+ * 2026-09-26 for everybody: "the sentence rule should be blocked until all of
+ * its requirements are known." Before that the planner wanted any one of
+ * them, so a learner who had met は was shown Simple without が and を.
  *
  * This is the SECTION's, not the item's. A star's parts are the same for
  * every learner (the home's catalogue is one shape of the sky shipped to
@@ -167,14 +168,16 @@ function tierOf(entryId: string) {
  * The grammar half of the rule is read straight off the patterns rather than
  * through `sentenceTierBlock`, which walks the whole sentence corpus per
  * tier, and "has the learner met this pattern" is the same question the
- * section itself asks of every row.
+ * section itself asks of every row. Reading it that way also means a type
+ * never waits on a pattern the row has dropped as met.
  */
 function waitingOn(entryId: string, history: HistoryFile, now: number): string[] {
   const tier = tierOf(entryId);
   if (!tier) return [];
-  const entries = tier.grammarPrereqs.map((id) => libEntry(patternEntry(id))).filter((e): e is LibEntry => !!e);
-  if (entries.some((e) => standingFor(e, history, now).met)) return [];
-  return entries.map((e) => e.id);
+  return tier.grammarPrereqs
+    .map((id) => libEntry(patternEntry(id)))
+    .filter((e): e is LibEntry => !!e && !standingFor(e, history, now).met)
+    .map((e) => e.id);
 }
 
 export function observatoryFromHistory(history: HistoryFile, now = Date.now()): SkyObservatoryData {
