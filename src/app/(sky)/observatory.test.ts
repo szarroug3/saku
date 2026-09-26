@@ -219,13 +219,15 @@ describe("the sentence rules on offer", () => {
     // SAK-490. Sam, 2026-09-26: "the sentence rule should be blocked until
     // all of its requirements are known." A learner who had met は waited on
     // nothing and was shown Simple without が and を.
-    it("with は learned and not が or を, is not offered and waits on が and を", () => {
+    it("with は learned and not が or を, is not offered and waits on は vs が and を", () => {
+      // は and が are one item (SAK-491), so what Simple waits on is the pair's
+      // tile, which with は known costs only が, and を
       const history = knows("wa", "prenominal-form");
       const { s } = section(history);
-      assert.deepEqual(s.needs?.[simple], ["grammar:ga", "grammar:wo"]);
+      assert.deepEqual(s.needs?.[simple], ["particles:wa-ga", "grammar:wo"]);
       assert.equal(open(history, []), false, "not offered on は alone");
-      assert.equal(open(history, ["grammar:ga"]), false, "nor with が picked");
-      assert.equal(open(history, ["grammar:ga", "grammar:wo"]), true, "offered once が and を are picked too");
+      assert.equal(open(history, ["particles:wa-ga"]), false, "nor with は vs が picked");
+      assert.equal(open(history, ["particles:wa-ga", "grammar:wo"]), true, "offered once は vs が and を are picked too");
     });
 
     it("with は, が and を learned, is offered and waits on nothing", () => {
