@@ -726,6 +726,7 @@ describe("a particle's page says what the particle means", () => {
     assert.ok(own.indexOf(said) <= 2, "the reading is not near the top of は's page");
   });
 
+  const UNMARKED = new Set(["バスに乗ります。"]);
   it("marks the particle in every sentence it shows, everywhere it appears", () => {
     for (const recipe of recipesInScope) {
       const note = noteOf(recipe);
@@ -734,6 +735,9 @@ describe("a particle's page says what the particle means", () => {
       for (const ex of shown) {
         const plain = ex.jp.map((r) => r.text).join("");
         const marked = ex.jp.filter((r) => r.accent);
+        // a sentence shown for the particle it does NOT take has nothing to
+        // pick out (Sam, 2026-09-26: を's page "should not be teaching ni")
+        if (UNMARKED.has(plain)) { assert.equal(marked.length, 0, `${plain} marks something`); continue; }
         assert.ok(marked.length > 0, `${plain} has nothing marked in it`);
         for (const mark of new Set(marked.map((r) => r.text))) {
           assert.equal(marked.filter((r) => r.text === mark).length, plain.split(mark).length - 1, `${plain} marks ${mark} only once`);

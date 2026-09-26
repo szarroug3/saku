@@ -396,20 +396,21 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
       },
       {
         heading: "を on a place",
+        // Sam, 2026-09-26: this page teaches を and nothing else, so the で
+        // sentence that used to sit beside this one is gone; で has its own page
         text:
-          "を and で both come after a place, and they say different things. を " +
-          "marks the place you moved through. で marks where you were while you did it.",
+          "を marks the place you moved through, the way it marks a road. Where " +
+          "you were while you did something does not take を.",
         examples: [
           { jp: "公園を走ります。", mark: "を", en: "I run through the park.", readings: ["こうえん", "はし"], words: [{ word: "公園", meaning: "park" }, { word: "走る", meaning: "run" }] },
-          { jp: "公園で走ります。", mark: "で", en: "I run in the park.", readings: ["こうえん", "はし"], words: [{ word: "公園", meaning: "park" }, { word: "走る", meaning: "run" }] },
         ],
       },
       {
         heading: "Where beginners go wrong",
         text:
           "English puts a thing after some verbs that Japanese does not. In " +
-          "Japanese a bus is something you get on, so 乗る (get on) takes に.",
-        examples: [{ jp: "バスに乗ります。", mark: "に", en: "I get on the bus.", readings: ["の"], words: [{ word: "バス", meaning: "bus" }] }],
+          "Japanese a bus is something you get on, so 乗る (get on) does not take を.",
+        examples: [{ jp: "バスに乗ります。", mark: [], en: "I get on the bus.", readings: ["の"], words: [{ word: "バス", meaning: "bus" }] }],
       },
       {
         text:

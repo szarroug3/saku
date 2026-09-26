@@ -629,6 +629,9 @@ function particleListPage(): TeachPage {
  * And every particle listed, so a sentence shown for は and が together picks
  * out both (Sam, 2026-09-24: "the sentence highlights only one"). */
 function withEveryMark(text: string, marks: readonly string[]): SkySoundLine {
+  // nothing to pick out: a sentence shown for the particle it does NOT take
+  // (バスに乗ります on を's page, Sam, 2026-09-26) is printed plain
+  if (!marks.length) return text ? [{ text }] : [];
   const each = new RegExp(`(${marks.map((m) => m.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")).join("|")})`);
   return text
     .split(each)
