@@ -120,12 +120,13 @@ describe("the sentence rules on offer", () => {
   });
 
   // SAK-468. Sam: "why isn't simple sentences not after topic/subject? why
-  // does it come after all these other particles". Simple needs は and が; を,
-  // に, で and だけ are what its example sentences turn on, so they follow it.
+  // does it come after all these other particles". Simple needs は, が and を
+  // (を joined them on 2026-09-26, SAK-487); に, で and だけ are what its
+  // example sentences turn on, so they follow it.
   it("puts the type after what it requires and before what its sentences use", () => {
     const { items } = section(emptyHistory());
     const glyphs = items.map((it) => it.glyph);
-    assert.deepEqual(glyphs, ["〜は", "〜が", "Simple", "〜を", "〜に", "〜で", "〜だけ"]);
+    assert.deepEqual(glyphs, ["〜は", "〜が", "〜を", "Simple", "〜に", "〜で", "〜だけ"]);
     // the three the old section offered in the same breath and Simple never uses
     for (const away of ["〜へ", "〜まで", "〜か"]) assert.ok(!glyphs.includes(away), `${away} is not offered yet`);
   });
@@ -160,8 +161,8 @@ describe("the sentence rules on offer", () => {
       const { o, s, items } = section(emptyHistory());
       const type = items.find((it) => it.kind === "sentence")!;
       assert.equal(type.id, simple);
-      // its own two, and the one the whole row waits on (SAK-468)
-      assert.deepEqual(s.needs?.[simple], ["grammar:wa", "grammar:ga", "grammar:prenominal-form"]);
+      // its own three, and the one the whole row waits on (SAK-468)
+      assert.deepEqual(s.needs?.[simple], ["grammar:wa", "grammar:ga", "grammar:wo", "grammar:prenominal-form"]);
       // and what it waits on is on the page to be picked, here or in Grammar
       const offered = new Set(o.sections.flatMap((x) => x.items));
       for (const id of s.needs![simple]) assert.ok(offered.has(id), `${id} is not offered`);
@@ -173,19 +174,29 @@ describe("the sentence rules on offer", () => {
       }
     });
 
+    // SAK-487. Sam, 2026-09-26: "let's make wo required instead." Simple
+    // waits on exactly は, が and を, and on nothing else of its own.
+    it("waits on exactly は, が and を of its own", () => {
+      const { s } = section(emptyHistory());
+      const own = (s.needs?.[simple] ?? []).filter((id) => id !== NA);
+      assert.deepEqual([...own].sort(), ["grammar:ga", "grammar:wa", "grammar:wo"]);
+    });
+
     // 〜な is picked along with them here, since the whole row waits on it
     // too now (SAK-468); the row is what these picks are made in.
-    it("is not offered to an empty sky, and is offered once は and が are picked", () => {
+    it("is not offered to an empty sky, and is offered once は, が and を are picked", () => {
       assert.equal(open(emptyHistory(), []), false);
       assert.equal(open(emptyHistory(), [NA, "grammar:wa"]), false);
-      assert.equal(open(emptyHistory(), [NA, "grammar:wa", "grammar:ga"]), true);
+      assert.equal(open(emptyHistory(), [NA, "grammar:wa", "grammar:ga"]), false, "は and が are not enough now");
+      assert.equal(open(emptyHistory(), [NA, "grammar:wa", "grammar:ga", "grammar:wo"]), true);
     });
 
     it("counts one learned and one picked the same way, and goes when the pick goes", () => {
-      assert.equal(open(knows("wa"), [NA, "grammar:ga"]), true);
-      assert.equal(open(emptyHistory(), [NA, "grammar:wa", "grammar:ga"]), true);
-      assert.equal(open(emptyHistory(), [NA, "grammar:wa"]), false, "unpicking が takes it away again");
-      assert.equal(open(emptyHistory(), ["grammar:wa", "grammar:ga"]), false, "and so does unpicking 〜な");
+      assert.equal(open(knows("wa"), [NA, "grammar:ga", "grammar:wo"]), true);
+      assert.equal(open(emptyHistory(), [NA, "grammar:wa", "grammar:ga", "grammar:wo"]), true);
+      assert.equal(open(emptyHistory(), [NA, "grammar:wa", "grammar:ga"]), false, "unpicking を takes it away again");
+      assert.equal(open(emptyHistory(), [NA, "grammar:wa", "grammar:wo"]), false, "and so does unpicking が");
+      assert.equal(open(emptyHistory(), ["grammar:wa", "grammar:ga", "grammar:wo"]), false, "and so does unpicking 〜な");
     });
 
     it("opens for good once the app's own rule opens it", () => {

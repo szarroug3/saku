@@ -21,8 +21,8 @@
 // One list. For each sentence type in SENTENCE_ORDERING_TIERS order:
 //
 //   1. its `grammarPrereqs`, all of them, in teaching order, because those are
-//      what the type IS: a Simple sentence is a topic or a subject and a
-//      predicate, so は and が have to come first;
+//      what the type IS: a Simple sentence is a topic or a subject, what the
+//      action is done to, and a predicate, so は, が and を have to come first;
 //   2. before any of those, the form it is built on, when the track teaches
 //      that form as a lesson of its own: the て/で-form before 〜てから, the
 //      ない-form before 〜ないでください. This is grammar-shelf.ts's rule, which
@@ -44,6 +44,19 @@
 // で and だけ are only what its curated examples happen to turn on, and a page
 // can hold those examples back until the learner can read them (SAK-468 part
 // two). So Simple now reads は, が, Simple, を, に, で, だけ.
+//
+// を MOVED IN FRONT OF SIMPLE
+// ===========================
+// Sam, 2026-09-26, on the Simple intro's line "Markers such as は and を help
+// you tell who or what the sentence is about": を was not required before
+// Simple, and every one of Simple's curated examples turns on it. Her call:
+// "let's make wo required instead." So を is one of Simple's `grammarPrereqs`
+// with は and が, and Simple reads は, が, を, Simple, に, で, だけ (SAK-487).
+// For a learner who has met none of the three, the Observatory's Simple tile
+// stays hidden until all three are learned or picked: the same SAK-464 rule
+// (`waitingOn` in observatory.ts) with one more pattern in it. A learner who
+// has already met one of them waits on nothing, as before, because the app's
+// own unlock rule (`sentenceTierBlock`) still wants any one.
 //
 // The adjective and noun form (〜な) no longer leads the list either. It is
 // grammar, not a sentence rule, and it is already the first thing the grammar
@@ -70,7 +83,7 @@ import { grammarRank } from "@/lib/library/grammar-order";
 /** One place in the order: a grammar pattern to learn, or a sentence type.
  *
  * A pattern says which sentence type it was placed for, since the type no
- * longer stands at the end of its own run: は comes before Simple and を after
+ * longer stands at the end of its own run: は comes before Simple and に after
  * it, and both are Simple's. A pattern no type asked for says nothing, which
  * is what makes it one of the leftovers. Everything that reads the order by
  * type (the Observatory's row, the Atlas's Sentences shelf) reads this rather

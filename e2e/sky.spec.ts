@@ -2102,7 +2102,7 @@ test("a sentence type is off the page until what it needs is learned or picked (
   const row = page.locator("section", { has: page.getByRole("heading", { name: "Sentences", exact: true }) });
   await row.getByRole("button", { name: "Start sentences" }).click();
   const tile = (text: string) => row.getByRole("button").filter({ hasText: text });
-  const wa = tile("marks the topic"), ga = tile("marks the subject"), simple = tile("Simple");
+  const wa = tile("marks the topic"), ga = tile("marks the subject"), wo = tile("marks the direct object"), simple = tile("Simple");
 
   // the row is the particles it leads with, and nothing that cannot be taken
   await expect(wa).toBeVisible();
@@ -2112,19 +2112,22 @@ test("a sentence type is off the page until what it needs is learned or picked (
   await expect(body).not.toContainText("Opens once");
   await expect(body).not.toContainText(/\blocked\b/i);
 
-  // one of the two is not enough; both bring it back
+  // one or two of the three is not enough; all three bring it back. を joined
+  // は and が on 2026-09-26 (SAK-487): "let's make wo required instead."
   await wa.click();
   await expect(simple).toHaveCount(0);
   await ga.click();
+  await expect(simple).toHaveCount(0);
+  await wo.click();
   await expect(simple).toHaveCount(1);
   await expect(simple).toContainText("sentence type");
 
   // and taking one of them out takes the type with it, pick and all
   await simple.click();
-  await expect(page.getByText("4 Picks", { exact: true })).toBeVisible();
+  await expect(page.getByText("5 Picks", { exact: true })).toBeVisible();
   await ga.click();
   await expect(simple).toHaveCount(0);
-  await expect(page.getByText("2 Picks", { exact: true })).toBeVisible();
+  await expect(page.getByText("3 Picks", { exact: true })).toBeVisible();
 });
 
 test("the Sentences row waits on 〜な, and opens with は first (SAK-468)", async ({ page }) => {
@@ -2157,13 +2160,15 @@ test("the Sentences row waits on 〜な, and opens with は first (SAK-468)", as
   await expect(tiles.nth(1)).toContainText("marks the subject");
   await expect(tiles.nth(2)).toContainText("marks the direct object");
 
-  // は and が bring Simple in as the third tile, before the particles its own
-  // example sentences turn on
+  // は, が and を bring Simple in as the fourth tile, before the particles its
+  // own example sentences turn on (SAK-487: を is one Simple needs now)
   await tiles.nth(0).click();
   await tiles.filter({ hasText: "marks the subject" }).click();
-  await expect(tiles.nth(2)).toContainText("Simple");
-  await expect(tiles.nth(2)).toContainText("sentence type");
-  await expect(tiles.nth(3)).toContainText("marks the direct object");
+  await expect(tiles.filter({ hasText: "Simple" })).toHaveCount(0);
+  await tiles.filter({ hasText: "marks the direct object" }).click();
+  await expect(tiles.nth(3)).toContainText("Simple");
+  await expect(tiles.nth(3)).toContainText("sentence type");
+  await expect(tiles.nth(4)).toContainText("marks where something is or is going");
 
   // and taking 〜な back out takes the row with it, picks and all
   await na.click();

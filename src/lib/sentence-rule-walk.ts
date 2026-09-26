@@ -637,12 +637,16 @@ export const TIER_LESSONS: Record<SentenceOrderingTierId, readonly LessonDefinit
  * `readable` undefined is every example, which is what a page with no learner
  * behind it shows.
  *
- * WHEN NOTHING IS READABLE YET. Simple's examples all turn on を, and を is
- * not something Simple requires: a learner reaches Simple knowing は and が
- * and no more. A page of steps with no sentence under any of them teaches
- * nothing, so the fallback is the examples that are CLOSEST, the ones missing
- * the fewest patterns, rather than none. The page says nothing about the ones
- * held back either way (Sam's rule from SAK-464: no line about what is shut).
+ * WHEN NOTHING IS READABLE YET. Simple's examples all turn on を. Simple
+ * used to require only は and が, so a learner reached it with none of them
+ * readable; since SAK-487 (2026-09-26) を is required too, and a learner who
+ * knows the three can read every one. The app still opens a type on any ONE
+ * of its requirements, though, so a learner who knew は before the rest can
+ * reach a page with nothing readable. A page of steps with no sentence under
+ * any of them teaches nothing, so the fallback is the examples that are
+ * CLOSEST, the ones missing the fewest patterns, rather than none. The page
+ * says nothing about the ones held back either way (Sam's rule from SAK-464:
+ * no line about what is shut).
  */
 export function readableTierExamples(
   tierId: SentenceOrderingTierId,

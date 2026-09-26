@@ -396,8 +396,8 @@ export function offerings(history: HistoryFile, now = Date.now()): Offerings {
   // The section RUNS TO THE NEXT SENTENCE TYPE AND THAT TYPE'S OWN RUN, and
   // stops where the type after it starts. That is Sam's rule for it, "teach
   // just what's needed for the next sentence type": what the type requires
-  // (は and が for Simple), the type, and then the particles its own example
-  // sentences turn on (を, に, で, だけ), which are the type's too. It is
+  // (は, が and を for Simple, SAK-487), the type, and then the particles its
+  // own example sentences turn on (に, で, だけ), which are the type's too. It is
   // short by construction, so it lays out whole rather than at the usual nine
   // (a section that ended one card short of the thing its cards are FOR would
   // teach the opposite of the order it is built on).

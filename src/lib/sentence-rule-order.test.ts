@@ -11,9 +11,10 @@
 //   1. It tiles the subject: every recipe once, every sentence type once, and
 //      nothing else in the list.
 //   2. A sentence type comes right after what it requires and before what its
-//      examples merely use. For Simple that is は, が, Simple, then を, に, で
+//      examples merely use. For Simple that is は, が, を, Simple, then に, で
 //      and だけ, and never the particles its sentences never turn on, which is
-//      the whole point of SAK-430 and SAK-468.
+//      the whole point of SAK-430 and SAK-468. を moved in front of Simple on
+//      2026-09-26 (SAK-487).
 //   3. A form is taught before the patterns built on it: the て/で-form before
 //      〜てから, the ない-form before 〜ないでください, the stem before 〜たい.
 //   4. The sentence types keep SENTENCE_ORDERING_TIERS order, so the chain ends
@@ -60,21 +61,33 @@ describe("the sentence rule order", () => {
     assert.ok(at("prenominal-form") > at("reported"), "〜な is left to the tail");
   });
 
-  test("Simple reads は, が, Simple, then the particles its own sentences use", () => {
+  // SAK-487. Sam, 2026-09-26, on the Simple intro naming を when を was not
+  // required yet: "let's make wo required instead."
+  test("Simple requires exactly は, が and を", () => {
+    const simple = SENTENCE_ORDERING_TIERS.find((t) => t.id === "simple")!;
+    assert.deepEqual([...simple.grammarPrereqs].sort(), ["ga", "wa", "wo"]);
+    assert.ok(
+      order.slice(0, at("simple")).every((s) => s.kind === "pattern" && ["wa", "ga", "wo"].includes(s.id)),
+      "nothing but those three comes before Simple",
+    );
+  });
+
+  test("Simple reads は, が, を, Simple, then the particles its own sentences use", () => {
     const simple = at("simple");
-    // what a Simple sentence IS: a topic or a subject, and a predicate
-    for (const id of ["wa", "ga"]) assert.ok(at(id) >= 0 && at(id) < simple, `${id} before Simple`);
+    // what a Simple sentence IS: a topic or a subject, what the action is
+    // done to, and a predicate
+    for (const id of ["wa", "ga", "wo"]) assert.ok(at(id) >= 0 && at(id) < simple, `${id} before Simple`);
     assert.ok(at("wa") < at("ga"), "は before が");
-    // and then what its curated sentences turn on, most used first: を is the
-    // one every second Simple sentence uses, so it leads them
+    assert.ok(at("ga") < at("wo"), "が before を");
+    // and then what its curated sentences turn on, most used first
     assert.deepEqual(
-      order.slice(0, simple + 5).map((s) => s.id),
-      ["wa", "ga", "simple", "wo", "ni", "de", "dake"],
+      order.slice(0, simple + 4).map((s) => s.id),
+      ["wa", "ga", "wo", "simple", "ni", "de", "dake"],
     );
     // and every one of those says it is Simple's, however it is placed, so a
     // reader cutting the list by type does not have to guess from the order
     assert.ok(
-      order.slice(0, simple + 5).every((s) => s.kind === "tier" || s.tier === "simple"),
+      order.slice(0, simple + 4).every((s) => s.kind === "tier" || s.tier === "simple"),
       "the whole run belongs to Simple",
     );
     // the ones no Simple sentence uses wait: this is the nine-at-once fix

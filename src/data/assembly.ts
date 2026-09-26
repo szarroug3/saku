@@ -758,7 +758,10 @@ export const SENTENCE_ORDERING_TIERS: readonly AssemblyTier[] = [
     // instrument marking rather than a direct object.
     patterns: ["wo", "ni", "de", "e", "made", "made-ni", "dake", "kara-source"],
     minReadable: 3,
-    grammarPrereqs: ["wa", "ga"],
+    // を joined は and が on 2026-09-26 (SAK-487): every curated Simple
+    // example turns on it, and Sam's call was to require it rather than
+    // teach it after the type
+    grammarPrereqs: ["wa", "ga", "wo"],
   },
   {
     id: "sequential",

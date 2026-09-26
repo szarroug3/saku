@@ -7125,3 +7125,22 @@ Also from Sam's read: "A second が" read as if the sentence had two, so the hea
 ## A voiced kana's card opens its base kana and its mark (SAK-489)
 
 Sam, 2026-09-26, on パ's card: "in the dakuten and handakuten pages, can you add a thing that links back to the base. like in this one, it would link back to ha." A kana that carries a dakuten or handakuten now has a "Built from" group on its card (`atlas.ts`, the kana branch): the base kana from `DAKUTEN_ROWS`' pairs (ハ for パ, か for が) and the mark's own page (Dakuten or Handakuten). A base kana has no such group. The test checks パ, が, ハ and あ.
+## Simple needs を as well as は and が (SAK-487)
+
+Sam, 2026-09-26, on the Simple intro's line about markers: を was not required before Simple, so she asked whether it should be. Her call: "let's make wo required instead."
+
+**The order.** Simple's `grammarPrereqs` in `src/data/assembly.ts` are `["wa", "ga", "wo"]` now. `sentenceRuleOrder()` places a type's prereqs before it, so the track reads は, が, を, Simple, then に, で and だけ, which are what Simple's example sentences use. Nothing else in the order moved. The comment at the top of `src/lib/sentence-rule-order.ts` records the decision with the date.
+
+**The Observatory.** The Sentences row lists は, が, を, then Simple. `waitingOn` in `src/app/(sky)/observatory.ts` reads the same prereqs, so for a learner who has met none of the three, the Simple tile stays off the page until all three are learned or picked tonight, and it goes again if one of them is unpicked. The rule itself did not change: a learner who has already met one of the three waits on nothing, because the app's own unlock rule (`sentenceTierBlock`) still opens a type on any one of its prereqs.
+
+**The intro.** The marker line on Simple's intro page, in `src/data/sentence-ordering-guides.ts`, reads "Markers such as は, が and を show what the sentence is about, who or what does something, and what the action is done to." The "Don't worry about the words yet." paragraph stays.
+
+**The examples.** Every curated Simple example turns on を, so a learner who knows は, が and を reads all three outright. The closest-examples fallback in `readableTierExamples` stays, for a learner who reaches Simple through any one of its prereqs.
+
+**Generated data.** `npm run build:learn-index` and `npm run build:catalogues` were rerun: the learn index carries each tier's prereq facts, and the Atlas's Sentences shelf is cut by the order.
+
+**Tests.** `sentence-rule-order.test.ts` checks that Simple requires exactly は, が and を and that only those three come before it, and pins the run as は, が, を, Simple, に, で, だけ. `observatory.test.ts` checks the row's order, that Simple waits on exactly those three of its own, that は and が picked are not enough, and that unpicking を or が takes Simple away. `teach.test.ts` checks that with は, が and を known, Simple's readable examples are the curated ones. The two e2e tests for SAK-464 and SAK-468 pick は, が and then を, and find Simple as the fourth tile, followed by に.
+
+Screenshots: `.logs/sak-487/sentences-wa-ga-picked.png` (は and が picked, no Simple tile) and `.logs/sak-487/sentences-wa-ga-wo-picked.png` (を picked too, Simple fourth).
+
+**The gates.** `npx tsc --noEmit` and `npx eslint src e2e scripts` clean. 4,334 unit tests, 4,333 pass and 1 skipped. 86 e2e pass. `scripts/unreachable.mjs --list` at zero, `scripts/unused-exports.mjs` at zero on both lists, and `scripts/button-centering.mjs` at zero over 1px across 7 pages.

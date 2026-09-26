@@ -142,11 +142,12 @@ export const SENTENCE_ORDERING_GUIDES: Record<SentenceOrderingTierId, SentenceOr
       },
       {
         lead: "Small markers show what each part does.",
-        text: "Markers such as は and が show what the sentence is about and who or what does something.",
+        // SAK-487: を is required before Simple now, so the line names it
+        text: "Markers such as は, が and を show what the sentence is about, who or what does something, and what the action is done to.",
       },
       {
-        // Sam, 2026-09-26: a learner reaches this page knowing は and が and
-        // little else, and the sentence under it has を and 食べる in it
+        // Sam, 2026-09-26: a learner reaches this page knowing は, が and を
+        // (SAK-487) and few words, and the sentence under it has 食べる in it
         lead: "Don't worry about the words yet.",
         text: "If you do not know what the words in the sentence below mean, that is fine. The next few pages explain them.",
       },

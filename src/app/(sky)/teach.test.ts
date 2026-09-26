@@ -521,14 +521,23 @@ describe("a sentence type's page shows the examples the learner can read", () =>
     ]);
   });
 
-  // Simple is the one type with no example readable from its own
-  // requirements: every curated Simple sentence turns on を, which は and が
-  // do not bring. A page of steps with nothing under them teaches nothing, so
-  // it shows the closest examples instead of none.
+  // SAK-487. Every curated Simple sentence turns on を, and を is one of
+  // Simple's requirements now, with は and が. So a learner who knows the
+  // three reads all of them outright, with no fallback.
+  it("shows every curated Simple example once は, が and を are known", () => {
+    assert.ok(TIER_EXAMPLES.simple.every((e) => e.p.includes("wo")), "every curated Simple example uses を");
+    assert.deepEqual(readableTierExamples("simple", new Set(["wa", "ga", "wo"])), TIER_EXAMPLES.simple);
+    const shown = examplesOn("simple", claiming("wa", "ga", "wo"));
+    for (const e of TIER_EXAMPLES.simple) assert.ok(shown.includes(e.jp), `${e.jp} is shown`);
+    assert.deepEqual(shown, ["私はそれを言う。", "私は何を言う？", "私はこれを食べる。"]);
+  });
+
+  // The app still opens a type on any ONE of its requirements, so a learner
+  // can reach Simple without を. A page of steps with nothing under them
+  // teaches nothing, so it shows the closest examples instead of none.
   it("shows the closest examples when none is readable yet", () => {
-    const justRead = examplesOn("simple", claiming("wa", "ga"));
-    assert.deepEqual(justRead, ["私はそれを言う。", "私は何を言う？", "私はこれを食べる。"]);
-    assert.deepEqual(examplesOn("simple", claiming("wa", "ga", "wo")), justRead, "the same three, readable outright once を is met");
+    const withoutWo = examplesOn("simple", claiming("wa", "ga"));
+    assert.deepEqual(withoutWo, examplesOn("simple", claiming("wa", "ga", "wo")), "the same three, one を away");
   });
 
   it("shows every example when there is no learner to read it for", () => {
