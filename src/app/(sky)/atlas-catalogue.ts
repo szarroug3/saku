@@ -15,7 +15,8 @@ import type { SkyAtlasData } from "@/sky/components/sky-atlas";
 
 import { all, countsOver, SHELVES } from "./atlas";
 import { timedSync } from "@/lib/server-timing";
-import { sparse, standingFor, touchedEntries } from "./learner";
+import { groupStandingFor, sparse, standingFor, touchedEntries } from "./learner";
+import { PARTICLE_GROUPS } from "./particle-groups";
 import { splitItems } from "./item-split";
 import type { AtlasCatalogue, AtlasPayload } from "./atlas-payload";
 import { withoutCounts } from "./catalogue-build";
@@ -63,6 +64,15 @@ export function atlasPayloadFor(history: HistoryFile, now = Date.now(), catalogu
       for (const [id, entry] of mine) take(id, entry);
     } else {
       for (const item of catalogue.items) { const entry = libEntry(item.id as EntryId); if (entry) take(item.id, entry); }
+    }
+    // a particle group is a tile with no entry of its own: it stands where
+    // its two patterns stand (SAK-491)
+    const tiles = tileOrder(catalogue);
+    for (const g of PARTICLE_GROUPS) {
+      if (!tiles.has(g.id)) continue;
+      const parts = g.parts.map((p) => libEntry(p as EntryId)).filter((e): e is LibEntry => !!e);
+      const { standing } = groupStandingFor(parts, history, now);
+      if (standing !== "not-seen") standings[g.id] = standing;
     }
   });
   return {

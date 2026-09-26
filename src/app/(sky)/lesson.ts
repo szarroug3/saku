@@ -23,10 +23,12 @@ import { lessonSteps as appLessonSteps } from "@/lib/lesson-steps";
 import type { SkyLessonData } from "@/sky/components/sky-lesson";
 import { buildGraph } from "@/sky/lib/graph";
 import { lessonReferences, lessonSteps, type LessonPage, type LessonTeach } from "@/sky/lib/lesson";
-import type { SkyItem } from "@/sky/lib/types";
+import { isPlace, type SkyItem } from "@/sky/lib/types";
+import type { FactId } from "@/types/facts";
 import type { HistoryFile } from "@/types/store";
 
 import { offerings, offerPicker, pickFacts, TSU_RULE, type Offerings } from "./observatory";
+import { particleGroup, tileOf } from "./particle-groups";
 import { pageFromIntro, readablePatterns, teachFor } from "./teach";
 
 /** One of everything, for a look at every kind of card: a plain kana row,
@@ -125,7 +127,7 @@ export function lessonFromPicks(history: HistoryFile, picks: readonly string[], 
   // learner had before tonight, and tonight's picks, which are what they are
   // about to have (SAK-468)
   const readable = readablePatterns(before, known, now);
-  for (const id of ids) { const it = byId.get(id); if (it && !it.group) teach[id] = teachFor(it, { reading: readings.get(id), readable }); }
+  for (const id of ids) { const it = byId.get(id); if (it && !isPlace(it)) teach[id] = teachFor(it, { reading: readings.get(id), readable }); }
   // what tonight rests on and does not teach: the stars already in the sky
   // under tonight's picks, and the pages the walk put behind them
   const references = lessonReferences(graph, known, learnedSet, pages);
@@ -161,7 +163,10 @@ function taughtReading(facts: readonly string[]): string | undefined {
  * derived from it rather than written out by hand; each page says in one
  * word which of the two it is. */
 function walkFor(starIds: readonly string[], history: HistoryFile, offer: Offerings, readings: Map<string, string>): LessonPage[] {
-  const facts = starIds.flatMap((id) => { const e = libEntry(id as Parameters<typeof libEntry>[0]); return e ? [...knownFactsOf(e)] : []; });
+  // a particle group has no entry of its own: its two patterns' facts are
+  // what the walk reads, and a page the walk puts behind either pattern stands
+  // behind the group, which is the star (SAK-491)
+  const facts = starIds.flatMap((id): FactId[] => { const e = libEntry(id as Parameters<typeof libEntry>[0]); return e ? [...knownFactsOf(e)] : particleGroup(id) ? pickFacts([id]) : []; });
   const pages: LessonPage[] = [];
   let pending: Omit<LessonPage, "before">[] = [];
   // Each page says which of the two it is and nothing else. It used to carry a
@@ -177,7 +182,7 @@ function walkFor(starIds: readonly string[], history: HistoryFile, offer: Offeri
     if (step.type === "item") {
       const reading = taughtReading(step.item.facts);
       if (reading) readings.set(step.item.entry, reading);
-      const at = starIds.indexOf(step.item.entry);
+      const at = starIds.indexOf(tileOf(step.item.entry));
       if (at < 0) continue;
       const before = starIds[Math.min(cursor, at)];
       for (const page of pending) pages.push({ ...page, before });

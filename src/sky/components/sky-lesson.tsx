@@ -55,7 +55,7 @@ import { japaneseFont } from "@/sky/lib/japanese";
 import { isUnlocked, lessonSteps, orderNote, starState, type LessonReference, type LessonTeach } from "@/sky/lib/lesson";
 import { detailsFloor, detailsPercent, dragSplit, lessonSplit, pressedSplit, skyShown, splitChevron, splitLabel, splitStyle, stepSplit } from "@/sky/lib/lesson-split";
 import { KIND_LABEL } from "@/sky/lib/tokens";
-import type { SkyItem } from "@/sky/lib/types";
+import { isPlace, type SkyItem } from "@/sky/lib/types";
 
 export interface SkyLessonData {
   /** Every pick and everything under it, plus what the learner has. */
@@ -302,7 +302,7 @@ export function SkyLesson({ data, drillHref, observatoryHref, written, hear, pit
     const rootOf = (id: string | null) => (id ? steps.find((s) => s.id === id)?.pick : undefined);
     return rootOf(selected) ?? rootOf(stepAt) ?? taught[0];
   }, [steps, selected, stepAt, taught]);
-  const itemsOf = (ids: readonly string[]) => ids.map((id) => graph.itemOf(id)).filter((x): x is SkyItem => !!x && !x.group);
+  const itemsOf = (ids: readonly string[]) => ids.map((id) => graph.itemOf(id)).filter((x): x is SkyItem => !!x && !isPlace(x));
   // Next and Back walk a star's pages before they move between stars, so a
   // rule taught over five pages is read through; Back into such a star
   // lands on its last page. The lesson ends on the last page of the last star.

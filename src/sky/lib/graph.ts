@@ -209,6 +209,9 @@ export function buildGraph(items: readonly SkyItem[]): PrerequisiteGraph {
     },
     constellationOf: (id) => {
       if (!byId.has(id)) return { root: id, nodes: [], edges: [] };
+      // a group taught on one card (は vs が) is one body, drawn as itself:
+      // its parts are the card's pages, not stars around it (SAK-491)
+      if (byId.get(id)?.oneCard) return { root: id, nodes: [{ id, depth: 0 }], edges: [] };
       const depth = new Map<string, number>([[id, 0]]);
       const edges: Array<readonly [string, string]> = [];
       const edgeSeen = new Set<string>();

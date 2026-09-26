@@ -41,6 +41,7 @@ import type { HistoryFile } from "@/types/store";
 import { standingFor } from "./learner";
 import { conceptTwin, PARTICLE_TERM, readablePatterns, teachFor } from "./teach";
 import { hasOffer, offerings, offerPicker, pickFacts, TSU_RULE, type Offerings } from "./observatory";
+import { particleGroup, tileOf } from "./particle-groups";
 
 /** The shelves, in the order the app teaches the subjects. Every cut of
  * every shelf is shown (Sam's call, 2026-09-05: everything, without having
@@ -139,18 +140,32 @@ export function atlasFromHistory(history: HistoryFile, now = Date.now()): SkyAtl
     const cuts = shelf.kinds.length > 1
       ? [{ id: shelf.id, label: shelf.title, entries: shelf.kinds.flatMap((kind) => shelfSections(kind, "everyday").flatMap((c) => c.entries)) }]
       : shelfSections(shelf.kinds[0], "everyday");
+    // two particles in one group are one tile (SAK-491), where the first of
+    // them comes on the shelf; `covered` counts the entries the tiles stand
+    // for, so the shelf's "more" is not two short for every group
+    const onShelf = new Set<string>();
+    let covered = 0;
     for (const cut of cuts) {
       // the native numbers are one rule, the 〜つ tile, first among the
       // counting rules (Sam, 2026-09-05), with the ten forms under it
       if (cut.id === "counters-tsu") continue;
       const rules = cut.id === "counters-constructions";
-      const ids = [...(rules ? [TSU_RULE] : []), ...cut.entries.filter((e) => !twinned(e)).map((e) => o.offerPick(e.id)?.id).filter((id): id is string => !!id)];
+      const ids: string[] = rules ? [TSU_RULE] : [];
+      if (rules) covered++;
+      for (const e of cut.entries) {
+        if (twinned(e)) continue;
+        const id = o.offerPick(tileOf(e.id))?.id;
+        if (!id) continue;
+        covered++;
+        if (onShelf.has(id)) continue;
+        onShelf.add(id);
+        ids.push(id);
+      }
       if (ids.length) sections.push({ id: cut.id, label: rules ? "Counting rules" : cut.label, items: ids });
     }
-    const onShelf = sections.reduce((n, s) => n + s.items.length, 0);
     const streamed = entries.length > STREAM_ABOVE;
     if (!streamed) for (const id of sections.flatMap((s) => s.items)) shown.add(id);
-    return { id: shelf.id, kind: shelf.sky, title: shelf.title, unit: shelf.unit, total: entries.length, counts: countsOver(entries, history, now), sections, more: Math.max(0, entries.length - onShelf), ...(streamed ? { streamed } : {}) };
+    return { id: shelf.id, kind: shelf.sky, title: shelf.title, unit: shelf.unit, total: entries.length, counts: countsOver(entries, history, now), sections, more: Math.max(0, entries.length - covered), ...(streamed ? { streamed } : {}) };
   }).filter((s) => s.total > 0);
   const holds = ([VOCAB_SUBJECT, KANJI_SUBJECT, KANA_SUBJECT] as const).map((kind) => ({ total: all(kind).length, unit: SHELVES.find((s) => s.kinds.includes(kind))!.unit }));
   // the tiles need only what a tile shows, plus how much a quiz could ask
@@ -200,7 +215,7 @@ export function atlasSectionsFromHistory(history: HistoryFile, shelfId: string, 
  * depends on the shipped tables alone. */
 let sentencesIds: ReadonlySet<string> | undefined;
 const sentencesShelfIds = (): ReadonlySet<string> =>
-  (sentencesIds ??= new Set(shelfSections(SENTENCE_RULE_KIND, "everyday").flatMap((c) => c.entries.map((e) => e.id as string))));
+  (sentencesIds ??= new Set(shelfSections(SENTENCE_RULE_KIND, "everyday").flatMap((c) => c.entries.map((e) => tileOf(e.id)))));
 
 /** The app's search, by kind, as Atlas sections. */
 export function atlasSearchFromHistory(history: HistoryFile, query: string, now = Date.now()): AtlasSearchResult {
@@ -209,11 +224,12 @@ export function atlasSearchFromHistory(history: HistoryFile, query: string, now 
   const sections: AtlasSection[] = [];
   for (const s of searchByType(query, { perSection: SEARCH_PER_KIND })) {
     const shelf = SHELVES.find((sh) => sh.kinds.includes(s.kind));
-    const items = s.hits.filter((h) => !twinned(h.entry)).map((h) => o.offerPick(h.entry.id)?.id).filter((id): id is string => !!id);
+    // は or が finds the one は vs が tile (SAK-491)
+    const items = [...new Set(s.hits.filter((h) => !twinned(h.entry)).map((h) => o.offerPick(tileOf(h.entry.id))?.id).filter((id): id is string => !!id))];
     if (!items.length) continue;
     // kinds that share a shelf (Terms) share its section
     const have = sections.find((x) => x.id === (shelf?.id ?? s.kind));
-    if (have) { have.items = [...have.items, ...items]; if (s.more) have.more = (have.more ?? 0) + s.more; continue; }
+    if (have) { have.items = [...new Set([...have.items, ...items])]; if (s.more) have.more = (have.more ?? 0) + s.more; continue; }
     sections.push({ id: shelf?.id ?? s.kind, label: shelf?.title ?? s.label, items, ...(s.more ? { more: s.more } : {}) });
   }
   // A pattern is on two shelves, Grammar and Sentences, and the search files
@@ -300,7 +316,7 @@ export function atlasEntryFromHistory(history: HistoryFile, id: string, now = Da
     // the registers, explained once, as the app's keigo page links out to
     group("Read about it", [readAbout("keigo-registers")]);
   }
-  if (item.kind === "grammar" && PARTICLE_ROWS.some((p) => p.entry === item.id)) {
+  if (item.kind === "grammar" && (PARTICLE_ROWS.some((p) => p.entry === item.id) || particleGroup(item.id))) {
     // a particle's page reaches the page that lists them all, the same way a
     // keigo set reaches the registers (SAK-466)
     group("Read about it", [termEntry(PARTICLE_TERM)]);

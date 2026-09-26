@@ -153,7 +153,21 @@ export function standingFor(entry: LibEntry, history: HistoryFile, now: number):
 }
 
 function workOutStanding(entry: LibEntry, history: HistoryFile, now: number): { standing: Standing; met: boolean } {
-  const facts = knownFactsOf(entry);
+  return standingOfFacts(knownFactsOf(entry), history, now);
+}
+
+/**
+ * A group's standing from its parts (SAK-491): the worst of every fact the
+ * parts carry, the rule one entry with several facts already follows, so は vs
+ * が reads as its two patterns do. It is met only when every part is: a group
+ * with one pattern left to learn is still on offer, for that one.
+ */
+export function groupStandingFor(parts: readonly LibEntry[], history: HistoryFile, now: number): { standing: Standing; met: boolean } {
+  const { standing } = standingOfFacts(parts.flatMap((e) => [...knownFactsOf(e)]), history, now);
+  return { standing, met: parts.length > 0 && parts.every((e) => standingFor(e, history, now).met) };
+}
+
+function standingOfFacts(facts: readonly FactId[], history: HistoryFile, now: number): { standing: Standing; met: boolean } {
   let met = false;
   let worst: AppStanding = "not-seen";
   let anySeen = false;

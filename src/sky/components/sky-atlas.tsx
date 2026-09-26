@@ -43,7 +43,7 @@ import { japaneseFont } from "@/sky/lib/japanese";
 import type { LessonTeach } from "@/sky/lib/lesson";
 import { STANDING_ORDER, standingWord, type Standing } from "@/sky/lib/standing";
 import { useStreamedShelf } from "./use-streamed-shelf";
-import { isPage, type SkyItem, type SkyKind } from "@/sky/lib/types";
+import { isPage, isPlace, type SkyItem, type SkyKind } from "@/sky/lib/types";
 
 /** One cut of a shelf: a name and the entries under it. */
 export interface AtlasSection {
@@ -197,7 +197,7 @@ export function SkyAtlas({ data, lookup, picksHref, quizHref, written: Written, 
   }, [data.items, extra]);
   const graph = useMemo(() => buildGraph(items), [items]);
   const bring = useCallback((more: readonly SkyItem[]) => setExtra((prev) => [...prev, ...more]), []);
-  const itemsOf = useCallback((ids: readonly string[]) => ids.map((id) => graph.itemOf(id)).filter((x): x is SkyItem => !!x && !x.group), [graph]);
+  const itemsOf = useCallback((ids: readonly string[]) => ids.map((id) => graph.itemOf(id)).filter((x): x is SkyItem => !!x && !isPlace(x)), [graph]);
 
   // the rail: one collection open at a time, and one status or all. Open
   // by default on a wide screen, folded on a narrow one (see useNarrow),

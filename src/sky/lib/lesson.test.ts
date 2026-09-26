@@ -6,6 +6,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
+import { cartSummary, pickState } from "@/sky/lib/cart";
 import { buildGraph } from "@/sky/lib/graph";
 import { isUnlocked, lessonReferences, lessonSteps, orderNote, referencePages, starState, unseenPages, type LessonPage } from "@/sky/lib/lesson";
 import type { SkyItem } from "@/sky/lib/types";
@@ -157,5 +158,44 @@ describe("what the order says about itself", () => {
     assert.equal(note("word", "word"), undefined, "words with no kanji under them");
     assert.equal(note("counter", "keigo", "verbPair"), undefined);
     assert.equal(note(), undefined);
+  });
+});
+
+// SAK-491. Two particles a learner mixes up are one item: a group whose parts
+// are taught on one card. Unlike a kana row, the group is the step, the star
+// and the pick, its parts are its card's pages, and the cart charges the parts.
+describe("a group taught on one card", () => {
+  const pair = buildGraph([
+    item("wa", "grammar", { particle: true }), item("ga", "grammar", { particle: true }), item("wo", "grammar", { particle: true }),
+    item("wa-ga", "grammar", { particle: true, group: true, oneCard: true, listsParts: true, components: ["wa", "ga"] }),
+  ]);
+
+  it("is one step, and its parts are not steps", () => {
+    const steps = lessonSteps(pair, ["wa-ga", "wo"], new Set());
+    assert.deepEqual(steps.map((s) => s.id), ["wa-ga", "wo"]);
+  });
+
+  it("is still one step when one of its parts is already known", () => {
+    assert.deepEqual(lessonSteps(pair, ["wa-ga"], new Set(["wa"])).map((s) => s.id), ["wa-ga"]);
+  });
+
+  it("is not taught once it is learned, and a known part is never a reference of its own", () => {
+    assert.deepEqual(lessonSteps(pair, ["wa-ga"], new Set(["wa", "ga", "wa-ga"])), []);
+    assert.deepEqual(lessonReferences(pair, ["wa-ga"], new Set(["wa"])).map((r) => r.id), []);
+    assert.deepEqual(lessonReferences(pair, ["wa-ga"], new Set(["wa", "ga", "wa-ga"])).map((r) => r.id), ["wa-ga"]);
+  });
+
+  it("is drawn as one body, with nothing around it", () => {
+    const shape = pair.constellationOf("wa-ga");
+    assert.deepEqual(shape.nodes, [{ id: "wa-ga", depth: 0 }]);
+    assert.deepEqual(shape.edges, []);
+    assert.equal(shape.group, undefined, "not a ring of its parts, the way a kana row is drawn");
+  });
+
+  it("costs its two parts, at a pattern's weight each, and is never locked by them", () => {
+    const summary = cartSummary(pair, ["wa-ga"], new Set());
+    assert.deepEqual([...summary.lines[0].cost.pieces].sort(), ["ga", "wa"]);
+    assert.equal(summary.weight, 6);
+    assert.equal(pickState(pair, "wa-ga", new Set(), []).available, true);
   });
 });

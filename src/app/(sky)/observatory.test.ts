@@ -108,13 +108,12 @@ describe("the sentence rules on offer", () => {
   it("says which of its rows are particles", () => {
     const { items } = section(emptyHistory());
     const labels = Object.fromEntries(items.map((it) => [it.glyph, typeLabel(it)]));
+    // は and が are one tile since SAK-491, and に and で, だけ and しか too
     assert.deepEqual(labels, {
-      "〜は": "particle",
-      "〜が": "particle",
+      "は vs が": "particle",
       "〜を": "particle",
-      "〜に": "particle",
-      "〜で": "particle",
-      "〜だけ": "particle",
+      "に vs で": "particle",
+      "だけ vs しか": "particle",
       Simple: "sentence type",
     });
   });
@@ -122,13 +121,14 @@ describe("the sentence rules on offer", () => {
   // SAK-468. Sam: "why isn't simple sentences not after topic/subject? why
   // does it come after all these other particles". Simple needs は, が and を
   // (を joined them on 2026-09-26, SAK-487); に, で and だけ are what its
-  // example sentences turn on, so they follow it.
+  // example sentences turn on, so they follow it. は and が are one tile
+  // (SAK-491), at は's place, and so are に and で, and だけ and しか.
   it("puts the type after what it requires and before what its sentences use", () => {
     const { items } = section(emptyHistory());
     const glyphs = items.map((it) => it.glyph);
-    assert.deepEqual(glyphs, ["〜は", "〜が", "〜を", "Simple", "〜に", "〜で", "〜だけ"]);
+    assert.deepEqual(glyphs, ["は vs が", "〜を", "Simple", "に vs で", "だけ vs しか"]);
     // the three the old section offered in the same breath and Simple never uses
-    for (const away of ["〜へ", "〜まで", "〜か"]) assert.ok(!glyphs.includes(away), `${away} is not offered yet`);
+    for (const away of ["〜へ", "〜まで", "まで vs までに", "〜か"]) assert.ok(!glyphs.includes(away), `${away} is not offered yet`);
   });
 
   // SAK-464. The type used to keep its place as a dim tile reading "Opens
@@ -139,6 +139,8 @@ describe("the sentence rules on offer", () => {
   describe("a type the learner cannot start yet", () => {
     const simple = "writing-rule:sentence-rule-simple";
     const NA = "grammar:prenominal-form";
+    /** は and が, one pick since SAK-491. */
+    const WA_GA = "particles:wa-ga";
     /** What the page does with the section: a thing is drawn when the cart
      * can take it and everything it waits on is learned or picked. */
     const open = (history: HistoryFile, picks: readonly string[]) => {
@@ -163,8 +165,9 @@ describe("the sentence rules on offer", () => {
       const { o, s, items } = section(emptyHistory());
       const type = items.find((it) => it.kind === "sentence")!;
       assert.equal(type.id, simple);
-      // its own three, and the one the whole row waits on (SAK-468)
-      assert.deepEqual(s.needs?.[simple], ["grammar:wa", "grammar:ga", "grammar:wo", "grammar:prenominal-form"]);
+      // its own three, は and が as the one pick they are (SAK-491), and the
+      // one the whole row waits on (SAK-468)
+      assert.deepEqual(s.needs?.[simple], [WA_GA, "grammar:wo", "grammar:prenominal-form"]);
       // and what it waits on is on the page to be picked, here or in Grammar
       const offered = new Set(o.sections.flatMap((x) => x.items));
       for (const id of s.needs![simple]) assert.ok(offered.has(id), `${id} is not offered`);
@@ -177,28 +180,30 @@ describe("the sentence rules on offer", () => {
     });
 
     // SAK-487. Sam, 2026-09-26: "let's make wo required instead." Simple
-    // waits on exactly は, が and を, and on nothing else of its own.
+    // waits on exactly は, が and を, and on nothing else of its own. は and が
+    // are waited on as the one は vs が pick (SAK-491).
     it("waits on exactly は, が and を of its own", () => {
       const { s } = section(emptyHistory());
       const own = (s.needs?.[simple] ?? []).filter((id) => id !== NA);
-      assert.deepEqual([...own].sort(), ["grammar:ga", "grammar:wa", "grammar:wo"]);
+      assert.deepEqual([...own].sort(), ["grammar:wo", WA_GA]);
     });
 
     // 〜な is picked along with them here, since the whole row waits on it
     // too now (SAK-468); the row is what these picks are made in.
-    it("is not offered to an empty sky, and is offered once は, が and を are picked", () => {
+    it("is not offered to an empty sky, and is offered once は vs が and を are picked", () => {
       assert.equal(open(emptyHistory(), []), false);
-      assert.equal(open(emptyHistory(), [NA, "grammar:wa"]), false);
-      assert.equal(open(emptyHistory(), [NA, "grammar:wa", "grammar:ga"]), false, "は and が are not enough now");
-      assert.equal(open(emptyHistory(), [NA, "grammar:wa", "grammar:ga", "grammar:wo"]), true);
+      assert.equal(open(emptyHistory(), [NA, WA_GA]), false, "は and が are not enough now");
+      assert.equal(open(emptyHistory(), [NA, WA_GA, "grammar:wo"]), true);
+      // the two patterns on their own are not what the row offers or waits on
+      assert.equal(open(emptyHistory(), [NA, "grammar:wa", "grammar:ga", "grammar:wo"]), false);
     });
 
     it("counts one learned and one picked the same way, and goes when the pick goes", () => {
-      assert.equal(open(knows("wa"), [NA, "grammar:ga", "grammar:wo"]), true);
-      assert.equal(open(emptyHistory(), [NA, "grammar:wa", "grammar:ga", "grammar:wo"]), true);
-      assert.equal(open(emptyHistory(), [NA, "grammar:wa", "grammar:ga"]), false, "unpicking を takes it away again");
-      assert.equal(open(emptyHistory(), [NA, "grammar:wa", "grammar:wo"]), false, "and so does unpicking が");
-      assert.equal(open(emptyHistory(), ["grammar:wa", "grammar:ga", "grammar:wo"]), false, "and so does unpicking 〜な");
+      assert.equal(open(knows("wo"), [NA, WA_GA]), true);
+      assert.equal(open(emptyHistory(), [NA, WA_GA, "grammar:wo"]), true);
+      assert.equal(open(emptyHistory(), [NA, WA_GA]), false, "unpicking を takes it away again");
+      assert.equal(open(emptyHistory(), [NA, "grammar:wo"]), false, "and so does unpicking は vs が");
+      assert.equal(open(emptyHistory(), [WA_GA, "grammar:wo"]), false, "and so does unpicking 〜な");
     });
 
     it("opens for good once the app's own rule opens it", () => {

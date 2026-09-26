@@ -122,10 +122,27 @@ export interface SkyItem {
    */
   group?: boolean;
   /**
+   * On a group: its parts are taught on one card, so the group is the star,
+   * the tile and the lesson step, and its parts are none of those (SAK-491).
+   * Two particles a learner mixes up (は and が) are one item over the two
+   * patterns: picked, claimed and taught as one, while the quiz still asks
+   * each pattern's own cards. A kana row is the other kind of group, a place
+   * whose sounds are the stars and the steps. Ignored on anything not a group.
+   */
+  oneCard?: boolean;
+  /**
    * For a verb pair or a keigo form: the word it attaches to. A prerequisite
    * too (you meet the pair after its headword), on top of the pair's own
    * kanji, which may be entirely different from the headword's. Ignored on
    * every other kind. See src/sky/lib/graph.ts.
    */
   headword?: string;
+}
+
+/** A grouping that is only a place (a kana row): never drawn as a star, never
+ * a tile, never a lesson step, its parts standing in for it. A group taught on
+ * one card (`oneCard`, は vs が) is none of that: it is the star, the tile and
+ * the step itself (SAK-491). */
+export function isPlace(item: Pick<SkyItem, "group" | "oneCard"> | undefined): boolean {
+  return !!item?.group && !item.oneCard;
 }

@@ -41,6 +41,7 @@ import { chipReading } from "@/sky/lib/japanese";
 import type { PartedSentence, SoundLine, TeachPage } from "@/sky/lib/lesson";
 import { kanjiRunsIn, rubyFromReading } from "@/sky/lib/sound-line";
 
+import { particleGroup } from "./particle-groups";
 import { pageFromIntro } from "./teach";
 
 const NOW = Date.UTC(2026, 8, 8);
@@ -428,7 +429,20 @@ describe("the Particle page lists every particle Saku teaches", () => {
     const t = table();
     assert.ok(t?.opens, "no row opens anything");
     assert.equal(t.opens.length, t.rows.length, "some rows open nothing");
-    for (const id of t.opens) assert.ok(id && libEntry(id as EntryId), `a row opens '${id}', which is not an entry`);
+    for (const id of t.opens) assert.ok(id && (libEntry(id as EntryId) || particleGroup(id)), `a row opens '${id}', which is not an entry or a group`);
+  });
+
+  // SAK-491. は and が keep a row each, and both open the one は vs が card,
+  // as the pairs that share a page do.
+  it("opens the one group card from both rows of a pair", () => {
+    const t = table();
+    assert.ok(t?.opens);
+    const opens = (recipe: string) => t.opens![PARTICLE_ROWS.findIndex((p) => p.recipeId === recipe)];
+    assert.equal(opens("wa"), "particles:wa-ga");
+    assert.equal(opens("ga"), "particles:wa-ga");
+    assert.equal(opens("ni"), "particles:ni-de");
+    assert.equal(opens("de"), "particles:ni-de");
+    assert.equal(opens("wo"), patternEntry("wo"), "a particle on its own opens its own card");
   });
 
   it("sends every page a row opens along with the term", () => {
@@ -898,9 +912,11 @@ describe("a Family table opens the pattern a row names", () => {
     (atlasEntryFromHistory(emptyHistory(), `grammar:${recipe}` as EntryId, NOW)?.teach?.pages ?? [])
       .find((p) => p.eyebrow === "Family")?.tables?.[0];
 
+  // から's family: は and が's family is the two of them, one card since
+  // SAK-491, so neither of its rows is somewhere else to go
   it("opens a page that exists, on every row but the one the card is already on", () => {
-    const table = familyOf("wa");
-    assert.ok(table, "は has no Family table");
+    const table = familyOf("kara-reason");
+    assert.ok(table, "から has no Family table");
     assert.ok(table.opens, "no row of it opens anything");
     assert.equal(table.opens.length, table.rows.length, "some rows open nothing");
     const here = table.rows.findIndex((row) => row[0]?.some((run) => run.accent));
@@ -914,10 +930,18 @@ describe("a Family table opens the pattern a row names", () => {
   });
 
   it("sends every page a row opens along with the pattern", () => {
-    const sent = new Set((atlasEntryFromHistory(emptyHistory(), "grammar:wa", NOW)?.items ?? []).map((x) => x.id));
-    for (const id of familyOf("wa")?.opens ?? []) {
-      if (id) assert.ok(sent.has(id), `${id} did not travel with は, so its row would open nothing`);
+    const sent = new Set((atlasEntryFromHistory(emptyHistory(), "grammar:kara-reason", NOW)?.items ?? []).map((x) => x.id));
+    for (const id of familyOf("kara-reason")?.opens ?? []) {
+      if (id) assert.ok(sent.has(id), `${id} did not travel with から, so its row would open nothing`);
     }
+  });
+
+  // SAK-491. On the は vs が card both rows are the card itself.
+  it("opens nothing from a group card's Family table, whose rows are both that card", () => {
+    const table = (atlasEntryFromHistory(emptyHistory(), "particles:wa-ga", NOW)?.teach?.pages ?? []).find((p) => p.eyebrow === "Family")?.tables?.[0];
+    assert.ok(table, "は vs が has no Family table");
+    assert.equal(table.rows.length, 2);
+    assert.deepEqual(table.opens, [undefined, undefined]);
   });
 });
 

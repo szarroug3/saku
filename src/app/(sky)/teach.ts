@@ -48,6 +48,7 @@ import { libEntry } from "@/lib/library/entries";
 import { standingFor } from "./learner";
 import { authoredReader, proseReader, proseSound, wordSound, type RunReader } from "./prose-sound";
 import { TSU_RULE } from "./observatory";
+import { particleGroup, tileOf, type ParticleGroup } from "./particle-groups";
 import { type LessonTeach, type PartedSentence, type SoundLine as SkySoundLine, type TeachForm, type TeachPage, type TeachParagraph, type TeachTable } from "@/sky/lib/lesson";
 import { cutLine, rubyFromReading } from "@/sky/lib/sound-line";
 import type { SkyItem } from "@/sky/lib/types";
@@ -395,6 +396,8 @@ export function teachFor(item: SkyItem, scope: TeachScope = {}): LessonTeach {
     // a pattern: the app's own teaching pages (the build, its tables, the
     // sentence) and its family, page by page, the way the app's grammar page
     // shows them (Sam's call, 2026-09-05: keep that richness)
+    const group = particleGroup(item.id);
+    if (group) return groupTeach(group);
     const recipe = RECIPES.find((r) => patternEntry(r.id) === item.id);
     if (recipe) { t.reading = recipe.pattern; t.meanings = [recipe.gloss]; if (recipe.sense) t.notes = [recipe.sense]; t.pages = withoutRepeatedTitle(grammarPages(recipe), recipe.pattern, recipe.gloss); return t; }
     return t;
@@ -617,7 +620,8 @@ function particleListPage(): TeachPage {
         p.example ? withParticleMarked(p.example.jp, p.particle) : [],
         [{ text: p.example?.en ?? "" }],
       ]),
-      opens: PARTICLE_ROWS.map((p) => p.entry),
+      // は and が each keep a row, and both open the one は vs が card (SAK-491)
+      opens: PARTICLE_ROWS.map((p) => tileOf(p.entry)),
     }],
     after: PARTICLE_RULE.body.slice(0, 3).map((para, i) => ({ ...(i === 0 ? { heading: "How they are read" } : {}), ...proseParagraph(para.text, PARTICLE_RULE.readings ? authoredReader(PARTICLE_RULE.readings) : undefined) })),
   };
@@ -768,6 +772,24 @@ function particleNotePages(recipe: Recipe, build: readonly TeachPage[]): TeachPa
   return [...mine, ...others, apart];
 }
 
+/**
+ * The card of two particles taught as one (SAK-491): headed by the group's
+ * name ("は vs が") and its meaning line, and holding the pages the first
+ * pattern's card holds, which are both patterns' already: 〜は with its
+ * paragraphs, 〜が with its, the page that tells them apart, and Family.
+ *
+ * The first page keeps its heading here. On 〜は's own card the heading only
+ * said the card's name again and was dropped (SAK-464); under "は vs が" it is
+ * the one thing that says which of the two the page is about, the way the
+ * second page's heading already does.
+ */
+function groupTeach(group: ParticleGroup): LessonTeach {
+  const first = RECIPES.find((r) => r.id === group.recipes[0]);
+  if (!first) return { meanings: [group.english] };
+  const pages = grammarPages(first).map((page, i) => (i === 0 ? { ...page, title: `${first.pattern} ${first.gloss}` } : page));
+  return { meanings: [group.english], pages };
+}
+
 /** The entry a recipe's card is, which is the page its written pattern has:
  * 〜から is one page holding "because" and "from", the same rule the Particle
  * page's rows follow. */
@@ -786,9 +808,12 @@ function patternEntryOf(r: Recipe): EntryId | undefined {
  * somewhere they are not.
  */
 function familyOpens(recipe: Recipe, members: readonly Recipe[]): ReadonlyArray<string | undefined> {
-  const here = patternEntryOf(recipe);
+  // a pattern in a particle group is opened as the group (SAK-491), so the
+  // other half of は vs が is the card already open and is not a link
+  const card = (r: Recipe) => { const entry = patternEntryOf(r); return entry ? tileOf(entry) : undefined; };
+  const here = card(recipe);
   return members.map((m) => {
-    const entry = patternEntryOf(m);
+    const entry = card(m);
     return entry && entry !== here ? entry : undefined;
   });
 }

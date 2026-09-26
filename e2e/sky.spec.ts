@@ -528,7 +528,8 @@ test("with no References, the order takes the whole right column (SAK-478)", asy
     return box;
   };
   await page.setViewportSize({ width: 1440, height: 900 });
-  await page.goto(`/lesson?sample&picks=${encodeURIComponent("grammar:wa,grammar:wo")}`);
+  // は and が are one pick since SAK-491, は vs が
+  await page.goto(`/lesson?sample&picks=${encodeURIComponent("particles:wa-ga,grammar:wo")}`);
   await expect(page.getByRole("heading", { name: "Tonight, in order" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "References", exact: true })).toHaveCount(0);
   const sky = await cell("sky");
@@ -989,8 +990,10 @@ test("the Particle page lists the particles, and a row opens that particle's pag
   const wa = page.getByRole("button", { name: "は", exact: true }).first();
   await expect(wa).toBeVisible();
   await wa.click();
-  // は's own page, which traveled with the term (its "pattern: meaning"
-  // heading is gone since SAK-464, so the build table's own line stands for it)
+  // は's row opens the one は vs が card (SAK-491), which traveled with the
+  // term, and its first page is は's
+  const panel = page.locator("[data-atlas-panel]");
+  await expect(panel.getByText("は vs が", { exact: true }).first()).toBeVisible();
   await expect(page.getByText("Take a noun, just as it is, and add は.")).toBeVisible();
   // and it points back
   await expect(page.getByRole("button", { name: /Open Read about it/ })).toBeVisible();
@@ -2102,21 +2105,20 @@ test("a sentence type is off the page until what it needs is learned or picked (
   const row = page.locator("section", { has: page.getByRole("heading", { name: "Sentences", exact: true }) });
   await row.getByRole("button", { name: "Start sentences" }).click();
   const tile = (text: string) => row.getByRole("button").filter({ hasText: text });
-  const wa = tile("marks the topic"), ga = tile("marks the subject"), wo = tile("marks the direct object"), simple = tile("Simple");
+  // は and が are one tile since SAK-491
+  const waGa = tile("は vs が"), wo = tile("marks the direct object"), simple = tile("Simple");
 
   // the row is the particles it leads with, and nothing that cannot be taken
-  await expect(wa).toBeVisible();
+  await expect(waGa).toBeVisible();
   await expect(simple).toHaveCount(0);
   // and nothing anywhere on the page says a thing is shut
   const body = page.locator("body");
   await expect(body).not.toContainText("Opens once");
   await expect(body).not.toContainText(/\blocked\b/i);
 
-  // one or two of the three is not enough; all three bring it back. を joined
-  // は and が on 2026-09-26 (SAK-487): "let's make wo required instead."
-  await wa.click();
-  await expect(simple).toHaveCount(0);
-  await ga.click();
+  // は vs が alone is not enough; を with it brings it back. を joined は and が
+  // on 2026-09-26 (SAK-487): "let's make wo required instead."
+  await waGa.click();
   await expect(simple).toHaveCount(0);
   await wo.click();
   await expect(simple).toHaveCount(1);
@@ -2124,10 +2126,10 @@ test("a sentence type is off the page until what it needs is learned or picked (
 
   // and taking one of them out takes the type with it, pick and all
   await simple.click();
-  await expect(page.getByText("5 Picks", { exact: true })).toBeVisible();
-  await ga.click();
+  await expect(page.getByText("4 Picks", { exact: true })).toBeVisible();
+  await waGa.click();
   await expect(simple).toHaveCount(0);
-  await expect(page.getByText("3 Picks", { exact: true })).toBeVisible();
+  await expect(page.getByText("2 Picks", { exact: true })).toBeVisible();
 });
 
 test("the Sentences row waits on 〜な, and opens with は first (SAK-468)", async ({ page }) => {
@@ -2154,21 +2156,21 @@ test("the Sentences row waits on 〜な, and opens with は first (SAK-468)", as
   await expect(sentences).toBeVisible();
   await sentences.getByRole("button", { name: "Start sentences" }).click();
 
-  // the row leads with は, and the type it leads to is not drawn yet
+  // the row leads with は vs が, one tile for the two (SAK-491), and the type
+  // it leads to is not drawn yet
   const tiles = sentences.locator("button[aria-pressed]");
-  await expect(tiles.first()).toContainText("marks the topic");
-  await expect(tiles.nth(1)).toContainText("marks the subject");
-  await expect(tiles.nth(2)).toContainText("marks the direct object");
+  await expect(tiles.first()).toContainText("は vs が");
+  await expect(tiles.first()).toContainText("は marks the topic, が marks the subject");
+  await expect(tiles.nth(1)).toContainText("marks the direct object");
 
-  // は, が and を bring Simple in as the fourth tile, before the particles its
+  // は vs が and を bring Simple in as the third tile, before the particles its
   // own example sentences turn on (SAK-487: を is one Simple needs now)
   await tiles.nth(0).click();
-  await tiles.filter({ hasText: "marks the subject" }).click();
   await expect(tiles.filter({ hasText: "Simple" })).toHaveCount(0);
   await tiles.filter({ hasText: "marks the direct object" }).click();
-  await expect(tiles.nth(3)).toContainText("Simple");
-  await expect(tiles.nth(3)).toContainText("sentence type");
-  await expect(tiles.nth(4)).toContainText("marks where something is or is going");
+  await expect(tiles.nth(2)).toContainText("Simple");
+  await expect(tiles.nth(2)).toContainText("sentence type");
+  await expect(tiles.nth(3)).toContainText("に vs で");
 
   // and taking 〜な back out takes the row with it, picks and all
   await na.click();
@@ -2268,6 +2270,41 @@ test("the atlas unselects everything in one press", async ({ page }) => {
   await expect(unselect).toHaveCount(0);
 });
 
+test("は and が are one tile, one pick and one card headed は vs が (SAK-491)", async ({ page }) => {
+  // Sam, 2026-09-26, on the Sentences row showing "marks the topic" and
+  // "marks the subject" as two tiles: "this should be one item. we moved away
+  // from separating them, remember." And on the card headed 〜は: "this
+  // should be renamed." The same goes for every pair that shares a page.
+  for (const [name, pills] of [["は vs が", ["〜は", "〜が", "は vs が", "Family"]], ["に vs で", ["〜に", "〜で", "に vs で", "Family"]]] as const) {
+    await page.goto("/observatory?sample");
+    const row = page.locator("section", { has: page.getByRole("heading", { name: "Sentences", exact: true }) });
+    const tile = row.getByRole("button").filter({ hasText: name });
+    await expect(tile).toHaveCount(1);
+    await expect(tile).toContainText("particle");
+    // the two patterns are not tiles of their own
+    const [first, second] = pills;
+    await expect(row.getByRole("button").filter({ hasText: first })).toHaveCount(0);
+    await expect(row.getByRole("button").filter({ hasText: second })).toHaveCount(0);
+    await tile.click();
+    await expect(tile).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByText("1 Pick", { exact: true })).toBeVisible();
+    await page.getByRole("link", { name: "Start lesson" }).click();
+    await expect(page).toHaveURL(/\/lesson\?/);
+
+    // one step, and its card is headed by the pair, with the four pages
+    await expect(page.getByText("Step 1 of 1", { exact: true })).toBeVisible();
+    const card = page.locator('[data-lesson-cell="card"]');
+    await expect(card.getByText(name, { exact: true }).first()).toBeVisible();
+    await expect(card.getByText(/^particle$/i).first()).toBeVisible();
+    const pager = card.getByRole("navigation", { name: "Pages" }).getByRole("button");
+    await expect(pager).toHaveCount(4);
+    await expect(pager).toHaveText([...pills]);
+    // and it is one moon in the lesson's sky
+    const sky = page.locator('svg[aria-label^="Tonight\'s constellations"]');
+    await expect(sky.locator('[data-body="moon"]')).toHaveCount(1);
+  }
+});
+
 test("the particles picked for tonight are moons, and nothing there is a planet", async ({ page }) => {
   // SAK-465. Five particles picked used to be five ringed planets in one
   // cluster: the biggest body in the sky drawn on its most ordinary thing
@@ -2275,12 +2312,13 @@ test("the particles picked for tonight are moons, and nothing there is a planet"
   // pattern a comet, and only a sentence type is still a planet.
   await page.goto("/observatory?sample");
   const cards = page.locator("section", { has: page.getByRole("heading", { name: "Sentences" }) }).getByRole("button");
-  const particles = ["marks the topic", "marks the subject", "marks the direct object", "marks where something is or is going", "marks where an action happens"];
+  // は vs が and に vs で are one pick and one moon each (SAK-491)
+  const particles = ["は vs が", "marks the direct object", "に vs で"];
   for (const name of particles) await cards.filter({ hasText: name }).first().click();
-  await expect(page.getByText("5 Picks", { exact: true })).toBeVisible();
+  await expect(page.getByText("3 Picks", { exact: true })).toBeVisible();
 
   const sky = page.locator('svg[aria-label="Tonight\'s picks, as the constellations they will be"]');
-  await expect(sky.locator('[data-body="moon"]')).toHaveCount(5);
+  await expect(sky.locator('[data-body="moon"]')).toHaveCount(3);
   await expect(sky.locator('[data-body="planet"]')).toHaveCount(0);
   await expect(sky.locator('[data-body="comet"]')).toHaveCount(0);
   // a moon is a disc with a crescent of the night lying on it: two flat
@@ -2391,7 +2429,8 @@ test("every body a sky draws is inside the panel, at every height the band is dr
 
   // a particle (a moon), a grammar pattern (a comet), a lone piece (a star),
   // and the two picks together, which is the case the card was filed on
-  for (const picks of ["grammar:wa", "grammar:te-kara", "radical:丨", "grammar:wa,grammar:te-kara"]) {
+  // (は is one pick with が since SAK-491, and one moon)
+  for (const picks of ["particles:wa-ga", "grammar:te-kara", "radical:丨", "particles:wa-ga,grammar:te-kara"]) {
     await page.goto(lesson(picks));
     await expect(page.getByRole("heading", { name: "Tonight, in order" })).toBeVisible();
     expect(await spilling(band), `${picks}, the band at rest`).toEqual([]);
@@ -2404,7 +2443,7 @@ test("every body a sky draws is inside the panel, at every height the band is dr
   // narrow, where the four cells are a stack and the band is a share of the
   // window rather than of the column
   await page.setViewportSize({ width: 760, height: 900 });
-  for (const picks of ["grammar:wa", "grammar:wa,grammar:te-kara"]) {
+  for (const picks of ["particles:wa-ga", "particles:wa-ga,grammar:te-kara"]) {
     await page.goto(lesson(picks));
     await expect(page.getByRole("heading", { name: "Tonight, in order" })).toBeVisible();
     expect(await spilling(band), `${picks}, narrow`).toEqual([]);
@@ -2412,7 +2451,7 @@ test("every body a sky draws is inside the panel, at every height the band is dr
 
   // ---- "Your sky tonight" on the Observatory, one pick and two ----
   await page.setViewportSize({ width: 1440, height: 900 });
-  for (const picks of ["grammar:wa", "grammar:wa,grammar:te-kara"]) {
+  for (const picks of ["particles:wa-ga", "particles:wa-ga,grammar:te-kara"]) {
     await page.goto(`/observatory?sample&picks=${encodeURIComponent(picks)}`);
     await expect(page.getByRole("heading", { name: "Your sky tonight" })).toBeVisible();
     expect(await spilling('[data-sky="tonight"]'), `${picks}, your sky tonight`).toEqual([]);

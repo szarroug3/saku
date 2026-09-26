@@ -4,7 +4,9 @@
 // needs, then the character, then the word (graph.orderOf). Anything
 // already in the sky is not re-taught and never listed, and a piece two
 // picks share is taught once, at its first use. A group (a kana row) is a
-// place, not a step: its sounds are the steps.
+// place, not a step: its sounds are the steps. A group taught on one card
+// (は vs が, SAK-491) is the other way round: it is the step, and its parts
+// are its card's pages, never steps or references of their own.
 //
 // A step opens once the step before it has been opened (Sam's rule). Known
 // prerequisites are open from the start, for reference, and opening one
@@ -16,7 +18,7 @@
 // items, and the terms and intros that apply to what is in the order. Those
 // are references, opened like a star and never a step.
 
-import type { SkyItem } from "./types";
+import { isPlace, type SkyItem } from "./types";
 import type { Learned, PrerequisiteGraph } from "./graph";
 
 /** A line of prose with the runs spoken as the sound marked.
@@ -262,13 +264,22 @@ export function lessonSteps(graph: PrerequisiteGraph, picks: readonly string[], 
   const steps: LessonStep[] = [];
   const seen = new Set<string>();
   for (const pick of picks) {
+    const onCard = partsOnACard(graph, pick);
     for (const id of graph.orderOf(pick)) {
-      if (seen.has(id) || has(learned, id) || graph.itemOf(id)?.group) continue;
+      if (seen.has(id) || has(learned, id) || onCard.has(id) || isPlace(graph.itemOf(id))) continue;
       seen.add(id);
       steps.push({ id, pick });
     }
   }
   return steps;
+}
+
+/** The parts under a pick that a group taught on one card holds: they are
+ * that card's pages, so they are neither steps nor references (SAK-491). */
+function partsOnACard(graph: PrerequisiteGraph, pick: string): ReadonlySet<string> {
+  const out = new Set<string>();
+  for (const id of graph.orderOf(pick)) if (graph.itemOf(id)?.oneCard) for (const p of graph.prerequisitesOf(id)) out.add(p);
+  return out;
 }
 
 /**
@@ -320,9 +331,10 @@ export function lessonReferences(graph: PrerequisiteGraph, picks: readonly strin
   const reached = new Set<string>();
   const seen = new Set<string>();
   for (const pick of picks) {
+    const onCard = partsOnACard(graph, pick);
     for (const id of graph.orderOf(pick)) {
       const item = graph.itemOf(id);
-      if (!item || item.group || seen.has(id)) continue;
+      if (!item || isPlace(item) || onCard.has(id) || seen.has(id)) continue;
       seen.add(id);
       reached.add(id);
       if (has(learned, id)) known.push({ id, label: item.glyph, kind: item.kind, why: "known" });

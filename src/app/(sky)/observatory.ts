@@ -48,7 +48,8 @@ import type { SkyItem, SkyKind } from "@/sky/lib/types";
 import type { FactId } from "@/types/facts";
 import type { HistoryFile } from "@/types/store";
 
-import { componentEntry, skyAdder, skyItems, standingFor, type SkyItems } from "./learner";
+import { componentEntry, groupStandingFor, skyAdder, skyItems, standingFor, type SkyItems } from "./learner";
+import { groupOfPart, PARTICLE_GROUPS, particleGroup, tileOf, type ParticleGroup } from "./particle-groups";
 
 /** How many of a long section to offer; the page lays out fewer. */
 const SHOW = 24;
@@ -83,6 +84,25 @@ function leftoverPatterns(): readonly string[] {
   steps.forEach((step, i) => { if (step.kind === "tier") last = i; });
   tail = steps.slice(last + 1).map((step) => step.id);
   return tail;
+}
+
+/** Where each particle group sits in the one order: at whichever of its
+ * patterns `sentenceRuleOrder()` places first (SAK-491). The group is offered
+ * there, in whichever section that is, and its other pattern is offered
+ * nowhere, so the Grammar and Sentences sections still offer every pattern
+ * once between them. */
+let leads: ReadonlyMap<string, string> | undefined;
+function leadsGroup(recipeId: string): boolean {
+  if (!leads) {
+    const found = new Map<string, string>();
+    for (const step of sentenceRuleOrder()) {
+      const group = step.kind === "pattern" ? groupOfPart(patternEntry(step.id)) : undefined;
+      if (group && !found.has(group.id)) found.set(group.id, step.id);
+    }
+    leads = found;
+  }
+  const group = groupOfPart(patternEntry(recipeId));
+  return !!group && leads.get(group.id) === recipeId;
 }
 
 /** What each track is and when to start it. Short, in the learner's terms. */
@@ -201,7 +221,7 @@ export interface Offerings {
  * pick by id. Apart from the sections so a caller that wants a few items
  * built the Observatory's way (practice's preview, SAK-382) does not walk
  * the whole sky and every section first. */
-function picker(sky: Pick<SkyItems, "items" | "add">) {
+function picker(sky: Pick<SkyItems, "items" | "add">, history: HistoryFile, now: number) {
   const { items, add } = sky;
 
   /** An app entry on offer: added with its parts, given the sky kind it is picked as. */
@@ -235,10 +255,31 @@ function picker(sky: Pick<SkyItems, "items" | "add">) {
     return offer(entry, "keigo", { english: set.meaning, headword: head?.id, components: [...new Set(set.words.flatMap((w) => kanjiIn(w.word)))] });
   };
 
+  // two particles a learner mixes up, as one item over its two patterns
+  // (SAK-491): a group like a kana row, but taught on one card, so it is the
+  // star, the tile and the step, and its patterns are its parts. It costs its
+  // patterns and nothing of its own, and it stands where they stand.
+  const offerGroup = (g: ParticleGroup): SkyItem | undefined => {
+    const parts = g.parts.map((p) => libEntry(p as Parameters<typeof libEntry>[0])).filter((e): e is LibEntry => !!e);
+    if (parts.length !== g.parts.length) return undefined;
+    for (const p of parts) offerPick(p.id);
+    const item: SkyItem = {
+      id: g.id, kind: "grammar", glyph: g.glyph, english: g.english,
+      standing: groupStandingFor(parts, history, now).standing,
+      ...(parts.every((p) => isParticleEntry(p.id)) ? { particle: true, label: "particle" } : {}),
+      group: true, oneCard: true, listsParts: true,
+      components: parts.map((p) => p.id),
+    };
+    items.set(g.id, item);
+    return item;
+  };
+
   /** Any pick by id, built the way its section would build it. */
   const offerPick = (id: string): SkyItem | undefined => {
     const have = items.get(id);
     if (have) return have;
+    const group = particleGroup(id);
+    if (group) return offerGroup(group);
     const entry = libEntry(id as Parameters<typeof libEntry>[0]);
     if (!entry) return undefined;
     switch (entry.kind) {
@@ -292,7 +333,7 @@ export function hasOffer(entry: LibEntry): boolean {
  * did when every caller built the whole thing (SAK-382). */
 export function offerPicker(history: HistoryFile, now = Date.now()): Pick<Offerings, "items" | "offerPick"> {
   const sky = skyAdder(history, now);
-  const { offerPick } = picker(sky);
+  const { offerPick } = picker(sky, history, now);
   let whole: Offerings | undefined;
   return {
     items: sky.items,
@@ -316,8 +357,18 @@ export function offerings(history: HistoryFile, now = Date.now()): Offerings {
   const { items, met, add } = sky;
   const learned = new Set(met);
   const sections: ObservatorySection[] = [];
-  const { offer, offerPair, offerKeigo, offerPick } = picker(sky);
+  const { offer, offerPair, offerKeigo, offerPick } = picker(sky, history, now);
   const wordEntry = (keb: string): LibEntry | undefined => { const id = entryForGlyph(VOCAB_SUBJECT, keb); return id ? libEntry(id) : undefined; };
+
+  // a particle group is learned when both of its patterns are (SAK-491), so a
+  // sentence type that needs it is open and the group itself is off the page;
+  // a pattern of it already met is learned too, so the group costs only the
+  // other one
+  for (const g of PARTICLE_GROUPS) {
+    const parts = g.parts.map((p) => libEntry(p as Parameters<typeof libEntry>[0])).filter((e): e is LibEntry => !!e);
+    for (const p of parts) if (standingFor(p, history, now).met) learned.add(p.id);
+    if (parts.length === g.parts.length && groupStandingFor(parts, history, now).met) learned.add(g.id);
+  }
 
   // kana: one item per row of either script, the row's kana under it
   const rows: string[] = [];
@@ -385,8 +436,13 @@ export function offerings(history: HistoryFile, now = Date.now()): Offerings {
   for (const id of leftoverPatterns()) {
     const entry = libEntry(patternEntry(id));
     if (!entry) continue;
-    if (standingFor(entry, history, now).met) { patternsMet++; continue; }
-    const item = offerPick(entry.id);
+    const met = standingFor(entry, history, now).met;
+    if (met) patternsMet++;
+    // a grouped pattern is offered as its group, once, where the group leads
+    // (SAK-491), for as long as either of its two is left to learn
+    const group = groupOfPart(entry.id);
+    if (group ? !leadsGroup(id) || learned.has(group.id) : met) continue;
+    const item = offerPick(group?.id ?? entry.id);
     if (item) patterns.push(item.id);
   }
   sections.push({ id: "grammar", title: "Grammar", ...COPY.grammar, items: patterns.slice(0, SHOW), shut: afterKana, started: patternsMet > 0, complete: patterns.length === 0 });
@@ -427,18 +483,23 @@ export function offerings(history: HistoryFile, now = Date.now()): Offerings {
     if (offeredType && (step.kind === "tier" ? step.id : step.tier) !== offeredType) break;
     const entry = libEntry(step.kind === "tier" ? markEntry(`sentence-rule-${step.id}`) : patternEntry(step.id));
     if (!entry) continue;
-    if (standingFor(entry, history, now).met) { rulesMet++; continue; }
+    const met = standingFor(entry, history, now).met;
+    if (met) rulesMet++;
+    // は and が are one tile, at は's place (SAK-491), as the Grammar row does it
+    const group = step.kind === "tier" ? undefined : groupOfPart(entry.id);
+    if (group ? !leadsGroup(step.id) || learned.has(group.id) : met) continue;
     if (step.kind === "tier") {
       const tier = tierOf(entry.id);
       if (tier && sentenceTierBlock(tier, history)?.kind === "sentences") break;
     }
     // offerPick names each of the two the way every other sky does: a pattern
     // by its meaning, a sentence type by its short label
-    const item = offerPick(entry.id);
+    const item = offerPick(group?.id ?? entry.id);
     if (!item) continue;
     rules.push(item.id);
     if (step.kind !== "tier") continue;
-    const waits = waitingOn(entry.id, history, now);
+    // a pattern the type waits on is met by picking or learning its group
+    const waits = [...new Set(waitingOn(entry.id, history, now).map(tileOf))];
     if (waits.length) needs[item.id] = waits;
     offeredType = step.id;
   }
@@ -499,6 +560,15 @@ export function beyondWords(history: HistoryFile, now = Date.now()): { items: Sk
   const firmament: string[] = [];
   for (const kind of [COUNTER_KIND, GRAMMAR_SUBJECT, SENTENCE_RULE_KIND, TRANSITIVITY_SUBJECT, KEIGO_SUBJECT] as const) {
     for (const entry of LIB_ENTRIES_BY_KIND.get(kind) ?? []) {
+      // two particles in one group are one moon (SAK-491), in the sky once
+      // either of them is met, the way an entry is once any of its facts is
+      const group = groupOfPart(entry.id);
+      if (group) {
+        if (met.includes(group.id) || firmament.includes(group.id) || !o.offerPick(group.id)) continue;
+        const parts = group.parts.map((p) => libEntry(p as Parameters<typeof libEntry>[0])).filter((e): e is LibEntry => !!e);
+        (parts.some((e) => standingFor(e, history, now).met) ? met : firmament).push(group.id);
+        continue;
+      }
       if (!o.offerPick(entry.id)) continue;
       (standingFor(entry, history, now).met ? met : firmament).push(entry.id);
     }
@@ -512,10 +582,16 @@ export function beyondWords(history: HistoryFile, now = Date.now()): { items: Sk
 
 /** The facts a set of picks claims when the learner says "I already know
  * these": each pick claims only itself (Sam's rule: a claimed word says
- * nothing about its kanji), and a kana row claims its sounds. */
+ * nothing about its kanji), a kana row claims its sounds, and a particle
+ * group its two patterns (SAK-491). */
 export function pickFacts(ids: readonly string[]): FactId[] {
   const out: FactId[] = [];
   for (const id of ids) {
+    const group = particleGroup(id);
+    if (group) {
+      for (const p of group.parts) { const e = libEntry(p as Parameters<typeof libEntry>[0]); if (e) out.push(...knownFactsOf(e)); }
+      continue;
+    }
     if (id === TSU_RULE) {
       for (const f of COUNTER_CURRICULUM) if (f.counter === "つ") { const e = libEntry(counterEntry(f)); if (e) out.push(...knownFactsOf(e)); }
       continue;

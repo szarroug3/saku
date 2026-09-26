@@ -39,6 +39,10 @@ function isPickable(item: SkyItem): boolean {
 
 /** The direct prerequisites of `id` that lock it: those picked as their own thing. */
 function locksOn(graph: PrerequisiteGraph, id: string): string[] {
+  // a group taught on one card (は vs が) is made of patterns, which are
+  // picked as their own thing anywhere else; here they are its parts, and a
+  // part never locks (SAK-491)
+  if (graph.itemOf(id)?.oneCard) return [];
   return graph.prerequisitesOf(id).filter((p) => { const it = graph.itemOf(p); return !!it && isPickable(it); });
 }
 
