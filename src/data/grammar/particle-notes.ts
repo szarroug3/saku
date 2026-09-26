@@ -252,9 +252,10 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
         for: "ga",
         heading: "The words that take が",
         text:
-          "A few words take が on the thing they are about: 好き, きらい, " +
-          "ほしい, わかる, できる. In Japanese, the thing you like or want " +
-          "is what が marks. The person who likes or wants it often goes unsaid.",
+          "A few words take が on the thing they are about: 好き (like), きらい " +
+          "(dislike), ほしい (want), わかる (understand), できる (can do). In " +
+          "Japanese, the thing you like or want is what が marks. The person who " +
+          "likes or wants it often goes unsaid.",
         examples: [{ jp: "水がほしいです。", mark: "が", en: "I want some water.", readings: ["みず"] }],
       },
       {
@@ -262,7 +263,7 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
         heading: "Questions and their answers",
         text:
           "A question word never takes は. You cannot be talking about something " +
-          "you do not know yet, so 誰, 何 and どれ take が.",
+          "you do not know yet, so 誰 (who), 何 (what) and どれ (which one) take が.",
         examples: [{ jp: "誰が来ましたか。", mark: "が", en: "Who came?", readings: ["だれ", "き"] }],
       },
       {
@@ -278,7 +279,9 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
         text:
           "Plenty of sentences use both. は says what the whole sentence is " +
           "about. が then picks out the part of it that everything else " +
-          "describes.",
+          "describes. In the sentence below, は is on 妹 (my sister), so the " +
+          "sentence is about her. が is on 歌 (singing), the thing that 上手 (good " +
+          "at) is said of.",
         examples: [{ jp: "妹は歌が上手です。", mark: ["は", "が"], en: "My sister is good at singing.", readings: ["いもうと", "うた", "じょうず"] }],
       },
       {
@@ -338,8 +341,9 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
       },
       {
         text:
-          "Not every verb takes one. 食べる and 飲む happen to something. 起きる " +
-          "and 寝る do not, so neither of them has a を in front of it.",
+          "Not every verb takes one. 食べる (eat) and 飲む (drink) happen to " +
+          "something. 起きる (get up) and 寝る (sleep) do not, so neither of them has " +
+          "a を in front of it.",
         examples: [{ jp: "水を飲みます。", mark: "を", en: "I drink water.", readings: ["みず", "の"] }],
       },
       {
@@ -362,7 +366,7 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
         heading: "Where beginners go wrong",
         text:
           "English puts a thing after some verbs that Japanese does not. In " +
-          "Japanese a bus is something you get on, so 乗る takes に.",
+          "Japanese a bus is something you get on, so 乗る (get on) takes に.",
         examples: [{ jp: "バスに乗ります。", mark: "に", en: "I get on the bus.", readings: ["の"] }],
       },
       {
@@ -394,7 +398,7 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
         heading: "What に does",
         text:
           "Put に after a place and you have named one spot. With いる and ある, " +
-          "that spot is where the thing already is.",
+          "the two verbs for being somewhere, that spot is where the thing already is.",
         examples: [{ jp: "学校にいます。", mark: "に", en: "I am at school.", readings: ["がっこう"] }],
       },
       {
@@ -443,7 +447,7 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
         heading: "に and へ",
         text:
           "へ is a third particle for somewhere you are heading. に marks the " +
-          "point you end up at, and へ marks the way there. After 行く, the two " +
+          "point you end up at, and へ marks the way there. After 行く (go), the two " +
           "mean much the same. As a particle, へ is read \"e\", so 学校へ is said " +
           "\"gakkou e\".",
         examples: [{ jp: "学校へ行きます。", mark: "へ", en: "I am going to school.", readings: ["がっこう", "い"] }],
@@ -451,7 +455,7 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
       {
         heading: "Where beginners go wrong",
         text:
-          "歩く and 走る say nothing about arriving anywhere, so 学校に歩きます " +
+          "歩く (walk) and 走る (run) say nothing about arriving anywhere, so 学校に歩きます " +
           "is not something a Japanese speaker says. Put 行く on the end of it " +
           "and the sentence works.",
         examples: [{ jp: "学校に歩いて行きます。", mark: "に", en: "I walk to school.", readings: ["がっこう", "ある", "い"] }],
@@ -488,7 +492,7 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
       },
       {
         text:
-          "歩く says nothing about where you are going. Put a place with へ on it " +
+          "歩く (walk) says nothing about where you are going. Put a place with へ on it " +
           "in front of 歩く and the walking has a direction.",
         examples: [{ jp: "学校へ歩きます。", mark: "へ", en: "I walk to school.", readings: ["がっこう", "ある"] }],
       },
@@ -554,7 +558,7 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
         heading: "Telling the two apart",
         text:
           "まで covers the whole stretch up to that time, and までに picks one " +
-          "moment before it. 待つ goes on and on, so it takes まで. 帰る happens " +
+          "moment before it. 待つ (wait) goes on and on, so it takes まで. 帰る (go home) happens " +
           "once, so it takes までに.",
         examples: [
           { jp: "六時まで待ちます。", mark: "まで", en: "I will wait until six.", readings: ["ろくじ", "ま"] },
@@ -812,7 +816,7 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
       {
         heading: "か on a question word",
         text:
-          "誰 is \"who\". Put か after it and you have 誰か, \"someone\". 何 and どこ " +
+          "誰 is \"who\". Put か after it and you have 誰か, \"someone\". 何 (what) and どこ (where) " +
           "work the same way.",
         examples: [{ jp: "誰かが来ました。", mark: "か", en: "Someone came.", readings: ["だれ", "き"] }],
       },

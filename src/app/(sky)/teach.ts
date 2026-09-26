@@ -778,13 +778,17 @@ function grammarPages(recipe: Recipe): TeachPage[] {
   const pages = particleNotePages(recipe, build);
   const family = recipe.cluster ? clusterById(recipe.cluster) : undefined;
   const members = family ? membersOf(family) : [];
+  const shared = PARTICLE_NOTES.find((n) => n.recipes.length > 1 && n.recipes.includes(recipe.id));
   if (family && members.length > 1) {
     // the pattern and its built form with the readings over their kanji
     // (SAK-484): 行くから, 本は, and a sense named in kanji (〜そう 様態), read
     // the way the page's prose is
     const rows = members.map((m) => {
       const built = buildRow(m)?.built ?? "";
-      const me = m.id === recipe.id;
+      // both particles of a shared note are the card's own (Sam, 2026-09-26:
+      // "this highlight makes it seem like this is about one and not the
+      // other but they're both being taught"), so both rows are picked out
+      const me = m.id === recipe.id || (shared?.recipes.includes(m.id) ?? false);
       const pattern = familyPattern(m);
       return [proseSound(pattern, proseReader).map((r) => (me ? { ...r, accent: true } : r)), [{ text: m.gloss }], proseSound(built, proseReader)];
     });
