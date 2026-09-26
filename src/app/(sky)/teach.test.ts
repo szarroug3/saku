@@ -23,6 +23,7 @@ import { CURRICULUM_LESSONS } from "@/data/grammar/lessons";
 import { kanjiRuns, PARTICLE_NOTES, type ParticleNote } from "@/data/grammar/particle-notes";
 import { PARTICLE_ROWS } from "@/data/grammar/particles";
 import { autoPatternPage, sentenceExampleFor } from "@/data/grammar/auto-page";
+import { kanaEntry } from "@/data/characters";
 import { primaryPatternRecipe, RECIPES, recipe as recipeById } from "@/data/grammar/recipes";
 import { PARTICLE_RULE } from "@/data/phase-intros";
 import { hasSentenceReadings, sentenceRuby, sentenceSlots } from "@/data/sentence-readings";
@@ -460,6 +461,15 @@ describe("the Particle page lists every particle Saku teaches", () => {
     const prose = pageProse(PARTICLE);
     assert.match(prose, /は is normally .ha., but when it marks the topic of a sentence it is read .wa./);
     assert.match(prose, /へ is normally .he., but when it points somewhere it is read .e./);
+  });
+
+  // SAK-489, Sam on パ's card: "add a thing that links back to the base."
+  it("opens the base kana and the mark from a kana that carries one", () => {
+    const built = (glyph: string) => atlasEntryFromHistory(emptyHistory(), kanaEntry(glyph), NOW)?.related.find((g) => g.title === "Built from");
+    assert.deepEqual(built("パ")?.items.map((x) => x.glyph), ["ハ", "Handakuten"]);
+    assert.deepEqual(built("が")?.items.map((x) => x.glyph), ["か", "Dakuten"]);
+    assert.equal(built("ハ"), undefined, "ハ is built from nothing");
+    assert.equal(built("あ"), undefined, "あ is built from nothing");
   });
 
   it("is reached from a particle's own page", () => {

@@ -7121,3 +7121,7 @@ Sam, 2026-09-26, on the は card: "i think this should be named ~wa vs ~ga or so
 A paragraph in `particle-notes.ts` can carry `for: "wa"`, the recipe whose own page it is on. `particleNotePages` in `teach.ts` builds a shared note as three pages on each card: this card's particle (its build page, then its own paragraphs in `after`), the other particle the same way from its own recipe, then the page that tells the two apart, which is the untagged rest of the body under an eyebrow with "vs" in it ("は vs が", titled "Telling は and が apart"). Both cards print the same three pages, in the order that puts the card's own particle first. The Family notes on wa-ga and ni-de name the "vs" page. A single particle's note is one page after the build, as before.
 
 Also from Sam's read: "A second が" read as if the sentence had two, so the heading is "が meaning but" and the paragraph opens "There is another が, and it means but". The matching heading on the と page is "と meaning whenever".
+
+## A voiced kana's card opens its base kana and its mark (SAK-489)
+
+Sam, 2026-09-26, on パ's card: "in the dakuten and handakuten pages, can you add a thing that links back to the base. like in this one, it would link back to ha." A kana that carries a dakuten or handakuten now has a "Built from" group on its card (`atlas.ts`, the kana branch): the base kana from `DAKUTEN_ROWS`' pairs (ハ for パ, か for が) and the mark's own page (Dakuten or Handakuten). A base kana has no such group. The test checks パ, が, ハ and あ.

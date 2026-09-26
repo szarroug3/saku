@@ -7,13 +7,14 @@
 // tables. Items are built the way the Observatory offers them, so a thing
 // looks the same here as it does on every other sky.
 
-import { KANA_SUBJECT } from "@/data/characters";
+import { KANA_SUBJECT, kanaEntry } from "@/data/characters";
 import { GRAMMAR_SUBJECT } from "@/data/grammar";
 import { PARTICLE_ROWS } from "@/data/grammar/particles";
 import { KANJI_SUBJECT, kanjiRow } from "@/data/kanji";
 import { builtPieces } from "@/data/kanji-etymology";
 import { KEIGO_SUBJECT } from "@/data/keigo";
 import { RADICAL_SUBJECT } from "@/data/radicals";
+import { DAKUTEN_ROWS } from "@/data/dakuten-rows";
 import { TERM_SUBJECT, TERMS, termEntry } from "@/data/terms";
 import { MARK_SUBJECT } from "@/data/marks";
 import { GRAMMAR_CONCEPT_SUBJECT, grammarConceptEntry, grammarConceptFor } from "@/data/grammar-concepts";
@@ -263,7 +264,16 @@ export function atlasEntryFromHistory(history: HistoryFile, id: string, now = Da
     related.push({ title: "Easily mixed up with", items, early: true, ...(Object.keys(tips).length ? { tips } : {}) });
   };
 
-  if (item.kind === "kana") lookalikes();
+  if (item.kind === "kana") {
+    lookalikes();
+    // a kana with a dakuten or handakuten opens the kana it is built from and
+    // the mark's own page (SAK-489, Sam: "add a thing that links back to the
+    // base. like in this one, it would link back to ha")
+    const row = DAKUTEN_ROWS.find((r) => r.pairs.some(([, voiced]) => voiced === glyph));
+    const base = row?.pairs.find(([, voiced]) => voiced === glyph)?.[0];
+    const mark = row && TERMS.find((t) => t.name === (row.mark === "゜" ? "Handakuten" : "Dakuten"));
+    if (base && mark) group("Built from", [kanaEntry(base), termEntry(mark.id)]);
+  }
   if (item.kind === "kanji") {
     lookalikes();
     // what it is a part of first, then every word written with it, in
