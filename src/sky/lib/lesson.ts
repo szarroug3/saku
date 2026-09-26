@@ -186,8 +186,9 @@ export interface TeachTable {
   opens?: ReadonlyArray<string | undefined>;
   /** A closing line: the chain the rows build toward, and its meaning. */
   footer?: string;
-  /** A note under the table: how a family's members differ. */
-  note?: string;
+  /** A note under the table: how a family's members differ. Runs when the
+   * Japanese in it carries its readings (東京から, SAK-485). */
+  note?: string | SoundLine;
 }
 
 /** An example sentence: natural English, the Japanese, and for a sentence

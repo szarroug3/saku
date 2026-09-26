@@ -20,13 +20,14 @@
 
 import { useState } from "react";
 
-import { GlyphName } from "@/sky/components/glyph";
+import { GlyphName, GlyphReading } from "@/sky/components/glyph";
 import { InlineAsk } from "@/sky/components/inline-ask";
 import { SkyButton } from "@/sky/components/sky-button";
 import { Eyebrow } from "@/sky/components/sky-card";
 import { SkyPageShell } from "@/sky/components/sky-page-shell";
 import { SkyPanel } from "@/sky/components/sky-panel";
 import { VERDICT } from "@/sky/components/quiz-results";
+import { chipReading } from "@/sky/lib/japanese";
 import { PLACE_KIND, placeNote, type PlaceEntry } from "@/sky/lib/place";
 import { GRADE, GRADES } from "@/sky/lib/quiz";
 import { formatWhen, sessionLabel, tallySession, type SkySession } from "@/sky/lib/sessions";
@@ -158,13 +159,22 @@ export function SkySessions({ sessions, unfinished = [], onRerun, onDelete, heig
                 ))}
               </dl>
               <ul className="mt-4 flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto">
-                {open.cards.map((c) => (
-                  <li key={c.id} className="grid grid-cols-[5rem_1fr_auto] items-center gap-x-3 rounded-lg px-2 py-1.5 sm:grid-cols-[7rem_1fr_auto] sm:gap-x-4">
-                    <GlyphName glyph={c.item.glyph} standing={c.item.standing} />
+                {/* a word's reading beside it, the way its chip prints it
+                    (SAK-485); the column is wider for the pair, 今日 きょう,
+                    申し込み もうしこみ, and a row keeps its one line */}
+                {open.cards.map((c) => {
+                  const reading = chipReading(c.item);
+                  return (
+                  <li key={c.id} className="grid grid-cols-[9rem_1fr_auto] items-center gap-x-3 rounded-lg px-2 py-1.5 sm:grid-cols-[10rem_1fr_auto] sm:gap-x-4">
+                    <span className="flex min-w-0 items-center gap-2">
+                      <GlyphName glyph={c.item.glyph} standing={c.item.standing} className="max-w-full shrink-0" />
+                      {reading && <GlyphReading reading={reading} />}
+                    </span>
                     <span className="truncate text-[13.5px] text-sky-ink/90">{c.item.english !== c.item.glyph ? c.item.english : ""}</span>
                     <Eyebrow tone="inherit" tight className={VERDICT[c.grade]}>{GRADE[c.grade].label}</Eyebrow>
                   </li>
-                ))}
+                  );
+                })}
               </ul>
               {onDelete && asking ? (
                 <InlineAsk

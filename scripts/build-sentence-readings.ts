@@ -18,7 +18,8 @@
 //
 //   - the Japanese inside grammar prose: a particle's page (particle-notes.ts),
 //     a pattern's pages, a sentence type's walk, and the Family table's
-//     patterns and built forms. Split into runs the way the page splits them
+//     patterns and built forms, and since SAK-485 the note under the Family
+//     table. Split into runs the way the page splits them
 //     (`kanjiRunsIn`), keeping only the runs the vocabulary cannot read as one
 //     word (`runsForReadingsPass` in src/app/(sky)/prose-sound.ts): 食べる is
 //     read from the vocabulary, 猫は好きです from here;
@@ -75,6 +76,8 @@ for (const r of RECIPES) {
     if (m.sense) prose(m.sense);
     prose(buildRow(m)?.built ?? "");
   }
+  // the note under the Family table (SAK-485): 東京から on 〜から
+  if (family && membersOf(family).length > 1 && family.feel) prose(family.feel);
 }
 for (const [tier, guide] of Object.entries(SENTENCE_ORDERING_GUIDES)) {
   for (const para of guide.body) prose(para.text);

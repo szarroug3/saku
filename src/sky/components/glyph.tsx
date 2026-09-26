@@ -49,3 +49,13 @@ export function GlyphName({ glyph, standing, cut = true, className = "" }: Glyph
   const face = cut ? "truncate text-[17px] font-medium leading-tight " : "";
   return <span className={`${face}${tone} ${japaneseFont(glyph)}${className ? ` ${className}` : ""}`} {...(cut ? { title: glyph } : {})}>{glyph}</span>;
 }
+
+/** A word's reading printed beside its glyph in a row (SAK-485): 今日 きょう,
+ * muted and smaller, the way a word chip prints it (SAK-483). Which words get
+ * one is `chipReading`'s rule, so the caller passes only what it returns.
+ *
+ * It gives way before the glyph does: in a narrow column the reading is cut
+ * first, with the whole of it in the tooltip. */
+export function GlyphReading({ reading }: { reading: string }) {
+  return <span className={`min-w-0 truncate font-sky-display text-[13px] leading-tight text-sky-muted ${japaneseFont(reading)}`} title={reading}>{reading}</span>;
+}

@@ -38,6 +38,18 @@ const REACH: Record<string, number> = { [KANA_SUBJECT]: Infinity, [KANJI_SUBJECT
  * many runs. Pairs whose kanji the data does not carry are skipped. */
 const MIX_UPS: ReadonlyArray<readonly [string, string, number]> = [["日", "目", 4], ["人", "入", 3], ["大", "犬", 2], ["木", "本", 2], ["土", "士", 1]];
 
+/** The newest sample run: words, each with how it went. */
+const WORD_RUN: ReadonlyArray<readonly [string, "clean" | "help" | "missed"]> = [
+  ["今日", "clean"], ["申し込み", "help"], ["食べる", "clean"], ["これ", "clean"], ["図書館", "missed"], ["お母さん", "help"], ["大きい", "clean"],
+];
+
+/** A card's counts for each way it can go. */
+const GRADED: Record<(typeof WORD_RUN)[number][1], SessionStats[FactId]> = {
+  clean: { seen: 1, misses: 0, everCorrect: true, firstTryCorrect: true, firstTryCount: 1, correct: 1, confused: {} },
+  help: { seen: 2, misses: 1, everCorrect: true, firstTryCorrect: false, firstTryCount: 0, correct: 1, confused: {} },
+  missed: { seen: 1, misses: 1, everCorrect: false, firstTryCorrect: false, firstTryCount: 0, correct: 0, confused: {} },
+};
+
 export function sampleHistory(now = Date.now()): HistoryFile {
   const history = emptyHistory();
   const claims: Record<string, number> = {};
@@ -89,6 +101,18 @@ export function sampleHistory(now = Date.now()): HistoryFile {
     }
     history.sessions.push(session(now - (mostRuns - run) * 2 * DAY, detail));
   }
+
+  // the newest run is words, so Sessions opens on rows that carry a reading
+  // beside the word (SAK-485): 今日 きょう, 申し込み もうしこみ, and これ, a
+  // word in kana, with none. The mix-ups above are all kanji, which have none.
+  const words: SessionStats = {};
+  WORD_RUN.forEach(([glyph, grade]) => {
+    const id = entryForGlyph(VOCAB_SUBJECT, glyph);
+    const entry = id && libEntry(id);
+    const fact = entry ? knownFactsOf(entry).find((f) => f.endsWith("/meaning")) : undefined;
+    if (fact) words[fact] = GRADED[grade];
+  });
+  if (Object.keys(words).length) history.sessions.push(session(now - DAY, words));
 
   history.claims = claims;
   return history;

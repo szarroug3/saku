@@ -772,7 +772,8 @@ function grammarPages(recipe: Recipe): TeachPage[] {
       eyebrow: "Family",
       title: "Ways to say this",
       paragraphs: [{ text: "Japanese often has more than one pattern for the same idea. These are the closest ones, and how each is built." }],
-      tables: [{ heads: ["Pattern", "Meaning", "Built"], rows, opens: familyOpens(recipe, members), ...(family.feel ? { note: family.feel } : {}) }],
+      // the note under it read the same way (SAK-485): 東京から on 〜から
+      tables: [{ heads: ["Pattern", "Meaning", "Built"], rows, opens: familyOpens(recipe, members), ...(family.feel ? { note: withRuby(proseSound(family.feel, proseReader), family.feel) } : {}) }],
       ...(family.link ? { link: { href: family.link.url, label: family.link.label } } : {}),
     });
   }

@@ -1093,6 +1093,22 @@ test("recent sessions list the pretend learner's quizzes", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Run it again" })).toBeVisible();
 });
 
+test("a session's word rows show each word's reading beside it (SAK-485)", async ({ page }) => {
+  // The rows printed 今日 and 申し込み bare. The pretend learner's newest run
+  // is words, so it is the session that opens.
+  await page.goto("/sessions?sample");
+  const row = page.locator("li").filter({ hasText: "申し込み" }).first();
+  await expect(row).toContainText("もうしこみ");
+  await expect(page.locator("li").filter({ hasText: "今日" }).first()).toContainText("きょう");
+  // a word written in kana is its own reading
+  const kore = page.locator("li").filter({ hasText: "これ" }).first();
+  await expect(kore).toBeVisible();
+  expect((await kore.textContent())?.match(/これ/g)).toHaveLength(1);
+  // and the reading takes no extra line: the row is as tall as one without it
+  const [withReading, without] = await Promise.all([row.boundingBox(), kore.boundingBox()]);
+  expect(Math.abs((withReading?.height ?? 0) - (without?.height ?? 0))).toBeLessThanOrEqual(1);
+});
+
 test("a visitor's quiz is kept in the browser and shows up under sessions", async ({ page }) => {
   // signed out, no account: the Sky reads and writes the browser's own copy
   await page.goto("/quiz?picks=kana-row:h-vowels");

@@ -171,7 +171,14 @@ export function Table({ table, onOpen }: { table: TeachTable; onOpen?: (id: stri
         </table>
       </div>
       {table.footer && <p className="mt-2 text-[13.5px]"><Mixed text={table.footer} /></p>}
-      {table.note && <p className="mt-2 text-[12.5px] leading-relaxed text-sky-muted">{table.note}</p>}
+      {/* the Family note's Japanese carries its readings (SAK-485). At the
+          note's old 12.5px the kana over 東京 came out near 7px, so the note is
+          the page's own prose size, where the readings are the size they are
+          in every paragraph, and a line with readings in it gets the room
+          they sit in */}
+      {table.note && (typeof table.note === "string"
+        ? <p className="mt-2 text-[14.5px] leading-relaxed text-sky-muted"><Mixed text={table.note} /></p>
+        : <p className="mt-2 text-[14.5px] leading-[1.9] text-sky-muted"><Sound line={table.note} /></p>)}
     </SkyBox>
   );
 }

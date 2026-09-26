@@ -15,6 +15,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import { GlyphReading } from "@/sky/components/glyph";
 import type { PitchComponent } from "@/sky/components/lesson-card";
 import { RecipeNameForm } from "@/sky/components/recipe-name-form";
 import { SkyButton } from "@/sky/components/sky-button";
@@ -23,7 +24,7 @@ import { Eyebrow } from "@/sky/components/sky-card";
 import { SkyPageShell } from "@/sky/components/sky-page-shell";
 import { SkySurface } from "@/sky/components/sky-panel";
 import { SkyPageBody } from "@/sky/components/sky-page-body";
-import { japaneseFont } from "@/sky/lib/japanese";
+import { chipReading, japaneseFont } from "@/sky/lib/japanese";
 import { GRADE, GRADES, tally, type Grade, type QuizAnswer, type QuizCard, type WayBack } from "@/sky/lib/quiz";
 
 /** The verdict colors, by grade; the Quiz's pips use the same. */
@@ -151,6 +152,7 @@ function HowItWent({ cards, answers, list, save, ending: { back, onRetry, onSave
             {cards.map((c, i) => {
               const a = answers[c.id];
               const on = picked.has(c.id);
+              const reading = chipReading(c.item);
               return (
                 <li key={c.id}>
                   {/* items-center, not items-baseline (SAK-415): a 20px glyph
@@ -170,8 +172,13 @@ function HowItWent({ cards, answers, list, save, ending: { back, onRetry, onSave
                     }}
                     className={`grid w-full grid-cols-[10rem_1fr_auto] items-center gap-x-3 rounded-lg border px-2.5 py-2 text-left ${on ? "border-sky-accent bg-sky-card-strong" : "border-transparent hover:bg-sky-card"}`}
                   >
-                    {/* the glyph column is one width, so the answers line up */}
-                    <span className={`truncate font-sky-display text-[20px] leading-none text-sky-ink ${japaneseFont(c.item.glyph)}`}>{c.item.glyph}</span>
+                    {/* the glyph column is one width, so the answers line up;
+                        a word's reading beside it the way its chip prints it
+                        (SAK-485), unless the answer column already says it */}
+                    <span className="flex min-w-0 items-center gap-2">
+                      <span className={`max-w-full shrink-0 truncate font-sky-display text-[20px] leading-none text-sky-ink ${japaneseFont(c.item.glyph)}`}>{c.item.glyph}</span>
+                      {reading && reading !== c.answer && <GlyphReading reading={reading} />}
+                    </span>
                     <span className={`text-[13px] ${japaneseFont(c.answer)}`}>{c.answerPitch !== undefined && Pitch ? <Pitch reading={c.answer} downstep={c.answerPitch} /> : c.answer}</span>
                     {/* the grade, and what it cost (SAK-425): a card that took
                         three goes and a card that took one both read "Help",

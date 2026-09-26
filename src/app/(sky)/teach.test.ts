@@ -99,7 +99,8 @@ function pageProse(entryId: string): string {
       // `instruction` is prose or a run of tinted spans; both say words.
       if (typeof t.instruction === "string") out.push(t.instruction);
       else if (t.instruction) out.push(t.instruction.map((run) => run.text).join(""));
-      if (t.note) out.push(t.note);
+      if (typeof t.note === "string") out.push(t.note);
+      else if (t.note) out.push(t.note.map((run) => run.text).join(""));
     }
   }
   return out.join("\n");
@@ -986,6 +987,24 @@ describe("furigana where the readings had to be written", () => {
     it("leaves no kanji in a pattern or a built form without a reading", () => {
       assert.ok(cells.length > 0);
       for (const cell of cells) assert.deepEqual(bareIn(cell), [], cell.map((r) => r.text).join(""));
+    });
+
+    // SAK-485: the note under the table printed 東京から bare on 〜から
+    const footers = RECIPES.filter((r) => r.cluster)
+      .flatMap((r) => entry(patternEntry(r.id))?.pages?.filter((p) => p.eyebrow === "Family") ?? [])
+      .flatMap((p) => p.tables ?? [])
+      .flatMap((t) => [t.note, t.footer].flatMap((line): SoundLine[] => (line === undefined ? [] : [typeof line === "string" ? [{ text: line }] : line])));
+
+    it("reads 東京から in the note under 〜から's Family table", () => {
+      const note = entry(patternEntry("kara-reason"))?.pages?.find((p) => p.eyebrow === "Family")?.tables?.[0]?.note;
+      assert.ok(note && typeof note !== "string", "〜から's Family note has no readings");
+      assert.deepEqual(rubyOf(note), [["東", "とう"], ["京", "きょう"]]);
+      assert.equal(note.map((r) => r.text).join(""), cluster("because")?.feel);
+    });
+
+    it("leaves no kanji in a Family footer without a reading", () => {
+      assert.ok(footers.length > 0);
+      for (const line of footers) assert.deepEqual(bareIn(line), [], line.map((r) => r.text).join(""));
     });
   });
 
