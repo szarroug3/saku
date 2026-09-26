@@ -189,6 +189,9 @@ export function acceptSource(argv = process.argv) {
  * `version` lets a caller pass the version string it read out of the archive
  * itself (KANJIDIC2's database_version, JMdict's creation date). It is only
  * used when accepting; a plain check never rewrites anything.
+ *
+ * @param {string} id
+ * @param {{ path?: string, accept?: boolean, version?: string | null }} [options]
  */
 export function verifySource(id, { path, accept = false, version = null } = {}) {
   const manifest = readManifest();

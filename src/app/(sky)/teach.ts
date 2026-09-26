@@ -34,6 +34,7 @@ import { contextPronunciation } from "@/data/kana-context";
 import { keigoSetForEntry } from "@/data/keigo";
 import { pairForEntry } from "@/data/transitivity-facts";
 import { etymologyOf } from "@/data/kanji-etymology";
+import { SOUND_OF, soundPartOnyomi } from "@/data/sound-part-onyomi";
 import { kanjiRow, READINGS, type KanjiRow } from "@/data/kanji";
 import { getMnemonic, type SoundLine } from "@/data/mnemonics";
 import { numberConstructionFor } from "@/data/number-construction";
@@ -209,10 +210,12 @@ function readingKind(base: string, row: KanjiRow | undefined, type: "on" | "kun"
  * (SAK-484): of the piece's own on'yomi, the one closest to the kanji's, since
  * that likeness is what "the sound of" means (住 じゅう takes 主's しゅう, not
  * its しゅ). Closest is the longest shared start once voicing is set aside,
- * and the piece's first on'yomi when none share one. Undefined for a piece
- * the kanji table has no on'yomi for, which is printed as it is. */
+ * and the piece's first on'yomi when none share one. A piece the kanji table
+ * has no on'yomi for (也 on 他, 弋 on 代) takes KANJIDIC2's (SAK-486);
+ * undefined when neither has one, and the piece is printed as it is. */
 function soundPartReading(kanji: string, part: string): string | undefined {
-  const ons = kanjiRow(part)?.on ?? [];
+  const table = kanjiRow(part)?.on ?? [];
+  const ons = table.length ? table : soundPartOnyomi(part);
   if (!ons.length) return undefined;
   const mine = kanjiRow(kanji)?.on ?? [];
   const plain = (s: string) => s.normalize("NFD").replace(/[゙゚]/g, "");
@@ -235,12 +238,12 @@ function soundPartReading(kanji: string, part: string): string | undefined {
 function originSound(kanji: string, text: string): SkySoundLine {
   const line: Array<{ text: string; ruby?: string }> = [];
   let at = 0;
-  for (const m of text.matchAll(/the sound of ([一-鿿㐀-䶿])(?!\s*[(（])/g)) {
+  for (const m of text.matchAll(SOUND_OF)) {
     const reading = soundPartReading(kanji, m[1]);
     if (!reading) continue;
-    const start = m.index + m[0].length - 1;
+    const start = m.index + m[0].length - m[1].length;
     line.push({ text: text.slice(at, start) }, { text: m[1], ruby: reading });
-    at = start + 1;
+    at = start + m[1].length;
   }
   line.push({ text: text.slice(at) });
   return line.filter((r) => r.text);

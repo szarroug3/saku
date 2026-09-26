@@ -117,6 +117,18 @@
       "version": "2026-256",
       "versionFrom": "the file's own header database_version, date_of_creation 2026-09-13"
     },
+    "kanjidic2-sound-parts": {
+      "bytes": 1488574,
+      "license": "CC BY-SA 4.0, Electronic Dictionary Research and Development Group",
+      "name": "KANJIDIC2 (sound parts)",
+      "note": "A second pin on KANJIDIC2, read only by the sound-part pass. EDRDG publishes a new file every day and keeps no old ones, so the file the kanjidic2 pin names cannot be downloaded again, and accepting a newer one there would make every other pass that reads it stale (SAK-486).",
+      "path": "scripts/ingest/raw/kanjidic-sound-parts/kanjidic2.xml.gz",
+      "recordedAt": "2026-09-25",
+      "sha256": "aef74d1c86bad7ef03441e6c0ded48f0b0da3e2637e00bcc80f6e10488811c99",
+      "url": "https://www.edrdg.org/kanjidic/kanjidic2.xml.gz",
+      "version": "2026-268",
+      "versionFrom": "the file's own header database_version, date_of_creation 2026-09-25"
+    },
     "kanjium": {
       "bytes": 3226405,
       "license": "CC BY-SA 4.0, mifunetoshiro and contributors",
@@ -361,6 +373,15 @@
         "readings.json"
       ],
       "recordedAt": "2026-09-13"
+    },
+    "scripts/ingest/sound-part-onyomi.ts": {
+      "archives": {
+        "kanjidic2-sound-parts": "aef74d1c86bad7ef03441e6c0ded48f0b0da3e2637e00bcc80f6e10488811c99"
+      },
+      "outputs": [
+        "sound-part-onyomi.json"
+      ],
+      "recordedAt": "2026-09-26"
     },
     "scripts/ingest/word_example_candidates.py": {
       "archives": {

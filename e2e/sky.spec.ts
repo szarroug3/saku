@@ -1709,6 +1709,14 @@ test("a verb pair's example sentences have the furigana over their kanji", async
   await expect(verb.locator("rt")).toHaveText("で");
 });
 
+test("a kanji's origin reads a sound part the kanji table does not have", async ({ page }) => {
+  // SAK-486. 他's origin names 也 for its sound, and 也 is not one of the
+  // 2,136 kanji, so nothing was over it. Its on'yomi now comes from KANJIDIC2.
+  await page.goto(`/atlas?sample&entry=${encodeURIComponent("kanji:他")}`);
+  await expect(page.getByText("the sound of", { exact: false }).first()).toBeVisible();
+  await expect.poll(() => rubies(page)).toEqual(expect.arrayContaining([["也", "や"]]));
+});
+
 test("the why behind writing early folds open under the card that raises it", async ({ page }) => {
   await page.goto(`/atlas?sample&entry=${encodeURIComponent("kanji:日")}`);
   await page.getByRole("button", { name: "Open How it's written" }).click();

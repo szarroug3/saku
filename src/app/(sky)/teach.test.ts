@@ -14,6 +14,8 @@ import readingsJson from "@/data/generated/sentence-readings.json" with { type: 
 import { patternEntry } from "@/data/grammar";
 import { GRAMMAR_CONCEPTS, grammarConceptEntry } from "@/data/grammar-concepts";
 import { etymologyOf } from "@/data/kanji-etymology";
+import { KANJI as KANJI_ROWS } from "@/data/kanji";
+import { SOUND_OF } from "@/data/sound-part-onyomi";
 import { MARKS, markEntry } from "@/data/marks";
 import { VERB_PAIRS } from "@/data/transitivity";
 import { cluster } from "@/data/grammar/clusters";
@@ -1066,6 +1068,33 @@ describe("furigana where the readings had to be written", () => {
     it("leaves a piece alone when its reading is already written, and a piece named for its meaning", () => {
       assert.deepEqual(rubyOf(origin("仕")), []);
       assert.ok(!rubyOf(origin("住")).some(([t]) => t === "人"));
+    });
+
+    // SAK-486: a piece outside the 2,136 kanji takes its on'yomi from KANJIDIC2.
+    it("reads a piece the kanji table does not have from KANJIDIC2: 也 on 他 is や", () => {
+      assert.deepEqual(rubyOf(origin("他")), [["也", "や"]]);
+      assert.equal(origin("他").map((r) => r.text).join(""), etymologyOf("他")?.originText);
+    });
+
+    it("reads a piece past the basic plane: 𠂢 on 派", () => {
+      assert.deepEqual(rubyOf(origin("派")), [["𠂢", "は"]]);
+      assert.equal(origin("派").map((r) => r.text).join(""), etymologyOf("派")?.originText);
+    });
+
+    // KANJIDIC2 2026-268 has no on'yomi for 34 of the pieces (⺕ on 雪, 俞 on
+    // 輸, 𠯑 on 話 and the rest the ingest prints). More than that is a
+    // regression: a piece that had a reading lost it.
+    it("leaves at most 34 pieces plain across every kanji's origin", () => {
+      const plain = new Set<string>();
+      for (const { c } of KANJI_ROWS) {
+        if (!etymologyOf(c)?.originText?.includes("the sound of")) continue;
+        for (const run of origin(c)) {
+          if (run.ruby) continue;
+          for (const m of run.text.matchAll(SOUND_OF)) plain.add(m[1]);
+        }
+      }
+      assert.ok(plain.size <= 34, `${plain.size} pieces named for their sound have no reading: ${[...plain].join(" ")}`);
+      assert.ok(plain.has("⺕"), "the count no longer sees the pieces it is counting");
     });
   });
 });
