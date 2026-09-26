@@ -546,6 +546,10 @@ describe("a particle's page says what the particle means", () => {
     return note;
   };
   const pageOf = (recipe: string) => pagesOf(recipe).find((p) => p.eyebrow === noteOf(recipe).eyebrow);
+  /** Every paragraph of prose on a particle's card: the page that tells the
+   * two apart, and the paragraphs under each particle's own build (SAK-479,
+   * Sam, 2026-09-26: three pages, not one). Family is left out. */
+  const proseOf = (recipe: string) => pagesOf(recipe).filter((p) => p.eyebrow !== "Family").flatMap((p) => [...p.paragraphs, ...(p.after ?? [])]);
   const recipesInScope = PARTICLE_NOTES.flatMap((n) => n.recipes);
 
   it("gives every particle in scope its page, with a Read more link that names the article", () => {
@@ -555,7 +559,8 @@ describe("a particle's page says what the particle means", () => {
       const page = pageOf(recipe);
       assert.ok(page, `${recipe} has no page of prose`);
       assert.equal(page.title, note.title);
-      assert.equal(page.paragraphs.length, note.body.length, `${recipe}'s page lost paragraphs`);
+      assert.equal(page.paragraphs.length, note.body.filter((p) => !p.for).length, `${recipe}'s page lost paragraphs`);
+      assert.ok(proseOf(recipe).length >= note.body.length, `${recipe}'s cards lost paragraphs`);
       // the source is named, once, by its own title rather than by a bare URL.
       // A page with no link at all says why in the data, the way a cluster
       // without one does: って is the only one, because Tofugu has no page for it.
@@ -623,6 +628,26 @@ describe("a particle's page says what the particle means", () => {
 
   const shared = PARTICLE_NOTES.filter((n) => n.recipes.length > 1);
 
+  // Sam, 2026-09-26, on the は card: "page 1 is ~wa then has the section about
+  // wa then ~ga then the section about ga and then a page of when both are
+  // used." It had been one page under "は and が" with all of it in a row.
+  it("is three pages on each card of a shared note: this particle, the other, then the two apart", () => {
+    for (const note of shared) {
+      for (const id of note.recipes) {
+        const pages = pagesOf(id).filter((p) => p.eyebrow !== "Family");
+        const patterns = note.recipes.map((r) => recipeById(r)?.pattern);
+        const mineFirst = [patterns[note.recipes.indexOf(id)], ...patterns.filter((_, i) => note.recipes[i] !== id)];
+        assert.deepEqual(pages.map((p) => p.eyebrow), [...mineFirst, note.eyebrow], `${id}'s pages are not in the order Sam asked for`);
+        // each particle's own page ends with the paragraphs written for it
+        note.recipes.forEach((r, i) => {
+          const own = pages.find((p) => p.eyebrow === patterns[i]);
+          assert.deepEqual(own?.after?.map((p) => p.text), note.body.filter((p) => p.for === r).map((p) => p.text), `${id}'s ${patterns[i]} page does not carry ${r}'s paragraphs`);
+        });
+        assert.match(note.eyebrow, / vs /);
+      }
+    }
+  });
+
   it("prints one page word for word on both of the cards that share it", () => {
     assert.ok(shared.length >= 4, `only ${shared.length} pages are shared`);
     for (const note of shared) {
@@ -671,21 +696,21 @@ describe("a particle's page says what the particle means", () => {
   });
 
   it("says how は is read, in the words the kana cards use", () => {
-    const page = pageOf("wa");
-    const said = page?.paragraphs.find((p) => p.text.includes('read "wa"'));
+    const own = pagesOf("wa").find((p) => p.eyebrow === "〜は")?.after ?? [];
+    const said = own.find((p) => p.text.includes('read "wa"'));
     assert.ok(said, "the page does not say は is read wa");
     // the kana card's own rule, so a learner reads it the same way twice
     assert.match(PARTICLE_RULE.body[0]?.text ?? "", /read .wa./);
     assert.ok(said.text.includes('read "ha"'), "it does not say what the character is read elsewhere");
     assert.ok(said.text.includes("watashi wa"), "it does not show the reading on a word");
-    // and it is near the top, not buried under the mistakes
-    assert.ok((page?.paragraphs.indexOf(said) ?? 99) <= 2, "the reading is not near the top of the page");
+    // and it is near the top of は's own paragraphs, not buried under the mistakes
+    assert.ok(own.indexOf(said) <= 2, "the reading is not near the top of は's page");
   });
 
   it("marks the particle in every sentence it shows, everywhere it appears", () => {
     for (const recipe of recipesInScope) {
       const note = noteOf(recipe);
-      const shown = pageOf(recipe)?.paragraphs.flatMap((p) => p.examples ?? []) ?? [];
+      const shown = proseOf(recipe).flatMap((p) => p.examples ?? []);
       assert.ok(shown.length >= note.body.length - 6, `${recipe}'s page shows almost no sentences`);
       for (const ex of shown) {
         const plain = ex.jp.map((r) => r.text).join("");
@@ -702,7 +727,7 @@ describe("a particle's page says what the particle means", () => {
   // Sam, 2026-09-24, on "Sentences with both": "these examples talk about how
   // the sentence has both but then the sentence highlights only one."
   it("picks out both particles in a sentence shown for the two of them", () => {
-    const shown = pageOf("wa")?.paragraphs.flatMap((p) => p.examples ?? []) ?? [];
+    const shown = proseOf("wa").flatMap((p) => p.examples ?? []);
     const both = shown.find((ex) => ex.jp.map((r) => r.text).join("") === "妹は歌が上手です。");
     assert.ok(both, "妹は歌が上手です is not on the は page");
     assert.deepEqual(both.jp.filter((r) => r.accent).map((r) => r.text), ["は", "が"]);
@@ -727,7 +752,7 @@ describe("a particle's page says what the particle means", () => {
   });
 
   it("carries the readings through to the page, over the kanji and nothing else", () => {
-    const shown = pageOf("wa")?.paragraphs.flatMap((p) => p.examples ?? []) ?? [];
+    const shown = proseOf("wa").flatMap((p) => p.examples ?? []);
     const withRuby = shown.flatMap((ex) => ex.jp.filter((run) => run.ruby));
     assert.ok(withRuby.length >= 20, `only ${withRuby.length} runs of kanji reached the page with a reading`);
     for (const run of withRuby) {
@@ -957,7 +982,7 @@ describe("furigana where the readings had to be written", () => {
 
   describe("a particle's page, the Japanese inside its prose", () => {
     const pages = RECIPES.flatMap((r) => (PARTICLE_NOTES.some((n) => n.recipes.includes(r.id)) ? entry(patternEntry(r.id))?.pages ?? [] : []));
-    const paras = pages.flatMap((p) => p.paragraphs);
+    const paras = pages.flatMap((p) => [...p.paragraphs, ...(p.after ?? [])]);
 
     it("reads a word from the vocabulary and a sentence from the readings pass", () => {
       const said = new Set(paras.flatMap((p) => p.runs ?? []).filter((r) => r.ruby).map((r) => `${r.text}${r.ruby}`));

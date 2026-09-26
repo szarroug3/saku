@@ -689,30 +689,51 @@ function notePara(para: ParticleNotePara): TeachParagraph {
 }
 
 /**
- * A particle's page of prose (SAK-470), or nothing for a particle that has none
- * written yet.
+ * A particle's pages of prose (SAK-470), after its build page, or the build
+ * page alone for a particle that has none written yet.
  *
- * It goes between the build page and Family: the build page says how to attach
- * the particle, this says what it means, and Family puts it beside the ones it
- * is confused with. Two particles can name one note between them, and は and が
- * do, as do に and で, まで and までに, だけ and しか, ね and よ: both cards print
- * the same page, word for word, because a page about one of them that leans on
- * the other's page is a page a learner can open first and not follow. The page
+ * They go between the build page and Family: the build page says how to
+ * attach the particle, the prose says what it means, and Family puts it beside
+ * the ones it is confused with. Two particles can name one note between them,
+ * and は and が do, as do に and で, まで and までに, だけ and しか, ね and よ:
+ * both cards print the same pages, because a page about one of them that leans
+ * on the other's page is a page a learner can open first and not follow. The page
  * names the article it drew on once, which is why the wa-ga and ni-de clusters
  * no longer link it again on the Family page right after.
  *
  * A note with no link prints none. Only って has none, and its `noLinkReason`
  * says why (particle-notes.ts).
  */
-function particleNotePage(recipeId: string): TeachPage | undefined {
-  const note = PARTICLE_NOTES.find((n) => n.recipes.includes(recipeId));
-  if (!note) return undefined;
-  return {
+function particleNotePages(recipe: Recipe, build: readonly TeachPage[]): TeachPage[] {
+  const note = PARTICLE_NOTES.find((n) => n.recipes.includes(recipe.id));
+  if (!note) return [...build];
+  const apart: TeachPage = {
     eyebrow: note.eyebrow,
     title: note.title,
-    paragraphs: note.body.map(notePara),
+    paragraphs: note.body.filter((p) => !p.for).map(notePara),
     ...(note.link ? { link: { href: note.link.url, label: note.link.label } } : {}),
   };
+  if (note.recipes.length === 1) return [...build, apart];
+  // A SHARED NOTE IS THREE PAGES (Sam, 2026-09-26: "page 1 is ~wa then has
+  // the section about wa then ~ga then the section about ga and then a page
+  // of when both are used"). This card's particle first: its build and its
+  // sentence, then the paragraphs written for it. The other particle the same
+  // way, built from its own recipe. Then the page that tells them apart. It
+  // used to be one long page under "は and が" that started with は, went on
+  // to が and ended with the comparison, and Sam read it as a page that had
+  // been merged by mistake.
+  const about = (id: string) => note.body.filter((p) => p.for === id).map(notePara);
+  const withOwn = (page: TeachPage, id: string): TeachPage => ({ ...page, after: [...(page.after ?? []), ...about(id)] });
+  const mine = build.map((p, i) => (i === build.length - 1 ? withOwn(p, recipe.id) : p));
+  const others = note.recipes.filter((id) => id !== recipe.id).flatMap((id) => {
+    const other = RECIPES.find((r) => r.id === id);
+    if (!other) return [];
+    // the page's title is the other particle's meaning line, since the card's
+    // head says only this card's; the build page's own title reads "〜が:
+    // Marks the subject." and is hidden on the card it belongs to (SAK-464)
+    return [withOwn({ ...pageFromIntro(autoPatternPage(other), undefined, proseReader), title: `${other.pattern} ${other.gloss}` }, id)];
+  });
+  return [...mine, ...others, apart];
 }
 
 /** The entry a recipe's card is, which is the page its written pattern has:
@@ -753,9 +774,8 @@ function familyPattern(m: Recipe): string {
  * shape into the Sky's, so the two show the same build by construction. */
 function grammarPages(recipe: Recipe): TeachPage[] {
   const intros = formLibraryPages(recipe.id);
-  const pages = (intros.length ? intros : [autoPatternPage(recipe)]).map((intro) => pageFromIntro(intro, undefined, proseReader));
-  const note = particleNotePage(recipe.id);
-  if (note) pages.push(note);
+  const build = (intros.length ? intros : [autoPatternPage(recipe)]).map((intro) => pageFromIntro(intro, undefined, proseReader));
+  const pages = particleNotePages(recipe, build);
   const family = recipe.cluster ? clusterById(recipe.cluster) : undefined;
   const members = family ? membersOf(family) : [];
   if (family && members.length > 1) {

@@ -292,14 +292,14 @@ export const CLUSTERS: readonly Cluster[] = [
     // note points at it instead of standing in for it.
     feel:
       "は marks what the sentence is about. が marks who or what is doing the " +
-      "verb. The は and が page before this one goes through both and shows " +
-      "what changes when you swap them.",
+      "verb. The は vs が page before this one shows what changes when you " +
+      "swap them.",
     // The article is linked from that page, under its own title, so linking it
     // again here would put two links to one article on pages a learner turns
     // between.
     link: null,
     noLinkReason:
-      "The は and が page links the Tofugu article under its own title, so the " +
+      "The は vs が page links the Tofugu article under its own title, so the " +
       "cluster does not link it a second time.",
   },
   {
@@ -313,13 +313,13 @@ export const CLUSTERS: readonly Cluster[] = [
     // so the note points at it. Same change the wa-ga note took.
     feel:
       "に marks where something is or where it is going. で marks where " +
-      "something happens. The に and で page before this one goes through both " +
-      "and shows which verbs take which.",
+      "something happens. The に vs で page before this one shows which verbs " +
+      "take which.",
     // Linked from that page, under the article's own title, so a learner
     // turning from one page to the next does not get the same link twice.
     link: null,
     noLinkReason:
-      "The に and で page links the Tofugu article under its own title, so the " +
+      "The に vs で page links the Tofugu article under its own title, so the " +
       "cluster does not link it a second time.",
   },
   // --- THE LAST MAP-ONLY CLUSTER -------------------------------------------

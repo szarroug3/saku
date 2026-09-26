@@ -60,11 +60,16 @@
 // NOTES in characters.ts), so a learner reads the same rule in the same words
 // wherever it comes up.
 //
-// WHICH PARTICLES SHARE A PAGE
+// WHICH PARTICLES SHARE A NOTE
 // ============================
-// Sam, 2026-09-20: "go ahead and build all of them." Two particles share a page
+// Sam, 2026-09-20: "go ahead and build all of them." Two particles share a note
 // where a learner confuses them with each other, which is the call は and が
-// came out of: に and で, まで and までに, だけ and しか, ね and よ. へ has a
+// came out of: に and で, まで and までに, だけ and しか, ね and よ. A shared
+// note is three pages on each card (Sam, 2026-09-26): the card's own particle,
+// its build and the paragraphs marked `for` it; the other particle the same
+// way; then the page that tells the two apart, which is the rest of `body`
+// under `eyebrow` ("は vs が"). Both cards print the same three pages, so a
+// reader can open either card first. へ has a
 // short page of its own that names the に and で page, because に against へ is
 // said there already and a second answer is one more thing to keep in step. は
 // against も is on も's page and names は itself, for the reason the は and が
@@ -113,6 +118,12 @@ export interface ParticleNoteExample {
 
 /** One idea, and the sentence or two that show it. */
 export interface ParticleNotePara {
+  /** On a shared note, the recipe whose own page this paragraph is on: "What
+   * は does" is on the 〜は page, under its build and its sentence. A paragraph
+   * with no `for` is on the page that tells the two apart (Sam, 2026-09-26:
+   * "page 1 is ~wa then has the section about wa then ~ga then the section
+   * about ga and then a page of when both are used"). */
+  readonly for?: string;
   readonly heading?: string;
   readonly text: string;
   /** Usually one. Two where the idea IS the difference between them, as with
@@ -143,8 +154,8 @@ export interface ParticleNote {
 export const PARTICLE_NOTES: readonly ParticleNote[] = [
   {
     recipes: ["wa", "ga"],
-    eyebrow: "は and が",
-    title: "What は and が each do",
+    eyebrow: "は vs が",
+    title: "Telling は and が apart",
     body: [
       {
         text:
@@ -153,6 +164,7 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
           "the subject, which is whoever or whatever is doing or being.",
       },
       {
+        for: "wa",
         heading: "What は does",
         text:
           "Put は after a word and you have said what the sentence is about. " +
@@ -162,18 +174,21 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
         examples: [{ jp: "私は学生です。", mark: "は", en: "As for me, I am a student.", readings: ["わたし", "がくせい"] }],
       },
       {
+        for: "wa",
         text:
           "は is read \"ha\" everywhere else in Japanese. When it marks the topic " +
           "of a sentence, it is read \"wa\", so the line above is said \"watashi " +
           "wa gakusei desu\".",
       },
       {
+        for: "wa",
         text:
           "は tells you nothing about what the word in front of it does. That " +
           "word can be the one acting, the thing acted on, or a day of the week.",
         examples: [{ jp: "日曜日は家にいます。", mark: "は", en: "On Sunday, I am at home.", readings: ["にちようび", "いえ"] }],
       },
       {
+        for: "wa",
         text:
           "What a sentence is about is usually something both people already " +
           "know. So は goes on whatever has already come up, like the bread you " +
@@ -181,12 +196,14 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
         examples: [{ jp: "このパンはおいしいですね。", mark: "は", en: "This bread is good." }],
       },
       {
+        for: "wa",
         text:
           "Two は in one sentence almost always means a comparison. One thing " +
           "goes with each は, and the sentence is about how the two differ.",
         examples: [{ jp: "夏は暑いですが、冬は寒いです。", mark: "は", en: "Summer is hot, but winter is cold.", readings: ["なつ", "あつ", "ふゆ", "さむ"] }],
       },
       {
+        for: "ga",
         heading: "What が does",
         text:
           "Put が after a word and that word is the one doing something, or the " +
@@ -232,6 +249,7 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
         examples: [{ jp: "誰かが来ました。", mark: "が", en: "Someone came.", readings: ["だれ", "き"] }],
       },
       {
+        for: "ga",
         heading: "The words that take が",
         text:
           "A few words take が on the thing they are about: 好き, きらい, " +
@@ -240,6 +258,7 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
         examples: [{ jp: "水がほしいです。", mark: "が", en: "I want some water.", readings: ["みず"] }],
       },
       {
+        for: "ga",
         heading: "Questions and their answers",
         text:
           "A question word never takes は. You cannot be talking about something " +
@@ -247,6 +266,7 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
         examples: [{ jp: "誰が来ましたか。", mark: "が", en: "Who came?", readings: ["だれ", "き"] }],
       },
       {
+        for: "ga",
         text:
           "The answer keeps が. The question asked which one of them it was, and " +
           "picking one out is what が does. 田中さんは来ました would be about " +
@@ -262,11 +282,12 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
         examples: [{ jp: "妹は歌が上手です。", mark: ["は", "が"], en: "My sister is good at singing.", readings: ["いもうと", "うた", "じょうず"] }],
       },
       {
-        heading: "A second が",
+        for: "ga",
+        heading: "が meaning \"but\"",
         text:
-          "There is a second が that joins two halves of a sentence with the " +
-          "sense of \"but\". This one comes after a whole statement. The が you have " +
-          "been reading about comes after a single word, so what comes in front of it " +
+          "There is another が, and it means \"but\". It joins two halves of a " +
+          "sentence and comes after a whole statement. The が this page is about " +
+          "comes after a single word, so what comes in front of it " +
           "tells you which one you have.",
         examples: [{ jp: "寒いですが、行きます。", mark: "が", en: "It is cold, but I am going.", readings: ["さむ", "い"] }],
       },
@@ -359,8 +380,8 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
   },
   {
     recipes: ["ni", "de"],
-    eyebrow: "に and で",
-    title: "What に and で each do",
+    eyebrow: "に vs で",
+    title: "Telling に and で apart",
     body: [
       {
         text:
@@ -369,6 +390,7 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
           "happens.",
       },
       {
+        for: "ni",
         heading: "What に does",
         text:
           "Put に after a place and you have named one spot. With いる and ある, " +
@@ -376,25 +398,30 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
         examples: [{ jp: "学校にいます。", mark: "に", en: "I am at school.", readings: ["がっこう"] }],
       },
       {
+        for: "ni",
         text: "A verb of going puts に on the place you end up at.",
         examples: [{ jp: "東京に行きます。", mark: "に", en: "I am going to Tokyo.", readings: ["とうきょう", "い"] }],
       },
       {
+        for: "ni",
         text:
           "に goes on a time as well, as long as you could point at it on a " +
           "clock or a calendar.",
         examples: [{ jp: "七時に起きます。", mark: "に", en: "I get up at seven.", readings: ["しちじ", "お"] }],
       },
       {
+        for: "de",
         heading: "What で does",
         text: "Put で after a place and that is where the action happens.",
         examples: [{ jp: "図書館で勉強します。", mark: "で", en: "I study at the library.", readings: ["としょかん", "べんきょう"] }],
       },
       {
+        for: "de",
         text: "で also marks what you used to do something.",
         examples: [{ jp: "ペンで書きます。", mark: "で", en: "I write with a pen.", readings: ["か"] }],
       },
       {
+        for: "de",
         text:
           "How you got somewhere counts as something you used, so a bus or a " +
           "train takes で.",
@@ -412,6 +439,7 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
         ],
       },
       {
+        for: "ni",
         heading: "に and へ",
         text:
           "へ is a third particle for somewhere you are heading. に marks the " +
@@ -486,8 +514,8 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
   },
   {
     recipes: ["made", "made-ni"],
-    eyebrow: "まで and までに",
-    title: "What まで and までに each do",
+    eyebrow: "まで vs までに",
+    title: "Telling まで and までに apart",
     body: [
       {
         text:
@@ -495,6 +523,7 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
           "separates them, so beginners often use the wrong one.",
       },
       {
+        for: "made",
         heading: "What まで does",
         text:
           "Put まで after a time or a place and that is where the stretch ends. " +
@@ -502,16 +531,19 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
         examples: [{ jp: "一時から二時まで勉強します。", mark: ["から", "まで"], en: "I study from one until two.", readings: ["いちじ", "にじ", "べんきょう"] }],
       },
       {
+        for: "made",
         text: "から can be left out when you both know where the stretch began.",
         examples: [{ jp: "駅まで歩きます。", mark: "まで", en: "I walk as far as the station.", readings: ["えき", "ある"] }],
       },
       {
+        for: "made",
         text:
           "まで goes after a verb too, and there it means until that has " +
           "happened.",
         examples: [{ jp: "終わるまで待ちます。", mark: "まで", en: "I will wait until it is over.", readings: ["お", "ま"] }],
       },
       {
+        for: "made-ni",
         heading: "What までに does",
         text:
           "Put までに after a time and you have set a deadline. Any moment " +
@@ -613,7 +645,7 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
         examples: [{ jp: "友達と行きます。", mark: "と", en: "I am going with a friend.", readings: ["ともだち", "い"] }],
       },
       {
-        heading: "The second と",
+        heading: "と meaning \"whenever\"",
         text:
           "There is another と, and it comes after a whole sentence. It says " +
           "that the second half happens every time the first half does.",
@@ -698,8 +730,8 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
   },
   {
     recipes: ["dake", "shika-nai"],
-    eyebrow: "だけ and しか",
-    title: "What だけ and しか each do",
+    eyebrow: "だけ vs しか",
+    title: "Telling だけ and しか apart",
     body: [
       {
         text:
@@ -707,16 +739,19 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
           "the verb in its negative form, and English still says \"only\".",
       },
       {
+        for: "dake",
         heading: "What だけ does",
         text: "Put だけ after a word and that word is all there is.",
         examples: [{ jp: "水だけ飲みます。", mark: "だけ", en: "I drink only water.", readings: ["みず", "の"] }],
       },
       {
+        for: "dake",
         text:
           "だけ goes after a verb as well. There it limits what you are doing.",
         examples: [{ jp: "見るだけです。", mark: "だけ", en: "I am only looking.", readings: ["み"] }],
       },
       {
+        for: "shika-nai",
         heading: "What しか does",
         text:
           "Put しか after a word and put the verb into the negative. 飲みません " +
@@ -806,8 +841,8 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
   },
   {
     recipes: ["ne", "yo"],
-    eyebrow: "ね and よ",
-    title: "What ね and よ each do",
+    eyebrow: "ね vs よ",
+    title: "Telling ね and よ apart",
     body: [
       {
         text:
@@ -815,6 +850,7 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
           "as something the other person did not know.",
       },
       {
+        for: "ne",
         heading: "What ね does",
         text:
           "Put ね on the end and you are asking the other person to agree. " +
@@ -822,11 +858,13 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
         examples: [{ jp: "今日は暑いですね。", mark: "ね", en: "Hot today, don't you think?", readings: ["きょう", "あつ"] }],
       },
       {
+        for: "ne",
         text:
           "ね is also how you check something you are fairly sure of already.",
         examples: [{ jp: "田中さんですね。", mark: "ね", en: "You are Tanaka, right?", readings: ["たなか"] }],
       },
       {
+        for: "yo",
         heading: "What よ does",
         text:
           "Put よ on the end and you are telling the other person something they " +
@@ -834,6 +872,7 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
         examples: [{ jp: "電車が来ますよ。", mark: "よ", en: "The train is coming.", readings: ["でんしゃ", "き"] }],
       },
       {
+        for: "yo",
         text: "An opinion is new to whoever hears it, so an opinion often ends in よ.",
         examples: [{ jp: "もう遅いよ。", mark: "よ", en: "It is late already.", readings: ["おそ"] }],
       },
