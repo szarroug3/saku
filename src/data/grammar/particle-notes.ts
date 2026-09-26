@@ -261,8 +261,8 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
           "猫は好きです is about cats and says nothing about dogs. 猫が好きです " +
           "picks cats out and leaves dogs out.",
         examples: [
-          { jp: "猫は好きです。", mark: "は", en: "I like cats.", readings: ["ねこ", "す"], words: [{ word: "猫", meaning: "cat" }, { word: "好き", meaning: "liked" }] },
-          { jp: "猫が好きです。", mark: "が", en: "Cats are the ones I like.", readings: ["ねこ", "す"], words: [{ word: "猫", meaning: "cat" }, { word: "好き", meaning: "liked" }] },
+          { jp: "猫は好きです。", mark: "は", en: "I like cats.", readings: ["ねこ", "す"], words: [{ word: "猫", meaning: "cat" }, { word: "好き", meaning: "like" }] },
+          { jp: "猫が好きです。", mark: "が", en: "Cats are the ones I like.", readings: ["ねこ", "す"], words: [{ word: "猫", meaning: "cat" }, { word: "好き", meaning: "like" }] },
         ],
       },
       {
