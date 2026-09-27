@@ -2529,3 +2529,27 @@ test("every body a sky draws is inside the panel, at every height the band is dr
     expect(await spilling('[data-sky="tonight"]'), `${picks}, your sky tonight`).toEqual([]);
   }
 });
+
+test("the observatory on a phone scrolls down to Start lesson", async ({ page }) => {
+  // On a phone the Observatory is one column, and the whole of it has to
+  // scroll: the sections, then the sky, the meter and the picks with the
+  // Start button under them. It used to be the two-column grid at every
+  // width, with the sections' column the only thing that scrolled, so the
+  // rail sat past the bottom of the shell where a finger could not reach it.
+  // Scrolled with the wheel rather than scrollIntoView, which scrolls a
+  // clipped box too and so would have passed on the broken page.
+  await page.setViewportSize({ width: 412, height: 915 });
+  await page.goto("/observatory?sample");
+  await expect(page.getByRole("heading", { name: "What would you like to learn next?" })).toBeVisible();
+  const start = page.getByText(/^Start lesson/).last();
+  await page.mouse.move(206, 457);
+  for (let i = 0; i < 12; i++) await page.mouse.wheel(0, 1500);
+  await expect(async () => {
+    const box = await start.boundingBox();
+    expect(box).not.toBeNull();
+    expect(box!.y).toBeGreaterThanOrEqual(0);
+    expect(box!.y + box!.height).toBeLessThanOrEqual(915);
+  }).toPass();
+  // and the heading has stayed put above it, as on every Sky page
+  await expect(page.getByRole("heading", { name: "What would you like to learn next?" })).toBeInViewport();
+});
