@@ -1572,8 +1572,8 @@ test("forgetting an unfinished quiz from Sessions asks first (SAK-444)", async (
   // the row says plainly that this one is still running (Sam, 2026-09-17),
   // on the same Continue button every heading carries, X and all (2026-09-27);
   // the tag is what the row is found by, since the button gives way to the
-  // ask while it is open
-  const row = page.getByRole("listitem").filter({ hasText: "In progress" });
+  // ask while it is open; the lesson the helper's drill left is the other row
+  const row = page.getByRole("listitem").filter({ hasText: "In progress" }).filter({ hasNotText: /Continue your lesson/ });
   await expect(row.getByRole("link", { name: quizRow })).toBeVisible();
   await row.getByRole("button", { name: "Forget this quiz" }).click();
   // the ask is the app's own delete, the verb saying the whole thing, and the
