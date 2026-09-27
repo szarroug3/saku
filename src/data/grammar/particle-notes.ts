@@ -178,9 +178,10 @@ export interface ParticleNote {
   readonly eyebrow: string;
   readonly title: string;
   /** A shared note's one-line meaning, for the tile and the card head of the
-   * item the two particles make together (SAK-491): "まで marks until, までに
-   * marks by". A pair that is also a family uses the family's gloss instead,
-   * so this is written only where there is no family. */
+   * item the two particles make together (SAK-491): "mark the topic and the
+   * subject". Short, the way a single pattern's meaning line is (Sam,
+   * 2026-09-26: "these can be named better"; the only ones "can just say
+   * only"). */
   readonly meaning?: string;
   readonly body: readonly ParticleNotePara[];
   /** The one Read more link, naming the page it drew on. Absent where Tofugu
@@ -197,6 +198,7 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
   {
     recipes: ["wa", "ga"],
     eyebrow: "は vs が",
+    meaning: "mark the topic and the subject",
     title: "Telling は and が apart",
     body: [
       {
@@ -433,6 +435,7 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
   {
     recipes: ["ni", "de"],
     eyebrow: "に vs で",
+    meaning: "mark where something is and where it happens",
     title: "Telling に and で apart",
     body: [
       {
@@ -567,7 +570,7 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
   {
     recipes: ["made", "made-ni"],
     eyebrow: "まで vs までに",
-    meaning: "まで marks until, までに marks by",
+    meaning: "until and by",
     title: "Telling まで and までに apart",
     body: [
       {
@@ -784,7 +787,7 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
   {
     recipes: ["dake", "shika-nai"],
     eyebrow: "だけ vs しか",
-    meaning: "だけ and しか both mean only",
+    meaning: "only",
     title: "Telling だけ and しか apart",
     body: [
       {
@@ -896,7 +899,7 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
   {
     recipes: ["ne", "yo"],
     eyebrow: "ね vs よ",
-    meaning: "ね asks for agreement, よ tells something new",
+    meaning: "ask for agreement and tell something new",
     title: "Telling ね and よ apart",
     body: [
       {

@@ -57,13 +57,13 @@ describe("the particle groups", () => {
     assert.equal(tileOf(patternEntry("wo")), patternEntry("wo"));
   });
 
-  it("say what they mean in the family's gloss, or the line the note writes for a pair with no family", () => {
-    assert.equal(particleGroup(WA_GA)?.english, "は marks the topic, が marks the subject");
-    assert.equal(particleGroup(NI_DE)?.english, "where something is vs where something happens");
-    // Sam, 2026-09-26: the joined lines came out long, so these are written
-    assert.equal(particleGroup("particles:made-made-ni")?.english, "まで marks until, までに marks by");
-    assert.equal(particleGroup("particles:dake-shika-nai")?.english, "だけ and しか both mean only");
-    assert.equal(particleGroup("particles:ne-yo")?.english, "ね asks for agreement, よ tells something new");
+  it("say what they mean in one short written line", () => {
+    // Sam, 2026-09-26: short, like a single pattern's line; "only" for the only ones
+    assert.equal(particleGroup(WA_GA)?.english, "mark the topic and the subject");
+    assert.equal(particleGroup(NI_DE)?.english, "mark where something is and where it happens");
+    assert.equal(particleGroup("particles:made-made-ni")?.english, "until and by");
+    assert.equal(particleGroup("particles:dake-shika-nai")?.english, "only");
+    assert.equal(particleGroup("particles:ne-yo")?.english, "ask for agreement and tell something new");
     for (const g of PARTICLE_GROUPS) assert.ok(!/[\u2013\u2014]/.test(g.english), `${g.glyph}'s meaning line has a dash`);
   });
 });

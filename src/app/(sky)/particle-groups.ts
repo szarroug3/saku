@@ -38,14 +38,15 @@ export interface ParticleGroup {
   english: string;
 }
 
-/** The meaning line: the family's gloss when the two are a family of exactly
- * these two, else the line the note writes for itself. Joining the two
- * particles' own meaning lines came out long ("だけ only, しか only X (nothing
- * but)"), so a pair with no family says it in one authored line instead. */
+/** The meaning line: the line the note writes for itself, short like a
+ * single pattern's ("mark the topic and the subject"); a family's gloss when
+ * the note has none and the two are a family of exactly these two; else the
+ * two patterns' own lines joined, which came out long and is why every shared
+ * note writes one (Sam, 2026-09-26). */
 function meaningOf(recipes: readonly string[], meaning: string | undefined): string {
+  if (meaning) return meaning;
   const family = CLUSTERS.find((c) => c.members.length === recipes.length && recipes.every((r) => c.members.includes(r)));
   if (family) return family.gloss;
-  if (meaning) return meaning;
   return recipes.map((id) => RECIPES.find((x) => x.id === id)?.gloss).filter(Boolean).join(", ");
 }
 

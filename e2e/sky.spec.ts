@@ -2160,7 +2160,7 @@ test("the Sentences row waits on 〜な, and opens with は first (SAK-468)", as
   // it leads to is not drawn yet
   const tiles = sentences.locator("button[aria-pressed]");
   await expect(tiles.first()).toContainText("は vs が");
-  await expect(tiles.first()).toContainText("は marks the topic, が marks the subject");
+  await expect(tiles.first()).toContainText("mark the topic and the subject");
   await expect(tiles.nth(1)).toContainText("marks the direct object");
 
   // は vs が and を bring Simple in as the third tile, before the particles its
