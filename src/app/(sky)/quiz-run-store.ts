@@ -144,6 +144,20 @@ export function reportRun(run: SavedRun | null, signedIn: boolean): void {
   keepRun(run, signedIn);
 }
 
+/** The marks a sitting has made that its slot has not taken yet, by its
+ * picks (SAK-492). What a lesson finds new when it starts is asked of the
+ * server, and the answer can land before or after the lesson's first write
+ * of its place; either way it is held here and folded into the slot by the
+ * next write of that lesson, so no mark is lost to the order they arrive in. */
+const pending = new Map<string, readonly string[]>();
+const keyOf = (picks: readonly string[]) => picks.join(",");
+
+/** The lesson with the marks held for it folded in. */
+function withPending(lesson: SavedLesson | null): SavedLesson | null {
+  const held = lesson && pending.get(keyOf(lesson.picks));
+  return held ? withMarks(lesson, { ...lesson, marked: held }) : lesson;
+}
+
 /** Keep the lesson, or clear it with null. The quiz slot is left as it is.
  *
  * No guard of its own, and it needs none: the lesson reports itself only
@@ -153,37 +167,39 @@ export function reportRun(run: SavedRun | null, signedIn: boolean): void {
  * (a lesson resumed on its last step, drilled without a step).
  *
  * What the sitting has marked rides over from the slot as it stands, when the
- * slot holds the same lesson (SAK-492): every writer builds the lesson from
- * its part alone, and a step or a round written without the marks would lose
- * what forgetting the lesson has to take back. */
+ * slot holds the same lesson, and from what is held for it (SAK-492): every
+ * writer builds the lesson from its part alone, and a step or a round written
+ * without the marks would lose what forgetting the lesson has to take back. */
 export function keepLesson(lesson: SavedLesson | null, signedIn: boolean): void {
   const place = placeAtOpen();
-  keep({ ...place, lesson: withMarks(lesson, place.lesson) }, signedIn);
+  keep({ ...place, lesson: withPending(withMarks(lesson, place.lesson)) }, signedIn);
 }
 
-/** Add facts to what the lesson in the slot has marked, when the slot holds
- * the lesson of these picks (SAK-492). The lesson has written its place by
- * the time a star is opened, since it reports its opening step the moment it
- * mounts, so a slot holding some other lesson means these marks are not this
- * sitting's to keep. */
+/** Add facts to what the lesson of these picks has marked (SAK-492): what it
+ * found new when it started, and what a star opened for the first time
+ * marked. Written into the slot straight away when the slot holds this
+ * lesson, and held for its next write when it does not yet. */
 export function markLesson(picks: readonly string[], facts: readonly string[], signedIn: boolean): void {
+  if (!facts.length) return;
+  const k = keyOf(picks);
+  pending.set(k, [...new Set([...(pending.get(k) ?? []), ...facts])]);
   const lesson = placeAtOpen().lesson;
-  if (!facts.length || !lesson || lesson.picks.join(",") !== picks.join(",")) return;
-  keepLesson({ ...lesson, marked: facts }, signedIn);
+  if (lesson && keyOf(lesson.picks) === k) keepLesson(lesson, signedIn);
 }
 
 /**
  * Let go of something left part way through, for good (SAK-492). The one
- * forget for both places that offer it: the Observatory's X on Continue, and
- * Sessions' "Forget it forever" on an Unfinished row.
+ * forget for every place that offers it: the X on the Continue button, on
+ * the Planetarium, the Observatory and a Sessions row alike.
  *
  * A quiz only clears its slot. A lesson clears its slot and then takes back
- * what the sitting marked, for each fact nobody has been quizzed on since, so
- * the Observatory offers those items again. The marks are read from the entry
- * the page was showing and from the slot as it stands, since either can hold
- * the newer list. The promise settles once the account has the cleared place
- * too, so a page that reads the account after this reads it without the
- * place.
+ * everything the sitting marked, so its items are brand new again and the
+ * Observatory offers them as if the lesson had never been started (Sam,
+ * 2026-09-27). The marks are read from the entry the page was showing, from
+ * the slot as it stands and from what is held for it, since any of them can
+ * hold the newer list. The promise settles once the account has the cleared
+ * place too, so a page that reads the account after this reads it without
+ * the place.
  */
 export async function forgetPlace(entry: PlaceEntry, signedIn: boolean): Promise<void> {
   if (entry.kind === "quiz") {
@@ -191,7 +207,8 @@ export async function forgetPlace(entry: PlaceEntry, signedIn: boolean): Promise
     await queue;
     return;
   }
-  const marked = withMarks(entry.lesson, placeAtOpen().lesson)?.marked ?? [];
+  const marked = withPending(withMarks(entry.lesson, placeAtOpen().lesson))?.marked ?? [];
+  pending.delete(keyOf(entry.lesson.picks));
   keepLesson(null, signedIn);
   await queue;
   await unlearnFacts(marked);

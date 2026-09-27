@@ -44,7 +44,7 @@ import { HearButton } from "./hear-button";
 import { SkyLesson, type SkyLessonData } from "@/sky/components/sky-lesson";
 import { referencePages, unseenPages } from "@/sky/lib/lesson";
 import { lessonSplit, OLD_VIEW_KEY } from "@/sky/lib/lesson-split";
-import { hasPlace, lessonAt, lessonFor, NO_PLACE, withMarks, type SavedPlace } from "@/sky/lib/place";
+import { lessonAt, lessonFor, NO_PLACE, placeToUse, withMarks, type SavedPlace } from "@/sky/lib/place";
 
 import { loadLesson } from "./actions";
 import { skyHref } from "./hrefs";
@@ -54,7 +54,7 @@ import { PitchMark } from "./pitch-reading";
 import { keepLesson, markLesson, usePlaceAtOpen } from "./quiz-run-store";
 import { readStored, useStored, writeStored } from "./stored";
 import { WrittenBlock } from "./written-block";
-import { seeId } from "./writes";
+import { freshFactsOf, seeId } from "./writes";
 
 /** How much of the lesson's left column the sky was last left with (SAK-471).
  * This browser's, not this account's: it is how a learner likes to read on the
@@ -72,7 +72,7 @@ export function LessonClient({ sample, showcase, signedIn, initial, picks, accou
   // resumes from underneath the learner. The pretend learner and the showcase
   // keep nothing, the way they record nothing.
   const local = usePlaceAtOpen();
-  const kept = sample || showcase || !local ? null : lessonFor(hasPlace(local) ? local : accountPlace, picks);
+  const kept = sample || showcase || !local ? null : lessonFor(placeToUse(local, accountPlace), picks);
   // the star to open on, which only the steps know: a sitting left in a round
   // or a break has no step of its own, so walking back here opens the lesson
   // where it would open anyway
@@ -84,9 +84,19 @@ export function LessonClient({ sample, showcase, signedIn, initial, picks, accou
     },
     [sample, showcase, picks, signedIn, kept],
   );
+  // What the lesson finds new when it starts is kept on the sitting, so the X
+  // on Continue can make it brand new again whatever the lesson does to it in
+  // the meantime (Sam, 2026-09-27: "as if the lesson had never been started").
+  // Asked once this browser has said whether a sitting was already kept, and
+  // only when none was: a sitting picked up again already holds its marks.
+  useEffect(() => {
+    if (sample || showcase || !local || kept) return;
+    let live = true;
+    void freshFactsOf(picks).then((facts) => { if (live) markLesson(picks, facts, signedIn); });
+    return () => { live = false; };
+  }, [sample, showcase, local, kept, picks, signedIn]);
   // A star opened for the first time marks its facts seen, and the facts that
-  // mark was the first one on are kept on the sitting, so forgetting the
-  // lesson can take them back (SAK-492).
+  // mark was the first one on join what the sitting keeps (SAK-492).
   const onOpen = useCallback(
     async (id: string) => {
       const first = await seeId(id);

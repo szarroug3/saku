@@ -87,11 +87,11 @@ export interface SavedLesson {
   part: LessonPart;
   /** When the lesson last moved. */
   leftAt: number;
-  /** The facts this sitting marked as met for the first time (SAK-492):
-   * opening a star marks its facts seen, and for these that mark was the
-   * first one, so it also stamped when they were learned. Forgetting the
-   * lesson takes back exactly these, for each one nobody has been quizzed on
-   * since. Left out while there are none. */
+  /** The facts this sitting is the first to touch (SAK-492): what the
+   * lesson found new when it started, and what a star opened for the first
+   * time marked. Forgetting the lesson makes exactly these brand new again,
+   * whatever the sitting did to them since (Sam, 2026-09-27: "as if the
+   * lesson had never been started"). Left out while there are none. */
   marked?: readonly string[];
 }
 
@@ -209,25 +209,34 @@ export function lessonAt(picks: readonly string[], part: LessonPart, now: number
  */
 export function withMarks(next: SavedLesson | null, ...kept: readonly (SavedLesson | null | undefined)[]): SavedLesson | null {
   if (!next) return null;
-  const same = kept.filter((k): k is SavedLesson => !!k && k.picks.join(",") === next.picks.join(","));
+  const same = kept.filter((k): k is SavedLesson => !!k && samePicks(k.picks, next.picks));
   const marked = [...new Set([...(next.marked ?? []), ...same.flatMap((k) => k.marked ?? [])])];
   return marked.length ? { ...next, marked } : next;
 }
 
-/** The lesson slot when it holds THIS lesson, else null.
- *
- * The same picks in the same order, which is how a lesson recognizes its own
- * place, the way a run recognizes its own source. */
-export function lessonFor(place: SavedPlace, picks: readonly string[]): SavedLesson | null {
-  const kept = place.lesson;
-  return kept && kept.picks.join(",") === picks.join(",") ? kept : null;
+/** Whether two lists of picks are the same lesson: the same ids in the same
+ * order, which is how a lesson recognizes its own place, the way a run
+ * recognizes its own source. */
+export function samePicks(a: readonly string[], b: readonly string[]): boolean {
+  return a.length === b.length && a.every((id, i) => id === b[i]);
 }
 
-/** Whether anything at all was left part way through. What a page asks
- * before it decides between the browser's place and the account's: the
- * browser's wins whole when it holds anything, the way SAK-404 had it. */
+/** The lesson slot when it holds THIS lesson, else null. */
+export function lessonFor(place: SavedPlace, picks: readonly string[]): SavedLesson | null {
+  const kept = place.lesson;
+  return kept && samePicks(kept.picks, picks) ? kept : null;
+}
+
+/** Whether anything at all was left part way through. */
 export function hasPlace(place: SavedPlace): boolean {
   return !!(place.quiz || place.lesson);
+}
+
+/** The place a page reads, between the browser's and the account's: the
+ * browser's wins whole when it holds anything, the way SAK-404 had it, and
+ * the account's stands in for a learner who left off on another machine. */
+export function placeToUse(local: SavedPlace, account: SavedPlace): SavedPlace {
+  return hasPlace(local) ? local : account;
 }
 
 /** One thing left part way through, whichever kind it is. */

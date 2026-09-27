@@ -15,7 +15,7 @@ import { useCallback, useMemo, useState } from "react";
 import type { StarLook } from "@/sky/components/constellation";
 import { DiscoveryPanel, discoveryTotals, type DiscoveryRow } from "@/sky/components/discovery-panel";
 import { MixUpsPanel, type MixUp } from "@/sky/components/mix-ups-panel";
-import { ContinueButton } from "@/sky/components/quiz-resume";
+import { ContinueButton, type Resume } from "@/sky/components/quiz-resume";
 import { SkyField } from "@/sky/components/sky-field";
 import { BODY_ORDER, bodyOfItem } from "@/sky/lib/constellation";
 import { Eyebrow } from "@/sky/components/sky-card";
@@ -29,7 +29,6 @@ import type { CoverageCounts } from "@/sky/lib/coverage";
 import { STANDING_ORDER } from "@/sky/lib/standing";
 import { buildGraph } from "@/sky/lib/graph";
 import { skyStars, tallyStandings } from "@/sky/lib/sky-scene";
-import type { PlaceEntry } from "@/sky/lib/place";
 import type { SkyItem } from "@/sky/lib/types";
 
 /** Everything the home needs, plain data, from whatever adapter the route uses. */
@@ -60,7 +59,8 @@ interface SkyHomeProps {
    * only it knows what a Sky URL looks like (SAK-367). Absent when there is
    * nothing to come back to, which is the usual case, and then the heading is
    * the heading. */
-  resume?: { entry: PlaceEntry; href: string };
+  /** What was left part way through, offered back beside the heading (SAK-404, SAK-444). */
+  resume?: Resume;
   /** How tall the home is: one page, never scrolling. The sky fills what
    * the heading and the details leave, and shrinks when the details open.
    * A CSS length, passed on to the page frame, which has the default. */
@@ -119,7 +119,7 @@ export function SkyHome({ data, observatoryHref = "/observatory", onClearMixUp, 
   }, [data.items, groups]);
 
   return (
-    <SkyPageShell eyebrow="Planetarium" title="What have you discovered?" aside={resume && <ContinueButton entry={resume.entry} href={resume.href} />} height={height}>
+    <SkyPageShell eyebrow="Planetarium" title="What have you discovered?" aside={resume && <ContinueButton {...resume} />} height={height}>
       {/* the box is the wash's color with none of its stars (.sky-wash-clear),
           so the learner's own stars are the only stars in it: with one or two
           discovered they were lost among the background's (Sam, 2026-09-06) */}

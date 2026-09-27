@@ -20,7 +20,7 @@ import { SkyPractice } from "@/sky/components/sky-practice";
 import { SkyQuiz } from "@/sky/components/sky-quiz";
 import { EMPTY_RECIPE, recipeKey, sameRecipe, type PracticeCollection, type PracticePreview, type Recipe, type SavedRecipe } from "@/sky/lib/practice";
 import type { QuizAnswer, QuizCard } from "@/sky/lib/quiz";
-import { hasPlace, NO_PLACE, type SavedPlace } from "@/sky/lib/place";
+import { NO_PLACE, placeToUse, type SavedPlace } from "@/sky/lib/place";
 import { orderDeck, resumeAt, runToKeep, sameSource, trimRun, type RunSource, type SavedRun } from "@/sky/lib/quiz-run";
 
 import { PitchMark } from "./pitch-reading";
@@ -82,7 +82,7 @@ export function PracticeRunClient({ initial, named, sample, signedIn, recipe, ac
   const { cfg, update } = useQuizConfig();
   const source = useMemo<RunSource>(() => ({ ...(named.length ? { cards: named } : {}), recipe: recipeKey(recipe) }), [named, recipe]);
   const local = usePlaceAtOpen();
-  const savedRun = sample || !local ? null : (hasPlace(local) ? local : accountPlace).quiz;
+  const savedRun = sample || !local ? null : placeToUse(local, accountPlace).quiz;
   const [replaced, setReplaced] = useState(false);
   const clash = savedRun && !sameSource(savedRun.from, source) ? savedRun : null;
   const resume = clash ? null : savedRun;

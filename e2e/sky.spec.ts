@@ -1404,7 +1404,7 @@ async function unfinishedQuiz(page: Page): Promise<string> {
   const total = (await count.innerText()).split(" of ")[1];
   await missCards(page, 1);
   await expect(count).toHaveText(`2 of ${total}`);
-  return `Quiz · 1 of ${total}`;
+  return `Continue your quiz (1 of ${total})`;
 }
 
 test("a visitor's drill is where they left it after a reload", async ({ page }) => {
@@ -1562,26 +1562,29 @@ test("an unfinished quiz does not get in the way of a lesson (SAK-444)", async (
   await expect(page.getByRole("heading", { name: "Unfinished" })).toBeVisible();
   const row = page.getByRole("listitem").filter({ hasText: quizRow });
   await expect(row).toBeVisible();
-  await row.getByRole("link", { name: "Continue", exact: true }).click();
+  await row.getByRole("link", { name: quizRow }).click();
   await expect(page.getByText(/^\d+ of \d+$/)).toHaveText(/^2 of \d+$/);
 });
 
 test("forgetting an unfinished quiz from Sessions asks first (SAK-444)", async ({ page }) => {
   const quizRow = await unfinishedQuiz(page);
   await page.goto("/sessions");
-  const row = page.getByRole("listitem").filter({ hasText: quizRow });
-  // the row says plainly that this one is still running (Sam, 2026-09-17)
-  await expect(row.getByText("In progress")).toBeVisible();
-  await row.getByRole("button", { name: "Forget", exact: true }).click();
+  // the row says plainly that this one is still running (Sam, 2026-09-17),
+  // on the same Continue button every heading carries, X and all (2026-09-27);
+  // the tag is what the row is found by, since the button gives way to the
+  // ask while it is open
+  const row = page.getByRole("listitem").filter({ hasText: "In progress" });
+  await expect(row.getByRole("link", { name: quizRow })).toBeVisible();
+  await row.getByRole("button", { name: "Forget this quiz" }).click();
   // the ask is the app's own delete, the verb saying the whole thing, and the
   // row still says the quiz is running while it is open
   await expect(row.getByRole("button", { name: "Forget it forever" })).toBeVisible();
   await expect(row.getByText("In progress")).toBeVisible();
   // backing out leaves the quiz where it was
   await row.getByRole("button", { name: "Keep it" }).click();
-  await expect(row.getByRole("link", { name: "Continue", exact: true })).toBeVisible();
+  await expect(row.getByRole("link", { name: quizRow })).toBeVisible();
   // and going through with it takes the row away
-  await row.getByRole("button", { name: "Forget", exact: true }).click();
+  await row.getByRole("button", { name: "Forget this quiz" }).click();
   await row.getByRole("button", { name: "Forget it forever" }).click();
   await expect(page.getByText(quizRow)).toHaveCount(0);
   await page.goto("/");
@@ -1616,6 +1619,7 @@ test("the X on Continue forgets the lesson, and what it marked is offered again 
   await start.click();
   // two patterns, so the second is a step the learner opens (the first is
   // open when the lesson is, and it is opening a step that marks it)
+  const first = (await tiles.nth(0).innerText()).split("\n")[0];
   const glyph = (await tiles.nth(1).innerText()).split("\n")[0];
   const item = tiles.filter({ hasText: glyph });
   await expect(item).toHaveCount(1);
@@ -1654,6 +1658,9 @@ test("the X on Continue forgets the lesson, and what it marked is offered again 
   await expect(page.getByRole("link", { name: /^Continue your/ })).toHaveCount(0);
   await expect.poll(() => page.evaluate(() => window.localStorage.getItem("sky:quiz:run"))).toBe(null);
   await rowHolds(1);
+  // and so is the first, which the lesson opened on: everything the lesson
+  // marked is brand new again, as if it had never been started (2026-09-27)
+  await expect(tiles.filter({ hasText: first })).toHaveCount(1);
   // and it stays forgotten
   await page.reload();
   await rowHolds(1);
@@ -2552,4 +2559,19 @@ test("the observatory on a phone scrolls down to Start lesson", async ({ page })
   }).toPass();
   // and the heading has stayed put above it, as on every Sky page
   await expect(page.getByRole("heading", { name: "What would you like to learn next?" })).toBeInViewport();
+});
+
+test("on a phone the atlas panel has its close and no widen button", async ({ page }) => {
+  // Sam, 2026-09-27: "The expand/contract button in the atlas here doesn't
+  // do anything in mobile which makes sense but it shouldn't appear." Below
+  // md the open panel already has the whole width, so there is nothing for
+  // the button to widen.
+  await page.setViewportSize({ width: 412, height: 915 });
+  await page.goto(`/atlas?sample&entry=${encodeURIComponent("kanji:日")}`);
+  await expect(page.getByRole("heading", { name: "What would you like to know?" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Close" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Widen this panel" })).toHaveCount(0);
+  // and on a desktop it is there
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await expect(page.getByRole("button", { name: "Widen this panel" })).toBeVisible();
 });

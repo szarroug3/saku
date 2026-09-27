@@ -54,6 +54,28 @@ import { groupOfPart, PARTICLE_GROUPS, particleGroup, tileOf, type ParticleGroup
 /** How many of a long section to offer; the page lays out fewer. */
 const SHOW = 24;
 
+/** The library entry of a curriculum word, by its written form. */
+const wordEntry = (keb: string): LibEntry | undefined => { const id = entryForGlyph(VOCAB_SUBJECT, keb); return id ? libEntry(id) : undefined; };
+
+/** A library entry by any id the sky holds, or nothing: the one lookup every
+ * pick, part and group goes through here. */
+const entryOf = (id: string): LibEntry | undefined => libEntry(id as Parameters<typeof libEntry>[0]);
+
+/** What a lookup found, for a `filter` over lookups that can miss. A
+ * declaration rather than an arrow, since the copy checks read this file as
+ * TSX and would take an arrow's `<T>` for a tag. */
+function present<T>(x: T | undefined): x is T {
+  return !!x;
+}
+
+/** The entries behind a particle group's parts: all of them, or nothing when
+ * the library has dropped one, since a group with a part missing cannot be
+ * offered, taught or drawn as the group. */
+function partsOf(g: ParticleGroup): LibEntry[] | undefined {
+  const parts = g.parts.map(entryOf).filter(present);
+  return parts.length === g.parts.length ? parts : undefined;
+}
+
 /** The library entry of every bare particle, so a grammar item can be given
  * the flag the sky draws a moon from. The recipe ids are the Library's own
  * particle section, read rather than listed again here (SAK-465). */
@@ -231,8 +253,7 @@ function picker(sky: Pick<SkyItems, "items" | "add">, history: HistoryFile, now:
     items.set(entry.id, item);
     return item;
   };
-  const wordEntry = (keb: string): LibEntry | undefined => { const id = entryForGlyph(VOCAB_SUBJECT, keb); return id ? libEntry(id) : undefined; };
-  const kanjiIn = (text: string): string[] => [...text].filter((c) => kanjiRow(c)).map((c) => componentEntry(c)).filter((e): e is LibEntry => !!e).map((e) => { add(e); return e.id; });
+  const kanjiIn = (text: string): string[] => [...text].filter((c) => kanjiRow(c)).map((c) => componentEntry(c)).filter(present).map((e) => { add(e); return e.id; });
 
   // a verb pair: attached to the plain verb, with both members' kanji
   const offerPair = (p: VerbPair, entry: LibEntry): SkyItem => {
@@ -250,7 +271,7 @@ function picker(sky: Pick<SkyItems, "items" | "add">, history: HistoryFile, now:
 
   // a keigo set: attached to the plain verb, with the polite words' kanji
   const offerKeigo = (set: KeigoSet, entry: LibEntry): SkyItem => {
-    const head = set.gate.map(wordEntry).find((e): e is LibEntry => !!e);
+    const head = set.gate.map(wordEntry).find(present);
     if (head) add(head);
     return offer(entry, "keigo", { english: set.meaning, headword: head?.id, components: [...new Set(set.words.flatMap((w) => kanjiIn(w.word)))] });
   };
@@ -260,8 +281,8 @@ function picker(sky: Pick<SkyItems, "items" | "add">, history: HistoryFile, now:
   // star, the tile and the step, and its patterns are its parts. It costs its
   // patterns and nothing of its own, and it stands where they stand.
   const offerGroup = (g: ParticleGroup): SkyItem | undefined => {
-    const parts = g.parts.map((p) => libEntry(p as Parameters<typeof libEntry>[0])).filter((e): e is LibEntry => !!e);
-    if (parts.length !== g.parts.length) return undefined;
+    const parts = partsOf(g);
+    if (!parts) return undefined;
     for (const p of parts) offerPick(p.id);
     const item: SkyItem = {
       id: g.id, kind: "grammar", glyph: g.glyph, english: g.english,
@@ -280,7 +301,7 @@ function picker(sky: Pick<SkyItems, "items" | "add">, history: HistoryFile, now:
     if (have) return have;
     const group = particleGroup(id);
     if (group) return offerGroup(group);
-    const entry = libEntry(id as Parameters<typeof libEntry>[0]);
+    const entry = entryOf(id);
     if (!entry) return undefined;
     switch (entry.kind) {
       case COUNTER_KIND: return offer(entry, "counter");
@@ -358,14 +379,13 @@ export function offerings(history: HistoryFile, now = Date.now()): Offerings {
   const learned = new Set(met);
   const sections: ObservatorySection[] = [];
   const { offer, offerPair, offerKeigo, offerPick } = picker(sky, history, now);
-  const wordEntry = (keb: string): LibEntry | undefined => { const id = entryForGlyph(VOCAB_SUBJECT, keb); return id ? libEntry(id) : undefined; };
 
   // a particle group is learned when both of its patterns are (SAK-491), so a
   // sentence type that needs it is open and the group itself is off the page;
   // a pattern of it already met is learned too, so the group costs only the
   // other one
   for (const g of PARTICLE_GROUPS) {
-    const parts = g.parts.map((p) => libEntry(p as Parameters<typeof libEntry>[0])).filter((e): e is LibEntry => !!e);
+    const parts = g.parts.map(entryOf).filter(present);
     for (const p of parts) if (standingFor(p, history, now).met) learned.add(p.id);
     if (parts.length === g.parts.length && groupStandingFor(parts, history, now).met) learned.add(g.id);
   }
@@ -379,7 +399,7 @@ export function offerings(history: HistoryFile, now = Date.now()): Offerings {
   const hiraganaRows: string[] = [];
   for (const set of SETS) {
     for (const section of set.sections) {
-      const kana = section.chars.map((ch) => libEntry(kanaEntry(ch.c))).filter((e): e is LibEntry => !!e);
+      const kana = section.chars.map((ch) => libEntry(kanaEntry(ch.c))).filter(present);
       for (const e of kana) add(e);
       const id = `kana-row:${section.id}`;
       const allMet = kana.every((e) => met.has(e.id));
@@ -407,14 +427,14 @@ export function offerings(history: HistoryFile, now = Date.now()): Offerings {
   const afterKana = kanaMet < kanaTotal;
 
   // words: the curriculum's order, next ones first
-  const allWords = CURRICULUM_KEBS_ORDERED.map(wordEntry).filter((e): e is LibEntry => !!e);
+  const allWords = CURRICULUM_KEBS_ORDERED.map(wordEntry).filter(present);
   const words = allWords.filter((e) => !standingFor(e, history, now).met);
   sections.push({ id: "words", title: "Words", ...COPY.words, items: words.slice(0, SHOW).map((e) => offer(e, "word").id), shut: afterKana, started: words.length < allWords.length, complete: words.length === 0 });
 
   // counting: the track's own order. The native numbers are one rule, not
   // ten picks (Sam, 2026-09-05): a pick with the ten forms under it
-  const allCounting = COUNTER_CURRICULUM.map((f) => libEntry(counterEntry(f))).filter((e): e is LibEntry => !!e);
-  const tsu = COUNTER_CURRICULUM.filter((f) => f.counter === "つ").map((f) => libEntry(counterEntry(f))).filter((e): e is LibEntry => !!e);
+  const allCounting = COUNTER_CURRICULUM.map((f) => libEntry(counterEntry(f))).filter(present);
+  const tsu = COUNTER_CURRICULUM.filter((f) => f.counter === "つ").map((f) => libEntry(counterEntry(f))).filter(present);
   for (const e of tsu) offer(e, "counter");
   items.set(TSU_RULE, { id: TSU_RULE, kind: "counter", glyph: "〜つ", english: "Native numbers", standing: tsu.every((e) => met.has(e.id)) ? "claimed" : "not-seen", components: tsu.map((e) => e.id), listsParts: true });
   const counting = allCounting.filter((e) => !standingFor(e, history, now).met);
@@ -565,7 +585,7 @@ export function beyondWords(history: HistoryFile, now = Date.now()): { items: Sk
       const group = groupOfPart(entry.id);
       if (group) {
         if (met.includes(group.id) || firmament.includes(group.id) || !o.offerPick(group.id)) continue;
-        const parts = group.parts.map((p) => libEntry(p as Parameters<typeof libEntry>[0])).filter((e): e is LibEntry => !!e);
+        const parts = group.parts.map(entryOf).filter(present);
         (parts.some((e) => standingFor(e, history, now).met) ? met : firmament).push(group.id);
         continue;
       }
@@ -589,7 +609,7 @@ export function pickFacts(ids: readonly string[]): FactId[] {
   for (const id of ids) {
     const group = particleGroup(id);
     if (group) {
-      for (const p of group.parts) { const e = libEntry(p as Parameters<typeof libEntry>[0]); if (e) out.push(...knownFactsOf(e)); }
+      for (const p of group.parts) { const e = entryOf(p); if (e) out.push(...knownFactsOf(e)); }
       continue;
     }
     if (id === TSU_RULE) {
@@ -602,7 +622,7 @@ export function pickFacts(ids: readonly string[]): FactId[] {
       for (const ch of section?.chars ?? []) { const e = libEntry(kanaEntry(ch.c)); if (e) out.push(...knownFactsOf(e)); }
       continue;
     }
-    const entry = libEntry(id as Parameters<typeof libEntry>[0]);
+    const entry = entryOf(id);
     if (entry) out.push(...knownFactsOf(entry));
   }
   return out;

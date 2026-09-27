@@ -6,6 +6,7 @@
 // so the copy on screen follows. The server only computes what a write
 // needs (see actions.ts).
 
+import { unmetFacts } from "@/lib/history-ops";
 import { postClaim, postClearMixup, postSeen, postSession, postUnlearn } from "@/lib/progress-fetch";
 import { loadLocalHistory } from "@/lib/store/local-progress";
 import type { QuizAnswer } from "@/sky/lib/quiz";
@@ -53,31 +54,37 @@ export async function unclaimIds(ids: readonly string[]): Promise<void> {
 }
 
 /**
+ * What a lesson finds new when it starts: the facts of its picks the learner
+ * has not met (SAK-492). The sitting keeps them, so forgetting the lesson
+ * makes them brand new again whatever the lesson did to them in the meantime
+ * (Sam, 2026-09-27: "as if the lesson had never been started"). The account
+ * answers for a signed-in learner; for a visitor the server has nothing to
+ * read, and this browser's history is asked instead.
+ */
+export async function freshFactsOf(picks: readonly string[]): Promise<FactId[]> {
+  const { facts, fresh } = await factsToSee(picks);
+  return fresh ?? unmetFacts(loadLocalHistory(), facts);
+}
+
+/**
  * A star opened in a lesson: its facts marked seen, so it is in rotation.
  *
- * AND WHICH OF THEM THIS WAS THE FIRST MARK ON (SAK-492). The answer is the
- * facts that had no `learnedAt` before the write, since the write is what
- * stamps it. The lesson keeps them on its sitting, so forgetting the lesson
- * can take back what it marked and nothing an earlier lesson did. The account
- * answers for a signed-in learner; for a visitor the server has nothing to
- * read, and this browser's history is asked instead, before the write lands in
- * it.
+ * AND WHICH OF THEM THIS WAS THE FIRST MARK ON (SAK-492): the facts not met
+ * before the write, asked the way `freshFactsOf` asks, before the write lands.
+ * The lesson keeps them on its sitting beside what it found new at the start,
+ * so forgetting the lesson can take back what it marked and nothing an earlier
+ * lesson did.
  */
 export async function seeId(id: string): Promise<FactId[]> {
   const { facts, fresh } = await factsToSee([id]);
   if (!facts.length) return [];
-  const first = fresh ?? unmet(facts, loadLocalHistory().learnedAt);
+  const first = fresh ?? unmetFacts(loadLocalHistory(), facts);
   await postSeen(facts);
   return first;
 }
 
-/** The facts with no `learnedAt` stamp in this history. */
-function unmet(facts: readonly FactId[], learnedAt: Partial<Record<FactId, number>> = {}): FactId[] {
-  return facts.filter((f) => learnedAt[f] == null);
-}
-
-/** A forgotten lesson's marks taken back, for the facts it marked first and
- * nobody has been quizzed on since (SAK-492). */
+/** A forgotten lesson's marks taken back, so its facts are brand new again
+ * (SAK-492): what it found new when it started and what it marked first. */
 export async function unlearnFacts(facts: readonly string[]): Promise<void> {
   if (facts.length) await postUnlearn(facts as FactId[]);
 }

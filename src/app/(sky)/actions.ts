@@ -23,6 +23,7 @@ import { buildSessionRecord } from "@/lib/session-record";
 import { loadSettings } from "@/lib/settings";
 import { readSessionRow, writeSessionRow } from "@/lib/store/supabase-store";
 import { shuffleDeck, type QuizAnswer, type QuizCard } from "@/sky/lib/quiz";
+import { unmetFacts } from "@/lib/history-ops";
 import { NO_PLACE, placeDoc, readPlace, type SavedPlace } from "@/sky/lib/place";
 import type { FactId } from "@/types/facts";
 import type { SessionStats } from "@/types/sky";
@@ -220,10 +221,11 @@ export async function factsOfPicks(ids: readonly string[]): Promise<FactId[]> {
 }
 
 /**
- * A star's facts, for a lesson opening it, and which of them this account has
- * never met: no `learnedAt` stamp, so the "seen" about to be written is what
- * stamps it (SAK-492). The lesson keeps those on its sitting, and forgetting
- * the lesson takes back exactly them and nothing an earlier lesson marked.
+ * Some picks' facts, for a lesson starting on them or opening one of them,
+ * and which of those this account has not met: not answered, claimed or
+ * opened in a lesson before (`unmetFacts`, the Sky's own reading of met). The
+ * lesson keeps those on its sitting, and forgetting the lesson makes exactly
+ * them brand new again, nothing an earlier lesson marked (SAK-492).
  *
  * Asked BEFORE the write, and asked here, because a signed-in learner's
  * history is on the server and the page holds none of it. `fresh` is null
@@ -233,8 +235,7 @@ export async function factsOfPicks(ids: readonly string[]): Promise<FactId[]> {
 export async function factsToSee(ids: readonly string[]): Promise<{ facts: FactId[]; fresh: FactId[] | null }> {
   const facts = await factsOfPicks(ids);
   if (!facts.length || !(await currentUserId())) return { facts, fresh: null };
-  const learned = (await learnerHistory()).learnedAt ?? {};
-  return { facts, fresh: facts.filter((f) => learned[f] == null) };
+  return { facts, fresh: unmetFacts(await learnerHistory(), facts) };
 }
 
 /** The Quiz's answers as session records, the app's own way: a drill

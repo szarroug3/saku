@@ -30,7 +30,9 @@ import {
   applyUnlearn,
   deriveLearnedAt,
   emptyHistory,
+  isFactMet,
   normalizeHistoryShell,
+  unmetFacts,
   withBackfilledLearnedAt,
 } from "@/lib/history-ops";
 import { isFactFresh } from "@/lib/content/unit-scheduler-core";
@@ -458,37 +460,41 @@ function quizOn(fact: FactId, ts: number): QuizSessionRecord {
   };
 }
 
-test("forgetting a lesson clears what it marked that nobody has quizzed since, and leaves the rest", () => {
+test("forgetting a lesson makes everything it marked brand new, quizzed in its rounds or not, and leaves the rest", () => {
   const earlier = fid("pattern-wa");
   const a = fid("pattern-wo");
   const b = fid("pattern-ni");
   // an earlier lesson marked は, and nobody quizzed it
   let hist = applySeen(emptyHistory(), [earlier], 1_000);
   // this sitting opens two stars, and opens は again on the way
-  const marked: FactId[] = [];
-  for (const [facts, ts] of [[[a], 2_000], [[b, earlier], 3_000]] as const) {
-    const step = openStar(hist, [...facts], ts);
-    hist = step.hist;
-    marked.push(...step.first);
-  }
-  assert.deepEqual(marked, [a, b], "は was marked by the earlier lesson, not this one");
-  // に is quizzed after the lesson marked it
+  const one = openStar(hist, [a, earlier], 2_000);
+  const two = openStar(one.hist, [b], 3_000);
+  hist = two.hist;
+  const marked = [...one.first, ...two.first];
+  assert.deepEqual(marked, [a, b], "は was met before, so it is not the sitting's to keep");
+  // に is drilled in the lesson's own round
   hist = applySession(hist, quizOn(b, 4_000));
+  assert.ok(hist.facts[b], "and has an aggregate for it");
 
   const after = applyUnlearn(hist, marked);
-  assert.equal(after.seen?.[a], undefined, "を: no quiz on it, so its seen mark goes");
+  assert.equal(after.seen?.[a], undefined, "を: its seen mark goes");
   assert.equal(after.learnedAt?.[a], undefined, "and so does its learnedAt stamp");
-  assert.equal(after.seen?.[b], 3_000, "に was quizzed since, so its marks stay");
-  assert.equal(after.learnedAt?.[b], 3_000);
-  assert.equal(after.seen?.[earlier], 3_000, "は is the earlier lesson's, and is not touched");
+  assert.equal(after.seen?.[b], undefined, "に: quizzed in the round, and it goes just the same (2026-09-27)");
+  assert.equal(after.learnedAt?.[b], undefined);
+  assert.equal(after.facts[b], undefined, "with its aggregate");
+  assert.equal(after.seen?.[earlier], 2_000, "は is the earlier lesson's, and is not touched");
   assert.equal(after.learnedAt?.[earlier], 1_000);
-  // and a read of the stored document does not stamp を again from anything
-  assert.equal(normalizeHistoryShell(after).learnedAt?.[a], undefined);
+  // the session stays, as what happened; it stamps に again on a read, and
+  // that stamp is not what makes a fact met
+  assert.equal(after.sessions.length, 1);
+  assert.equal(isFactMet(normalizeHistoryShell(after), b), false);
+  assert.equal(isFactMet(normalizeHistoryShell(after), a), false);
+  assert.equal(isFactMet(normalizeHistoryShell(after), earlier), true);
   assert.notEqual(after, hist, "a clone");
   assert.equal(hist.seen?.[a], 2_000, "input untouched");
 });
 
-test("forgetting a lesson leaves a claimed fact alone, and a fact the aggregate holds", () => {
+test("forgetting a lesson leaves a claimed fact alone", () => {
   const claimed = fid("hira-wa");
   const folded = fid("hira-wo");
   let hist = applySeen(emptyHistory(), [claimed, folded], 2_000);
@@ -496,8 +502,25 @@ test("forgetting a lesson leaves a claimed fact alone, and a fact the aggregate 
   // an aggregate with no stored session behind it: one the 200 cap evicted
   hist = { ...hist, facts: { ...hist.facts, [folded]: applySession(emptyHistory(), quizOn(folded, 2_500)).facts[folded] } };
   const after = applyUnlearn(hist, [claimed, folded]);
-  assert.equal(after.seen?.[claimed], 2_000);
+  assert.equal(after.seen?.[claimed], 2_000, "a claim is the learner's word, and forgetting a lesson is not the opposite");
   assert.equal(after.learnedAt?.[claimed], 2_000);
-  assert.equal(after.seen?.[folded], 2_000);
-  assert.equal(after.learnedAt?.[folded], 2_000);
+  assert.equal(after.claims?.[claimed], 3_000);
+  assert.equal(after.seen?.[folded], undefined, "the folded one is reset, aggregate and all");
+  assert.equal(after.facts[folded], undefined);
+});
+
+// The Sky's reading of met, in one place for the write that asks which facts
+// a lesson finds new and the page that shows what is met (learner.ts).
+test("isFactMet reads an answer, a claim or a lesson's seen mark, and nothing else", () => {
+  const answered = fid("k-a"), claimed = fid("k-i"), opened = fid("k-u"), stamped = fid("k-e"), never = fid("k-o");
+  let hist = applySession(emptyHistory(), quizOn(answered, 1_000));
+  hist = applyClaims(hist, [claimed], 2_000);
+  hist = applySeen(hist, [opened], 3_000);
+  hist = { ...hist, learnedAt: { ...hist.learnedAt, [stamped]: 4_000 } };
+  assert.equal(isFactMet(hist, answered), true);
+  assert.equal(isFactMet(hist, claimed), true);
+  assert.equal(isFactMet(hist, opened), true);
+  assert.equal(isFactMet(hist, stamped), false, "a stamp alone is derived, not a meeting");
+  assert.equal(isFactMet(hist, never), false);
+  assert.deepEqual(unmetFacts(hist, [answered, claimed, opened, stamped, never]), [stamped, never]);
 });

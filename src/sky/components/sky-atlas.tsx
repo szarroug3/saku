@@ -387,9 +387,13 @@ export function SkyAtlas({ data, lookup, picksHref, quizHref, written: Written, 
     e.preventDefault();
   };
   const nudgeResize = (wider: boolean) => { const next = stepPanel(shown, wider, room); put(next); onWidth?.(next); };
+  // On a phone the open panel has the whole width already (`shelvesShown`),
+  // so the widen button had nothing to do there and is not drawn (Sam,
+  // 2026-09-27: "it doesn't do anything in mobile which makes sense but it
+  // shouldn't appear"). The close stays at the right end either way.
   const toolbar = (
     <>
-      <RoundButton label={wide ? "Bring the shelves back" : "Widen this panel"} pressed={wide} onClick={() => setWide(!wide)}>{wide ? "›" : "‹"}</RoundButton>
+      {narrow ? <span /> : <RoundButton label={wide ? "Bring the shelves back" : "Widen this panel"} pressed={wide} onClick={() => setWide(!wide)}>{wide ? "›" : "‹"}</RoundButton>}
       <RoundButton label="Close" onClick={selection.clear}>×</RoundButton>
     </>
   );

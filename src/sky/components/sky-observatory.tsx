@@ -18,7 +18,7 @@ import { useMemo, useState, useTransition } from "react";
 import { ItemCard } from "@/sky/components/item-card";
 import { ItemSection } from "@/sky/components/item-section";
 import { LessonMeter } from "@/sky/components/lesson-meter";
-import { ContinueButton } from "@/sky/components/quiz-resume";
+import { ContinueButton, type Resume } from "@/sky/components/quiz-resume";
 import { SkyField } from "@/sky/components/sky-field";
 import { SkyButton } from "@/sky/components/sky-button";
 import { SkyPageShell } from "@/sky/components/sky-page-shell";
@@ -29,7 +29,6 @@ import { buildGraph } from "@/sky/lib/graph";
 import { NOTHING } from "@/sky/lib/select";
 import { typeLabel } from "@/sky/lib/tokens";
 import { lessonSize } from "@/sky/lib/weight";
-import type { PlaceEntry } from "@/sky/lib/place";
 import type { SkyItem } from "@/sky/lib/types";
 
 export interface ObservatorySection {
@@ -105,9 +104,8 @@ interface SkyObservatoryProps {
    * visit only, so the page still behaves. */
   onClaim?: (ids: readonly string[]) => Promise<void>;
   /** The newest thing left part way through, lesson or quiz, offered back
-   * beside the heading (SAK-404, SAK-444). The href is the route's
-   * (SAK-367), and so is the forget behind the X on the button (SAK-492). */
-  resume?: { entry: PlaceEntry; href: string; onForget?: () => Promise<void> };
+   * beside the heading (SAK-404, SAK-444). */
+  resume?: Resume;
   initialPicks?: readonly string[];
 }
 
@@ -197,7 +195,7 @@ export function SkyObservatory({ data, cap = COMFORTABLE_WEIGHT, lessonHref, ini
   const startLabel = over ? "Start lesson anyway" : "Start lesson";
 
   return (
-    <SkyPageShell eyebrow="Observatory" title="What would you like to learn next?" aside={resume && <ContinueButton entry={resume.entry} href={resume.href} onForget={resume.onForget} className="lg:w-[340px]" />} height={height}>
+    <SkyPageShell eyebrow="Observatory" title="What would you like to learn next?" aside={resume && <ContinueButton {...resume} className="lg:w-[340px]" />} height={height}>
       {/* One column below lg, and the whole of it scrolls: the sections, then
           the sky, the meter and the picks with the Start button under them.
           It used to be the grid at every width, with the sections' column the

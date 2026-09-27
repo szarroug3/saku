@@ -9,7 +9,6 @@
 // the same for everybody and come from /api/atlas-catalogue, once per
 // browser, cached under a version that only changes when they do.
 
-import { useRouter } from "next/navigation";
 import { useCallback, useMemo } from "react";
 
 import { HearButton } from "./hear-button";
@@ -23,6 +22,7 @@ import { useSkyData } from "./local";
 import { PitchMark } from "./pitch-reading";
 import { useStored, writeStored } from "./stored";
 import { WrittenBlock } from "./written-block";
+import { useRefreshed } from "./use-refresh";
 import { claimIds, unclaimIds } from "./writes";
 
 /** How wide the entry panel was last left (SAK-471). This browser's, not this
@@ -33,7 +33,6 @@ import { claimIds, unclaimIds } from "./writes";
 const ATLAS_PANEL_KEY = "sky:atlas:panel";
 
 export function AtlasClient({ sample, signedIn, initial, entry }: { sample: boolean; signedIn: boolean; initial: AtlasPayload | null; entry?: string }) {
-  const router = useRouter();
   // read live rather than once: nothing in the Atlas depends on the width but
   // the layout, so a second tab changing it is not a problem
   const stored = useStored<unknown>(ATLAS_PANEL_KEY, null);
@@ -47,10 +46,10 @@ export function AtlasClient({ sample, signedIn, initial, entry }: { sample: bool
     tiles: (ids) => atlasTiles(who, ids),
     sections: (shelfId, status) => atlasSections(who, shelfId, status),
   }), [who]);
+  const claim = useRefreshed(claimIds);
+  const unclaim = useRefreshed(unclaimIds);
   if (!payload || !shelves || !lookup) return loading;
   const data = joinAtlas(shelves, payload);
-  const claim = async (ids: readonly string[]) => { await claimIds(ids); router.refresh(); };
-  const unclaim = async (ids: readonly string[]) => { await unclaimIds(ids); router.refresh(); };
   return (
     <SkyAtlas
       data={data}

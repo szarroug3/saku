@@ -16,9 +16,10 @@
 // see the phantom advance.
 //
 // `unlearn: true` takes back a forgotten Sky lesson's marks (SAK-492): the seen
-// record AND the learnedAt stamp, for each named fact that has no quiz on it.
-// The caller names only the facts the lesson stamped for the first time, so
-// nothing an earlier lesson marked is in the list.
+// record, the learnedAt stamp and the quiz aggregate, for each named fact the
+// learner has not claimed, so the fact is brand new again. The caller names
+// only the facts the lesson found new when it started and marked first after
+// that, so nothing an earlier lesson marked is in the list.
 
 import { getUserId } from "@/lib/auth";
 import { historyErrorResponse } from "@/lib/api-error";
@@ -32,8 +33,8 @@ interface SeenBody {
   /** true withdraws the seen record. Absent means false — the common case is
    * recording a "quiz me", and a body that forgets the flag must not unsee. */
   remove?: boolean;
-  /** true takes back a forgotten lesson's seen and learnedAt marks, for the
-   * facts with no quiz on them (SAK-492). */
+  /** true takes back a forgotten lesson's marks, quiz aggregate included,
+   * for every named fact not claimed (SAK-492). */
   unlearn?: boolean;
 }
 

@@ -109,12 +109,39 @@ export function deriveLearnedAt(hist: HistoryFile): Record<FactId, number> {
   return out;
 }
 
+/**
+ * Whether the Sky reads a fact as met: answered in a quiz (an aggregate with
+ * a showing), claimed, or opened in a lesson. The same three records
+ * `standingOfFacts` in src/app/(sky)/learner.ts reads, kept here so a write
+ * that asks "which of these is new" (a lesson starting, SAK-492) and the
+ * page that shows what is met can never disagree. Not `learnedAt`: that is
+ * derived from the stored sessions on every read, so a fact reset to brand
+ * new with its sessions kept would read as met again by it.
+ */
+export function isFactMet(hist: HistoryFile, f: FactId): boolean {
+  return (hist.facts?.[f]?.seen ?? 0) > 0 || hist.claims?.[f] != null || hist.seen?.[f] != null;
+}
+
+/** The facts of these the learner has not met, in the order given. */
+export function unmetFacts(hist: HistoryFile, facts: readonly FactId[]): FactId[] {
+  return facts.filter((f) => !isFactMet(hist, f));
+}
+
 /** Fill in learnedAt for any fact missing one, WITHOUT disturbing existing
  *  entries: a value already written going-forward is authoritative-earliest and
  *  wins over the (possibly cap-truncated) derivation. */
 export function withBackfilledLearnedAt(hist: HistoryFile): HistoryFile {
   const existing = hist.learnedAt ?? {};
   return { ...hist, learnedAt: { ...deriveLearnedAt(hist), ...existing } };
+}
+
+/** Stamp when a fact was first learned: write-once, keep-earliest, the rule
+ * `learnedAt` follows on every write (see its doc in types/store.ts). One
+ * helper for the three writes that stamp (a claim, a seen, a session), which
+ * each used to spell it out. */
+function stampLearned(learnedAt: Record<FactId, number>, f: FactId, at: number): void {
+  const cur = learnedAt[f];
+  if (cur == null || at < cur) learnedAt[f] = at;
 }
 
 /**
@@ -132,13 +159,9 @@ export function applyClaims(
   const next = structuredClone(hist);
   next.claims ??= {};
   next.learnedAt ??= {};
-  const stampLearned = (f: FactId, at: number) => {
-    const cur = next.learnedAt![f];
-    if (cur == null || at < cur) next.learnedAt![f] = at;
-  };
   for (const f of facts) {
     next.claims[f] = ts;
-    stampLearned(f, ts);
+    stampLearned(next.learnedAt, f, ts);
   }
   return next;
 }
@@ -202,13 +225,9 @@ export function applySeen(
   const next = structuredClone(hist);
   next.seen ??= {};
   next.learnedAt ??= {};
-  const stampLearned = (f: FactId, at: number) => {
-    const cur = next.learnedAt![f];
-    if (cur == null || at < cur) next.learnedAt![f] = at;
-  };
   for (const f of facts) {
     next.seen[f] = ts;
-    stampLearned(f, ts);
+    stampLearned(next.learnedAt, f, ts);
   }
   return next;
 }
@@ -236,31 +255,33 @@ export function applyDropSeen(hist: HistoryFile, facts: FactId[]): HistoryFile {
 }
 
 /**
- * Take back what a lesson left part way through marked as met, for the facts
- * nobody has been quizzed on since (SAK-492).
+ * Take back what a forgotten lesson did, so its items are brand new again
+ * (SAK-492, widened on 2026-09-27).
  *
- * Opening a star in a Sky lesson marks its facts seen, and that first mark is
- * also what stamps `learnedAt`. Forgetting the lesson has to undo both, or the
- * Observatory keeps treating the facts as met: `seen` is what makes an item
- * met, and `learnedAt` is what `withBackfilledLearnedAt` would otherwise keep
- * as the record of it. The caller names only the facts the lesson itself
- * stamped for the first time, so a mark an earlier lesson made is never in
- * the list.
+ * A lesson marks its facts as it goes: opening a star writes `seen`, the
+ * first such mark stamps `learnedAt`, and a round of its drill writes a
+ * session and folds it into `facts`. Sam, 2026-09-27: "if I x out the
+ * current lesson, it makes everything in the lesson unmarked again as if the
+ * lesson had never been started so it should reappear in the observatory".
+ * So for each fact the caller names, the seen mark, the stamp and the
+ * aggregate all go, quizzed or not: a quiz in the lesson's own rounds is the
+ * lesson's doing too. It used to leave a quizzed fact alone, which kept a
+ * lesson drilled one round from ever coming back.
  *
- * A fact with any quiz evidence is left alone: an aggregate in `facts`, or a
- * stored session that asked it. That evidence is real, and the marks now date
- * from it rather than from the lesson. A fact with a claim is left alone as
- * well, since a claim is the learner saying they know it, and forgetting a
- * lesson is not saying the opposite. Always returns a clone.
+ * The caller names only what the lesson found new when it started, and what
+ * it marked first after that (the sitting's `marked`), so a fact met before
+ * the lesson is never in the list. A CLAIM is left alone whatever the list
+ * says: it is the learner saying they know the fact, and forgetting a lesson
+ * is not saying the opposite. The stored sessions stay too: they are what
+ * happened, and the Sessions page lists them as such. Always returns a clone.
  */
 export function applyUnlearn(hist: HistoryFile, facts: FactId[]): HistoryFile {
   const next = structuredClone(hist);
-  const quizzed = new Set<string>();
-  for (const s of next.sessions) for (const f of Object.keys(s.facts ?? {})) quizzed.add(f);
   for (const f of facts) {
-    if (quizzed.has(f) || next.facts?.[f] || next.claims?.[f] != null) continue;
+    if (next.claims?.[f] != null) continue;
     if (next.seen) delete next.seen[f];
     if (next.learnedAt) delete next.learnedAt[f];
+    if (next.facts) delete next.facts[f];
   }
   return next;
 }
@@ -303,14 +324,10 @@ export function applySession(
   next.sessions.push(session);
   next.sessions = next.sessions.slice(-200);
   next.learnedAt ??= {};
-  const stampLearned = (f: FactId, at: number) => {
-    const cur = next.learnedAt![f];
-    if (cur == null || at < cur) next.learnedAt![f] = at;
-  };
   for (const [f, s] of Object.entries(session.facts ?? {})) {
     const key = f as keyof typeof next.facts;
     foldSession((next.facts[key] ??= emptyAggregate()), s, session.ts);
-    stampLearned(f as FactId, session.ts);
+    stampLearned(next.learnedAt, f as FactId, session.ts);
   }
   return next;
 }

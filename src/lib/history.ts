@@ -159,15 +159,16 @@ export async function dropSeen(userId: string, facts: FactId[]): Promise<History
   return mutateHistory(userId, (hist) => applyDropSeen(hist, facts));
 }
 
-/** Take back the seen and learnedAt marks a forgotten Sky lesson made, for
- * the facts with no quiz on them (SAK-492, see applyUnlearn). A fact's quiz
- * aggregate lives in its own `progress_facts` row here rather than in the
- * document, so a fact with a row is taken out of the list before the op runs:
- * it has been quizzed, and its marks stay. */
+/** Take back everything a forgotten Sky lesson marked (SAK-492, see
+ * applyUnlearn): the seen mark, the learnedAt stamp and the quiz aggregate,
+ * for every named fact the learner has not claimed. The aggregate is its own
+ * `progress_facts` row here rather than in the document, deleted the way
+ * dropClaims deletes it. */
 export async function unlearn(userId: string, facts: FactId[]): Promise<HistoryFile> {
-  const rows = await readFactRowsVersioned(userId, facts);
-  const unquizzed = facts.filter((f) => !rows.get(f)?.exists);
-  return mutateHistory(userId, (hist) => applyUnlearn(hist, unquizzed));
+  const claims = (await loadHistory(userId)).claims ?? {};
+  const reset = facts.filter((f) => claims[f] == null);
+  await deleteFactRows(userId, reset);
+  return mutateHistory(userId, (hist) => applyUnlearn(hist, reset));
 }
 
 /** Retire an open confusion record at the learner's request. The underlying

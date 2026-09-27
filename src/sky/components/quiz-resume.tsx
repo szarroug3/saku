@@ -19,15 +19,19 @@
 // is unfinished. Only one quiz is kept, so starting another replaces it, and
 // that is the kind of thing the Sky asks about once (SAK-364, InlineAsk).
 //
-// AND AN X, ON THE OBSERVATORY'S (SAK-492). Sam, 2026-09-26: "let's make it
-// so i can click x on this or something to cancel the current lesson in
-// progress and then they would come back." The X is the round button every
-// panel closes with, inside the button's own box at its right end. The link
-// keeps the whole box, padded the same on both sides so its words stay in the
-// middle, and the X sits over the right-hand padding. Pressing it asks the way
-// Sessions asks before it forgets anything ("Forget it forever" or "Keep it"),
-// in the button's place and at its width, and going through with it is the
-// same forget Sessions runs.
+// AND AN X (SAK-492). Sam, 2026-09-26: "let's make it so i can click x on
+// this or something to cancel the current lesson in progress and then they
+// would come back." The X is the round button every panel closes with, inside
+// the button's own box at its right end. The link keeps the whole box, padded
+// the same on both sides so its words stay in the middle, and the X sits over
+// the right-hand padding. Pressing it asks before anything is forgotten
+// ("Forget it forever" or "Keep it"), in the button's place and at its width.
+//
+// THE SAME BUTTON EVERYWHERE (Sam, 2026-09-27: "all continue lesson buttons
+// should use the same component so they look the same. Right now, only one
+// of them shows the x button"). The Planetarium, the Observatory and a
+// Sessions row all draw this one, X included, and the route hands each the
+// same forget.
 
 import { useState } from "react";
 
@@ -39,23 +43,26 @@ import { useNow } from "@/sky/components/use-now";
 import { placeLabel, type PlaceEntry } from "@/sky/lib/place";
 import { runNote, type SavedRun } from "@/sky/lib/quiz-run";
 
-/** The one button, on a page that is neither the quiz nor the lesson. The
- * href is the route's, since only it knows what a Sky URL looks like
- * (SAK-367).
+/** What a page is handed to draw the button: the thing left part way
+ * through, the route's way back to it (only the route knows what a Sky URL
+ * looks like, SAK-367), and the forget behind the X. */
+export interface Resume {
+  entry: PlaceEntry;
+  href: string;
+  /** Forgets it for good, behind the X and its ask (SAK-492). Absent draws
+   * the plain button, with no X: a learner who cannot forget it (the pretend
+   * learner keeps no place, so it never comes up). */
+  onForget?: () => Promise<void>;
+}
+
+/** The one button, on a page that is neither the quiz nor the lesson.
  *
  * The clock is the reader's, not the server's. A signed-in learner's button is
  * rendered on the server from the account's place, and a break counted there
  * would be counted against the server's minute; so the break says which break
  * it is until this is a browser, and gains the minutes left after (SAK-355,
  * the same trade the sessions list makes for its timestamps). */
-export function ContinueButton({ entry, href, onForget, className = "" }: {
-  entry: PlaceEntry;
-  href: string;
-  /** Forgets it for good, behind the X and its ask (SAK-492). Absent draws
-   * the plain button, with no X. */
-  onForget?: () => Promise<void>;
-  className?: string;
-}) {
+export function ContinueButton({ entry, href, onForget, className = "" }: Resume & { className?: string }) {
   // every half minute, which is as fine as "3 min left" ever needs
   const now = useNow(30_000);
   const [asking, setAsking] = useState(false);

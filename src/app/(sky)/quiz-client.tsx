@@ -40,7 +40,7 @@ import { SkyQuiz } from "@/sky/components/sky-quiz";
 import { SkyRest } from "@/sky/components/sky-rest";
 import { useNow } from "@/sky/components/use-now";
 import { shuffleDeck, type QuizAnswer, type QuizCard, type WayBack } from "@/sky/lib/quiz";
-import { hasPlace, lessonAt, lessonFor, NO_PLACE, type LessonPart, type SavedPlace } from "@/sky/lib/place";
+import { lessonAt, lessonFor, NO_PLACE, placeToUse, type LessonPart, type SavedPlace } from "@/sky/lib/place";
 import { orderDeck, resumeAt, runToKeep, sameSource, trimRun, type RunSource, type SavedRun } from "@/sky/lib/quiz-run";
 import { seeded } from "@/sky/lib/random";
 import { restLeft, restMinutes } from "@/sky/lib/rest";
@@ -72,7 +72,7 @@ export function QuizClient({ initial, picks, named, back, sample = false, signed
   // none (a cleared browser, another machine). The sample records nothing and
   // so leaves nothing.
   const local = usePlaceAtOpen();
-  const place = sample || !local ? NO_PLACE : hasPlace(local) ? local : accountPlace;
+  const place = sample || !local ? NO_PLACE : placeToUse(local, accountPlace);
   // three rounds means this is a lesson's drill, so the sitting it belongs to
   // is what it picks up; one round means the quiz slot, as before
   const sitting = rounds > 1 ? lessonFor(place, picks) : null;
