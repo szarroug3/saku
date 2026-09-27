@@ -176,16 +176,25 @@ test("polymorphic — the same scheduler drives a non-pronunciation track", () =
 // walk used to pick purely by frequency — 人, every time — leaving a reset
 // fact invisible behind the track's genuinely-new material for as long as
 // that material lasted (14k+ units on the real vocab track). The regression
-// (a fact `history.learnedAt` remembers as once-met, applyDropClaims never
-// erases that) has to win the tie instead.
-test("SAK-103 — a reset (regressed) unit outranks a never-met, higher-frequency one", () => {
+// (a fact `history.learnedAt` remembers as once-met) used to win the tie.
+//
+// SINCE 2026-09-27 THE RESET IS BRAND NEW, STAMP INCLUDED. "I don't know
+// this" now takes back `learnedAt` along with the claim, the aggregate and
+// the seen mark (see applyDropClaims), because the Sky reads a seen fact as
+// met and the stamp as "not the first lesson to open it" (SAK-492). Nothing
+// live walks this scheduler any more (the old app went at cutover), so the
+// regression tie-break has no fact left to find: a reset unit is due again as
+// fresh material and takes its place in the track's own order, behind 人's
+// readings. What this test now holds is the half that matters, that the
+// reset fact is due at all: with room for everything, 木 き is back.
+test("SAK-103 — a reset unit is due again, as brand new", () => {
   const ki = units("木").find((u) => u.reading === "き")!;
   let hist = applyClaims(emptyHistory(), ki.facts as FactId[], 1_000);
   hist = applyDropClaims(hist, ki.facts as FactId[]); // "Mark as not known"
   assert.equal(hist.claims?.["word:木/reading" as FactId], undefined, "the claim is gone");
-  assert.notEqual(hist.learnedAt?.["word:木/reading" as FactId], undefined, "learnedAt survives the reset");
+  assert.equal(hist.learnedAt?.["word:木/reading" as FactId], undefined, "and so is the stamp: brand new");
 
-  const lesson = nextUnitLesson(["人", "木"], hist, { min: 1, max: 1 })!;
+  const lesson = nextUnitLesson(["人", "木"], hist, roomy)!;
   const readings = (lesson.units as readonly PronunciationUnit[]).map((u) => u.reading);
-  assert.ok(readings.includes("き"), "the reset 木 き is taught, not buried behind fresh 人");
+  assert.ok(readings.includes("き"), "the reset 木 き is taught again");
 });

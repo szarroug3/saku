@@ -164,17 +164,28 @@ export function applyClaims(
  * I know" — mirroring, for one fact, what applyDeleteSessions already does for
  * the whole file (rebuild `facts` from what survives).
  *
- * `learnedAt[f]` is deliberately LEFT ALONE — it is the permanent "this was met
- * at some point" record (see its own doc above, and unit-scheduler-core.ts's
- * `isRegression`), used for Progress/Stats display and for giving a reset fact
- * visit-priority over never-met material in the lesson walk. Dropping a claim
- * answers "is this due" (claims + facts); `learnedAt` answers "was this ever
- * met", a different question this call was never asked to unmeet.
+ * AND `seen[f]` AND `learnedAt[f]`, since 2026-09-27. Opening a star in a Sky
+ * lesson writes `seen` (seeId in src/app/(sky)/writes.ts), and `seen` on its
+ * own is what makes an entry met in the Sky (standingOfFacts in learner.ts):
+ * met, it is off the Observatory and reads as known on the Atlas. So a
+ * pattern Sam had opened in a lesson stayed that way after "I don't know
+ * this": the button withdrew a claim she had never made, the page came back
+ * on refresh still offering the button, and the Observatory still left the
+ * pattern out. Brand new means every record the Sky reads as met is gone.
+ *
+ * `learnedAt[f]` used to be left alone as the permanent "this was ever met"
+ * record, for the old app's Progress display and its lesson walk. Those are
+ * gone, and the one thing the Sky asks it now is which facts a lesson marked
+ * FIRST (SAK-492), so that forgetting the lesson can take those marks back. A
+ * fact that is brand new again has to have no stamp, or the next lesson to
+ * open it counts as not the first and its forget leaves the mark in place.
  */
 export function applyDropClaims(hist: HistoryFile, facts: FactId[]): HistoryFile {
   const next = structuredClone(hist);
   if (next.claims) for (const f of facts) delete next.claims[f];
   if (next.facts) for (const f of facts) delete next.facts[f];
+  if (next.seen) for (const f of facts) delete next.seen[f];
+  if (next.learnedAt) for (const f of facts) delete next.learnedAt[f];
   return next;
 }
 
@@ -388,12 +399,16 @@ export function applySessionMeta(
   return { ...hist, sessions, learnedAt };
 }
 
-/** The claims half of `applyDropClaims`, with the `facts[f]` delete removed —
- * that half is done by history.ts against `progress_facts` directly instead. */
+/** The document half of `applyDropClaims`, with the `facts[f]` delete removed —
+ * that half is done by history.ts against `progress_facts` directly instead.
+ * The claim, the seen mark and the learnedAt stamp all live in the document,
+ * so all three go here, as they do there. */
 export function applyDropClaimsMeta(hist: HistoryFile, facts: FactId[]): HistoryFile {
   const claims = { ...(hist.claims ?? {}) };
-  for (const f of facts) delete claims[f];
-  return { ...hist, claims };
+  const seen = { ...(hist.seen ?? {}) };
+  const learnedAt = { ...(hist.learnedAt ?? {}) };
+  for (const f of facts) { delete claims[f]; delete seen[f]; delete learnedAt[f]; }
+  return { ...hist, claims, seen, learnedAt };
 }
 
 /** The sessions half of `applyDeleteSessions`, with the facts-rebuild removed
