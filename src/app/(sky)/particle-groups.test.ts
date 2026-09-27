@@ -78,7 +78,7 @@ describe("a particle group in the Observatory", () => {
     assert.ok(item);
     assert.equal(item.kind, "grammar");
     assert.equal(item.glyph, "は vs が");
-    assert.equal(item.english, "は marks the topic, が marks the subject");
+    assert.equal(item.english, "mark the topic and the subject");
     assert.equal(item.label, "particle");
     assert.equal(item.particle, true);
     assert.equal(item.group, true);
