@@ -106,8 +106,8 @@ interface SkyObservatoryProps {
   onClaim?: (ids: readonly string[]) => Promise<void>;
   /** The newest thing left part way through, lesson or quiz, offered back
    * beside the heading (SAK-404, SAK-444). The href is the route's
-   * (SAK-367). */
-  resume?: { entry: PlaceEntry; href: string };
+   * (SAK-367), and so is the forget behind the X on the button (SAK-492). */
+  resume?: { entry: PlaceEntry; href: string; onForget?: () => Promise<void> };
   initialPicks?: readonly string[];
 }
 
@@ -197,7 +197,7 @@ export function SkyObservatory({ data, cap = COMFORTABLE_WEIGHT, lessonHref, ini
   const startLabel = over ? "Start lesson anyway" : "Start lesson";
 
   return (
-    <SkyPageShell eyebrow="Observatory" title="What would you like to learn next?" aside={resume && <ContinueButton entry={resume.entry} href={resume.href} className="lg:w-[340px]" />} height={height}>
+    <SkyPageShell eyebrow="Observatory" title="What would you like to learn next?" aside={resume && <ContinueButton entry={resume.entry} href={resume.href} onForget={resume.onForget} className="lg:w-[340px]" />} height={height}>
       <div className="grid min-h-0 flex-1 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
         <div className="min-h-0 min-w-0 self-stretch overflow-y-auto pb-6 pr-1">
           {data.sections.filter((section) => !section.shut && !section.complete && waited(section.id, picks)).map((section) => {

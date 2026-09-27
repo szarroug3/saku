@@ -12,6 +12,7 @@ import {
   placeLabel,
   placeNote,
   readPlace,
+  withMarks,
   type LessonPart,
   type SavedLesson,
   type SavedPlace,
@@ -133,6 +134,33 @@ describe("what is worth keeping", () => {
 
   it("keeps nothing for a lesson of no picks", () => {
     assert.equal(lessonAt([], steps, 5), null);
+  });
+});
+
+describe("what the sitting has marked (SAK-492)", () => {
+  it("is kept with the lesson and read back", () => {
+    const marked = { ...lesson(), marked: ["pattern-wo", "pattern-ni"] };
+    assert.deepEqual(roundTrip({ quiz: null, lesson: marked }).lesson, marked);
+  });
+
+  it("is left out of a sitting that marked nothing, and of one written before it was kept", () => {
+    assert.equal("marked" in (roundTrip({ quiz: null, lesson: lesson() }).lesson ?? {}), false);
+    assert.equal("marked" in (readPlace({ v: 3, lesson: { picks: ["p"], part: steps, leftAt: 1, marked: [] } }).lesson ?? {}), false);
+    assert.equal("marked" in (readPlace({ v: 3, lesson: { picks: ["p"], part: steps, leftAt: 1, marked: [3] } }).lesson ?? {}), false);
+  });
+
+  it("rides over to the next part of the same sitting, once each", () => {
+    const kept = { ...lesson(), marked: ["a", "b"] };
+    const next = lessonAt(["kana-row:h-w"], { kind: "break", round: 1, startedAt: 5, until: 9 }, 5);
+    assert.deepEqual(withMarks(next, kept)?.marked, ["a", "b"]);
+    assert.deepEqual(withMarks(next && { ...next, marked: ["b", "c"] }, kept, null)?.marked, ["b", "c", "a"]);
+  });
+
+  it("stays with its own lesson: a different lesson's marks are not carried", () => {
+    const other = { ...lesson(), picks: ["kana-row:h-vowels"], marked: ["a"] };
+    const next = lessonAt(["kana-row:h-w"], steps, 5);
+    assert.deepEqual(withMarks(next, other), next);
+    assert.equal(withMarks(null, other), null);
   });
 });
 

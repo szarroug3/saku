@@ -87,6 +87,12 @@ export interface SavedLesson {
   part: LessonPart;
   /** When the lesson last moved. */
   leftAt: number;
+  /** The facts this sitting marked as met for the first time (SAK-492):
+   * opening a star marks its facts seen, and for these that mark was the
+   * first one, so it also stamped when they were learned. Forgetting the
+   * lesson takes back exactly these, for each one nobody has been quizzed on
+   * since. Left out while there are none. */
+  marked?: readonly string[];
 }
 
 /** Everything left part way through: one quiz, one lesson, either of them
@@ -143,12 +149,14 @@ function readPart(raw: unknown): LessonPart | null {
  * and left offered nothing. */
 function readLesson(raw: unknown): SavedLesson | null {
   if (!raw || typeof raw !== "object") return null;
-  const l = raw as { picks?: unknown; part?: unknown; leftAt?: unknown };
+  const l = raw as { picks?: unknown; part?: unknown; leftAt?: unknown; marked?: unknown };
   if (!isIds(l.picks) || l.picks.length === 0) return null;
   // version 2 wrote the step onto the lesson itself, so the lesson IS the part
   const part = readPart(l.part ?? raw);
   if (!part) return null;
-  return { picks: l.picks, part, leftAt: whole(l.leftAt, 0) ?? 0 };
+  // a sitting written before SAK-492 marked nothing it knows of
+  const marked = isIds(l.marked) && l.marked.length ? { marked: l.marked } : {};
+  return { picks: l.picks, part, leftAt: whole(l.leftAt, 0) ?? 0, ...marked };
 }
 
 /**
@@ -186,6 +194,24 @@ export function placeDoc(place: SavedPlace): unknown {
  * lesson the learner started. */
 export function lessonAt(picks: readonly string[], part: LessonPart, now: number): SavedLesson | null {
   return picks.length === 0 ? null : { picks, part, leftAt: now };
+}
+
+/**
+ * The lesson about to be written, still carrying what the sitting has marked
+ * (SAK-492).
+ *
+ * Every write of the lesson slot starts from `lessonAt`, which knows only the
+ * part, so the marks ride over from whatever was kept before: the slot as it
+ * stands, and the sitting the page picked up (which, on a second machine, can
+ * be the account's copy rather than this browser's). Only a kept lesson with
+ * the same picks is the same sitting; any other is a different lesson, and its
+ * marks are not this one's to carry.
+ */
+export function withMarks(next: SavedLesson | null, ...kept: readonly (SavedLesson | null | undefined)[]): SavedLesson | null {
+  if (!next) return null;
+  const same = kept.filter((k): k is SavedLesson => !!k && k.picks.join(",") === next.picks.join(","));
+  const marked = [...new Set([...(next.marked ?? []), ...same.flatMap((k) => k.marked ?? [])])];
+  return marked.length ? { ...next, marked } : next;
 }
 
 /** The lesson slot when it holds THIS lesson, else null.

@@ -18,9 +18,21 @@
 // The ASK is what the quiz shows when you arrive on a different run while one
 // is unfinished. Only one quiz is kept, so starting another replaces it, and
 // that is the kind of thing the Sky asks about once (SAK-364, InlineAsk).
+//
+// AND AN X, ON THE OBSERVATORY'S (SAK-492). Sam, 2026-09-26: "let's make it
+// so i can click x on this or something to cancel the current lesson in
+// progress and then they would come back." The X is the round button every
+// panel closes with, inside the button's own box at its right end. The link
+// keeps the whole box, padded the same on both sides so its words stay in the
+// middle, and the X sits over the right-hand padding. Pressing it asks the way
+// Sessions asks before it forgets anything ("Forget it forever" or "Keep it"),
+// in the button's place and at its width, and going through with it is the
+// same forget Sessions runs.
+
+import { useState } from "react";
 
 import { InlineAsk } from "@/sky/components/inline-ask";
-import { SkyButton } from "@/sky/components/sky-button";
+import { RoundButton, SkyButton } from "@/sky/components/sky-button";
 import { SkyPageShell } from "@/sky/components/sky-page-shell";
 import { SkySurface } from "@/sky/components/sky-panel";
 import { useNow } from "@/sky/components/use-now";
@@ -36,10 +48,36 @@ import { runNote, type SavedRun } from "@/sky/lib/quiz-run";
  * would be counted against the server's minute; so the break says which break
  * it is until this is a browser, and gains the minutes left after (SAK-355,
  * the same trade the sessions list makes for its timestamps). */
-export function ContinueButton({ entry, href, className = "" }: { entry: PlaceEntry; href: string; className?: string }) {
+export function ContinueButton({ entry, href, onForget, className = "" }: {
+  entry: PlaceEntry;
+  href: string;
+  /** Forgets it for good, behind the X and its ask (SAK-492). Absent draws
+   * the plain button, with no X. */
+  onForget?: () => Promise<void>;
+  className?: string;
+}) {
   // every half minute, which is as fine as "3 min left" ever needs
   const now = useNow(30_000);
-  return <SkyButton variant="outline" href={href} className={className}>{placeLabel(entry, now)}</SkyButton>;
+  const [asking, setAsking] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const label = placeLabel(entry, now);
+  if (!onForget) return <SkyButton variant="outline" href={href} className={className}>{label}</SkyButton>;
+  if (asking) {
+    const confirm = async () => {
+      setBusy(true);
+      try { await onForget(); } finally { setBusy(false); setAsking(false); }
+    };
+    return <InlineAsk className={`justify-end ${className}`} confirm="Forget it forever" busyLabel="Forgetting…" busy={busy} onConfirm={confirm} onKeep={() => setAsking(false)} />;
+  }
+  // !px-10: 40px on each side, which is the X's 28px, the 5px it sits in from
+  // the edge, and a gap before the words; the same on the left so the words
+  // are centered in the whole box, not in what the X leaves of it
+  return (
+    <span className={`relative inline-flex ${className}`}>
+      <SkyButton variant="outline" href={href} className="w-full !px-10">{label}</SkyButton>
+      <RoundButton label={`Forget this ${entry.kind}`} onClick={() => setAsking(true)} className="absolute right-[5px] top-1/2 -translate-y-1/2">×</RoundButton>
+    </span>
+  );
 }
 
 /** The ask, in place of a quiz that would replace the quiz you have. */

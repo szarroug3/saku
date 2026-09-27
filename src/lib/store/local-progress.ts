@@ -43,6 +43,7 @@ import {
   applyDropSeen,
   applySeen,
   applySession,
+  applyUnlearn,
   emptyHistory,
   normalizeHistoryShell,
 } from "@/lib/history-ops";
@@ -139,6 +140,13 @@ export function localSeen(facts: FactId[], ts: number): HistoryFile {
  * frontier. */
 export function localDropSeen(facts: FactId[]): HistoryFile {
   return mutateHistory((h) => applyDropSeen(h, facts));
+}
+
+/** Take back a forgotten lesson's marks, locally. Mirrors POST /api/seen with
+ * `unlearn: true` (SAK-492). The aggregate is in this same document, so the op
+ * sees every quiz on these facts by itself. */
+export function localUnlearn(facts: FactId[]): HistoryFile {
+  return mutateHistory((h) => applyUnlearn(h, facts));
 }
 
 /** Retire a confusion record early, locally. Mirrors POST /api/mixup. */

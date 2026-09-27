@@ -1588,6 +1588,78 @@ test("forgetting an unfinished quiz from Sessions asks first (SAK-444)", async (
   await expect(page.getByRole("link", { name: /^Continue your quiz/ })).toHaveCount(0);
 });
 
+test("the X on Continue forgets the lesson, and what it marked is offered again (SAK-492)", async ({ page }) => {
+  // Sam, 2026-09-26, on the Observatory's "Continue your lesson (step 2 of
+  // 3)": "let's make it so i can click x on this or something to cancel the
+  // current lesson in progress and then they would come back." Opening a
+  // lesson's step marks its item as met, so the item leaves its row; the X
+  // forgets the lesson, and with it those marks.
+  //
+  // As a visitor rather than the pretend learner, because the pretend learner
+  // records nothing and keeps no place: there would be no button to press.
+  test.slow();
+  await page.goto("/observatory");
+  await claimAllKana(page);
+  const grammar = page.locator("section", { has: page.getByRole("heading", { name: "Grammar", exact: true }) });
+  const start = grammar.getByRole("button", { name: "Start grammar" });
+  const tiles = grammar.locator("button[aria-pressed]");
+  // The row opens on its Start button until something in it has been met, and
+  // meeting or unmeeting one flips that when the page's data comes back, so a
+  // look at the row presses Start whenever it is showing and tries again.
+  const rowHolds = async (count: number) => {
+    await expect(async () => {
+      if (await start.isVisible()) await start.click();
+      await expect(tiles.first()).toBeVisible({ timeout: 1_000 });
+      await expect(item).toHaveCount(count, { timeout: 1_000 });
+    }).toPass({ timeout: 20_000 });
+  };
+  await start.click();
+  // two patterns, so the second is a step the learner opens (the first is
+  // open when the lesson is, and it is opening a step that marks it)
+  const glyph = (await tiles.nth(1).innerText()).split("\n")[0];
+  const item = tiles.filter({ hasText: glyph });
+  await expect(item).toHaveCount(1);
+  await tiles.nth(0).click();
+  await item.click();
+  await page.getByRole("link", { name: "Start lesson" }).click();
+  const step = page.getByText(/^Step \d+ of \d+$/);
+  await expect(step).toHaveText("Step 1 of 2");
+  await page.getByRole("list").first().getByRole("button").first().click();
+  await page.getByRole("button", { name: "Next", exact: true }).click();
+  await expect(step).toHaveText("Step 2 of 2");
+  // the sitting keeps what that step marked, which is what the X takes back
+  await expect
+    .poll(() => page.evaluate(() => {
+      try { return JSON.parse(window.localStorage.getItem("sky:quiz:run") ?? "{}").lesson?.marked?.length ?? 0; } catch { return 0; }
+    }))
+    .toBeGreaterThan(0);
+
+  // back at the Observatory: the item has left its row, and the button offers
+  // the lesson back
+  await page.goto("/observatory");
+  const offer = page.getByRole("link", { name: "Continue your lesson (step 2 of 2)" });
+  await expect(offer).toBeVisible();
+  await rowHolds(0);
+
+  // the X asks first, and backing out keeps the lesson
+  const x = page.getByRole("button", { name: "Forget this lesson" });
+  await x.click();
+  await expect(offer).toHaveCount(0);
+  await page.getByRole("button", { name: "Keep it" }).click();
+  await expect(offer).toBeVisible();
+
+  // going through with it takes the button away and brings the item back
+  await x.click();
+  await page.getByRole("button", { name: "Forget it forever" }).click();
+  await expect(page.getByRole("link", { name: /^Continue your/ })).toHaveCount(0);
+  await expect.poll(() => page.evaluate(() => window.localStorage.getItem("sky:quiz:run"))).toBe(null);
+  await rowHolds(1);
+  // and it stays forgotten
+  await page.reload();
+  await rowHolds(1);
+  await expect(page.getByRole("link", { name: /^Continue your/ })).toHaveCount(0);
+});
+
 // ONE WAY TO OPEN AND CLOSE THINGS (SAK-412). Every fold in the Sky is now the
 // same round chevron button, one ⌃ turned over when shut (SAK-414), wired to
 // what it opens. None

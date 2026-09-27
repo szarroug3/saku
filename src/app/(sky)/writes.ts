@@ -6,10 +6,12 @@
 // so the copy on screen follows. The server only computes what a write
 // needs (see actions.ts).
 
-import { postClaim, postClearMixup, postSeen, postSession } from "@/lib/progress-fetch";
+import { postClaim, postClearMixup, postSeen, postSession, postUnlearn } from "@/lib/progress-fetch";
+import { loadLocalHistory } from "@/lib/store/local-progress";
 import type { QuizAnswer } from "@/sky/lib/quiz";
+import type { FactId } from "@/types/facts";
 
-import { factsOfPicks, quizRecords } from "./actions";
+import { factsOfPicks, factsToSee, quizRecords } from "./actions";
 
 /**
  * The Quiz's answers, recorded as the app's session records.
@@ -50,10 +52,34 @@ export async function unclaimIds(ids: readonly string[]): Promise<void> {
   if (facts.length) await postClaim(facts, false);
 }
 
-/** A star opened in a lesson: its facts marked seen, so it is in rotation. */
-export async function seeId(id: string): Promise<void> {
-  const facts = await factsOfPicks([id]);
-  if (facts.length) await postSeen(facts);
+/**
+ * A star opened in a lesson: its facts marked seen, so it is in rotation.
+ *
+ * AND WHICH OF THEM THIS WAS THE FIRST MARK ON (SAK-492). The answer is the
+ * facts that had no `learnedAt` before the write, since the write is what
+ * stamps it. The lesson keeps them on its sitting, so forgetting the lesson
+ * can take back what it marked and nothing an earlier lesson did. The account
+ * answers for a signed-in learner; for a visitor the server has nothing to
+ * read, and this browser's history is asked instead, before the write lands in
+ * it.
+ */
+export async function seeId(id: string): Promise<FactId[]> {
+  const { facts, fresh } = await factsToSee([id]);
+  if (!facts.length) return [];
+  const first = fresh ?? unmet(facts, loadLocalHistory().learnedAt);
+  await postSeen(facts);
+  return first;
+}
+
+/** The facts with no `learnedAt` stamp in this history. */
+function unmet(facts: readonly FactId[], learnedAt: Partial<Record<FactId, number>> = {}): FactId[] {
+  return facts.filter((f) => learnedAt[f] == null);
+}
+
+/** A forgotten lesson's marks taken back, for the facts it marked first and
+ * nobody has been quizzed on since (SAK-492). */
+export async function unlearnFacts(facts: readonly string[]): Promise<void> {
+  if (facts.length) await postUnlearn(facts as FactId[]);
 }
 
 /** A mix-up cleared by hand, from now. */

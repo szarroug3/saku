@@ -65,6 +65,7 @@ import {
   localResetHistory,
   localSeen,
   localSession,
+  localUnlearn,
 } from "@/lib/store/local-progress";
 import type { FactId } from "@/types/facts";
 import type { QuizSessionRecord } from "@/types/store";
@@ -178,6 +179,20 @@ export function postUnseen(facts: FactId[]): Promise<ProgressResult> {
   return announcing(
     postWithLocalFallback("/api/seen", { facts, remove: true }, () =>
       localDropSeen(facts),
+    ),
+  );
+}
+
+/**
+ * Take back what a forgotten lesson marked (SAK-492). Mirrors POST /api/seen
+ * with `unlearn: true`: the seen record and the learnedAt stamp go for each
+ * fact that has no quiz on it, so the Observatory offers the fact again. On 401
+ * the same op runs on this browser's history.
+ */
+export function postUnlearn(facts: FactId[]): Promise<ProgressResult> {
+  return announcing(
+    postWithLocalFallback("/api/seen", { facts, unlearn: true }, () =>
+      localUnlearn(facts),
     ),
   );
 }

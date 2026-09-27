@@ -32,6 +32,9 @@ const THRESHOLD = 1;
  * on the page is skipped rather than failing the run, so the list can reach
  * for something the sample learner may not have.
  */
+/** A lesson left on its second step, as the browser keeps it (place.ts). */
+const LEFT_LESSON = { v: 3, lesson: { picks: ["kana-row:h-w"], part: { kind: "steps", at: 1, steps: 3, star: "kana:を" }, leftAt: 1 } };
+
 const PAGES = [
   { path: "/?sample", name: "home", reveal: [{ role: "button", name: /Show the details/ }] },
   {
@@ -59,6 +62,12 @@ const PAGES = [
     // "Unselect all" and "I already know these" (SAK-458)
     reveal: [{ role: "button", name: /^marks the topic/ }],
   },
+  // A visitor with a lesson left part way through, which is what draws the
+  // Continue button and the X on it (SAK-492). The pretend learner keeps no
+  // place, so this one is a visitor's page with the place put in the browser
+  // first. Twice: the button with its X, and the ask the X opens.
+  { path: "/observatory", name: "observatory, a lesson left", store: { "sky:quiz:run": LEFT_LESSON }, reveal: [] },
+  { path: "/observatory", name: "observatory, forget asked", store: { "sky:quiz:run": LEFT_LESSON }, reveal: [{ role: "button", name: /^Forget this lesson$/ }] },
 ];
 
 /**
@@ -212,6 +221,12 @@ async function main() {
 
   for (const spec of PAGES) {
     await page.goto(`${base}${spec.path}`, { waitUntil: "load" });
+    // what the browser holds for this page, put there and the page loaded
+    // again to read it, then taken out so the next page starts clean
+    if (spec.store) {
+      await page.evaluate((store) => { for (const [k, v] of Object.entries(store)) localStorage.setItem(k, JSON.stringify(v)); }, spec.store);
+      await page.reload({ waitUntil: "load" });
+    }
     // The Sky's pages hydrate and then fill in; give the last of it a moment.
     await page.waitForTimeout(1500);
     for (const r of spec.reveal) {
@@ -227,6 +242,7 @@ async function main() {
     // `collect` is written here but runs there, so it goes over as its own
     // source and is called on the far side.
     const { measured, offenders } = await page.evaluate(`(${collect.toString()})(${JSON.stringify(SELECTOR)}, ${THRESHOLD})`);
+    if (spec.store) await page.evaluate(() => localStorage.clear());
     counted.push(`${spec.name}: ${measured}`);
     for (const f of offenders) {
       total += 1;

@@ -219,6 +219,24 @@ export async function factsOfPicks(ids: readonly string[]): Promise<FactId[]> {
   return pickFacts(ids.map((id) => id.replace(/^page:/, "")));
 }
 
+/**
+ * A star's facts, for a lesson opening it, and which of them this account has
+ * never met: no `learnedAt` stamp, so the "seen" about to be written is what
+ * stamps it (SAK-492). The lesson keeps those on its sitting, and forgetting
+ * the lesson takes back exactly them and nothing an earlier lesson marked.
+ *
+ * Asked BEFORE the write, and asked here, because a signed-in learner's
+ * history is on the server and the page holds none of it. `fresh` is null
+ * when there is no account to ask: a visitor's history is in their browser,
+ * and the browser answers the same question there (writes.ts).
+ */
+export async function factsToSee(ids: readonly string[]): Promise<{ facts: FactId[]; fresh: FactId[] | null }> {
+  const facts = await factsOfPicks(ids);
+  if (!facts.length || !(await currentUserId())) return { facts, fresh: null };
+  const learned = (await learnerHistory()).learnedAt ?? {};
+  return { facts, fresh: facts.filter((f) => learned[f] == null) };
+}
+
 /** The Quiz's answers as session records, the app's own way: a drill
  * session of the cards' facts (a listening card is its fact, asked by
  * ear) and, when ordering cards were answered, an assembly session of

@@ -27,8 +27,10 @@ import {
   applySeen,
   applySession,
   applySessionMeta,
+  applyUnlearn,
   deriveLearnedAt,
   emptyHistory,
+  normalizeHistoryShell,
   withBackfilledLearnedAt,
 } from "@/lib/history-ops";
 import { isFactFresh } from "@/lib/content/unit-scheduler-core";
@@ -408,4 +410,73 @@ test("applyDeleteSessionsMeta honors the empty-selection no-op contract", () => 
   const start = applySession(emptyHistory(), seedSession(100, "s1"));
   const out = applyDeleteSessionsMeta(start, [], false);
   assert.equal(out, start, "same reference: nothing selected, nothing changes");
+});
+
+// SAK-492. A Sky lesson left part way through is forgotten from the
+// Observatory's X, or from Sessions. Opening a star marked its facts seen, and
+// for the facts that mark was the first one on, it also stamped learnedAt; the
+// sitting keeps those fact ids, and forgetting hands them to applyUnlearn.
+
+/** What a lesson step does: the facts with no learnedAt before the seen write
+ * are the ones this sitting marked first (seeId in src/app/(sky)/writes.ts). */
+function openStar(hist: HistoryFile, facts: FactId[], ts: number): { hist: HistoryFile; first: FactId[] } {
+  const before = hist.learnedAt ?? {};
+  return { hist: applySeen(hist, facts, ts), first: facts.filter((f) => before[f] == null) };
+}
+
+function quizOn(fact: FactId, ts: number): QuizSessionRecord {
+  return {
+    id: `quiz-${ts}`,
+    ts,
+    mode: "drill",
+    redrill: false,
+    total: 1,
+    forgivingPct: 100,
+    strictPct: 100,
+    facts: { [fact]: { seen: 1, missed: 0, firstTry: 1, correct: 1 } } as QuizSessionRecord["facts"],
+  };
+}
+
+test("forgetting a lesson clears what it marked that nobody has quizzed since, and leaves the rest", () => {
+  const earlier = fid("pattern-wa");
+  const a = fid("pattern-wo");
+  const b = fid("pattern-ni");
+  // an earlier lesson marked は, and nobody quizzed it
+  let hist = applySeen(emptyHistory(), [earlier], 1_000);
+  // this sitting opens two stars, and opens は again on the way
+  const marked: FactId[] = [];
+  for (const [facts, ts] of [[[a], 2_000], [[b, earlier], 3_000]] as const) {
+    const step = openStar(hist, [...facts], ts);
+    hist = step.hist;
+    marked.push(...step.first);
+  }
+  assert.deepEqual(marked, [a, b], "は was marked by the earlier lesson, not this one");
+  // に is quizzed after the lesson marked it
+  hist = applySession(hist, quizOn(b, 4_000));
+
+  const after = applyUnlearn(hist, marked);
+  assert.equal(after.seen?.[a], undefined, "を: no quiz on it, so its seen mark goes");
+  assert.equal(after.learnedAt?.[a], undefined, "and so does its learnedAt stamp");
+  assert.equal(after.seen?.[b], 3_000, "に was quizzed since, so its marks stay");
+  assert.equal(after.learnedAt?.[b], 3_000);
+  assert.equal(after.seen?.[earlier], 3_000, "は is the earlier lesson's, and is not touched");
+  assert.equal(after.learnedAt?.[earlier], 1_000);
+  // and a read of the stored document does not stamp を again from anything
+  assert.equal(normalizeHistoryShell(after).learnedAt?.[a], undefined);
+  assert.notEqual(after, hist, "a clone");
+  assert.equal(hist.seen?.[a], 2_000, "input untouched");
+});
+
+test("forgetting a lesson leaves a claimed fact alone, and a fact the aggregate holds", () => {
+  const claimed = fid("hira-wa");
+  const folded = fid("hira-wo");
+  let hist = applySeen(emptyHistory(), [claimed, folded], 2_000);
+  hist = applyClaims(hist, [claimed], 3_000);
+  // an aggregate with no stored session behind it: one the 200 cap evicted
+  hist = { ...hist, facts: { ...hist.facts, [folded]: applySession(emptyHistory(), quizOn(folded, 2_500)).facts[folded] } };
+  const after = applyUnlearn(hist, [claimed, folded]);
+  assert.equal(after.seen?.[claimed], 2_000);
+  assert.equal(after.learnedAt?.[claimed], 2_000);
+  assert.equal(after.seen?.[folded], 2_000);
+  assert.equal(after.learnedAt?.[folded], 2_000);
 });

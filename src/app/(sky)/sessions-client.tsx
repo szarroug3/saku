@@ -10,7 +10,9 @@
 // two is already on the Continue button beside every heading, so this page
 // lists the OTHER one, which is the whole point: an unfinished quiz that a
 // newer lesson pushed off the button is still one click away here. Forgetting
-// one clears its slot and nothing else.
+// a quiz clears its slot and nothing else; forgetting a lesson clears its slot
+// and takes back the marks it made on facts nobody has quizzed since, the same
+// forget the Observatory's X runs (SAK-492).
 
 import { useRouter } from "next/navigation";
 
@@ -22,7 +24,7 @@ import type { SkySession } from "@/sky/lib/sessions";
 import { loadSessions } from "./actions";
 import { placeHref, skyHref } from "./hrefs";
 import { useSkyData } from "./local";
-import { keepLesson, keepRun, useSavedPlace } from "./quiz-run-store";
+import { forgetPlace, useSavedPlace } from "./quiz-run-store";
 
 export function SessionsClient({ initial, sample, signedIn, accountPlace = NO_PLACE }: { initial: readonly SkySession[] | null; sample: boolean; signedIn: boolean; accountPlace?: SavedPlace }) {
   const router = useRouter();
@@ -41,7 +43,9 @@ export function SessionsClient({ initial, sample, signedIn, accountPlace = NO_PL
     .map((entry) => ({
       entry,
       href: placeHref(entry, sample),
-      onForget: () => (entry.kind === "quiz" ? keepRun(null, signedIn) : keepLesson(null, signedIn)),
+      // a lesson takes back what it marked as it goes (SAK-492), and a
+      // signed-in page reads the account's place again once it is cleared
+      onForget: () => void forgetPlace(entry, signedIn).then(() => router.refresh()),
     }));
   if (!sessions) return loading;
   const rerun = (ids: readonly string[]) => router.push(skyHref("/quiz", { sample, from: "sessions", cards: ids }));

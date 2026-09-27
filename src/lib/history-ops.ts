@@ -224,6 +224,36 @@ export function applyDropSeen(hist: HistoryFile, facts: FactId[]): HistoryFile {
   return next;
 }
 
+/**
+ * Take back what a lesson left part way through marked as met, for the facts
+ * nobody has been quizzed on since (SAK-492).
+ *
+ * Opening a star in a Sky lesson marks its facts seen, and that first mark is
+ * also what stamps `learnedAt`. Forgetting the lesson has to undo both, or the
+ * Observatory keeps treating the facts as met: `seen` is what makes an item
+ * met, and `learnedAt` is what `withBackfilledLearnedAt` would otherwise keep
+ * as the record of it. The caller names only the facts the lesson itself
+ * stamped for the first time, so a mark an earlier lesson made is never in
+ * the list.
+ *
+ * A fact with any quiz evidence is left alone: an aggregate in `facts`, or a
+ * stored session that asked it. That evidence is real, and the marks now date
+ * from it rather than from the lesson. A fact with a claim is left alone as
+ * well, since a claim is the learner saying they know it, and forgetting a
+ * lesson is not saying the opposite. Always returns a clone.
+ */
+export function applyUnlearn(hist: HistoryFile, facts: FactId[]): HistoryFile {
+  const next = structuredClone(hist);
+  const quizzed = new Set<string>();
+  for (const s of next.sessions) for (const f of Object.keys(s.facts ?? {})) quizzed.add(f);
+  for (const f of facts) {
+    if (quizzed.has(f) || next.facts?.[f] || next.claims?.[f] != null) continue;
+    if (next.seen) delete next.seen[f];
+    if (next.learnedAt) delete next.learnedAt[f];
+  }
+  return next;
+}
+
 /** Retire one confusion record without deleting the quiz evidence that formed
  * it. Later mix-ups still reopen the pair because readers treat this timestamp
  * as a floor, not a permanent ignore-list. */

@@ -14,10 +14,15 @@
 // frontier does not stay advanced by a session that scored nothing. Recorded
 // server-side, so the roll-back reaches other devices too and one of them cannot
 // see the phantom advance.
+//
+// `unlearn: true` takes back a forgotten Sky lesson's marks (SAK-492): the seen
+// record AND the learnedAt stamp, for each named fact that has no quiz on it.
+// The caller names only the facts the lesson stamped for the first time, so
+// nothing an earlier lesson marked is in the list.
 
 import { getUserId } from "@/lib/auth";
 import { historyErrorResponse } from "@/lib/api-error";
-import { dropSeen, saveSeen } from "@/lib/history";
+import { dropSeen, saveSeen, unlearn } from "@/lib/history";
 import type { FactId } from "@/types/facts";
 
 const NO_STORE = { "Cache-Control": "no-store" };
@@ -27,6 +32,9 @@ interface SeenBody {
   /** true withdraws the seen record. Absent means false — the common case is
    * recording a "quiz me", and a body that forgets the flag must not unsee. */
   remove?: boolean;
+  /** true takes back a forgotten lesson's seen and learnedAt marks, for the
+   * facts with no quiz on them (SAK-492). */
+  unlearn?: boolean;
 }
 
 export async function POST(request: Request) {
@@ -52,9 +60,11 @@ export async function POST(request: Request) {
   // of the request, not from a time the client chose.
   try {
     const userId = await getUserId();
-    const hist = body.remove
-      ? await dropSeen(userId, facts)
-      : await saveSeen(userId, facts, Date.now());
+    const hist = body.unlearn
+      ? await unlearn(userId, facts)
+      : body.remove
+        ? await dropSeen(userId, facts)
+        : await saveSeen(userId, facts, Date.now());
     return Response.json(
       { ok: true, seen: Object.keys(hist.seen ?? {}).length },
       { headers: NO_STORE },

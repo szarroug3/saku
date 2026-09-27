@@ -44,14 +44,14 @@ import { HearButton } from "./hear-button";
 import { SkyLesson, type SkyLessonData } from "@/sky/components/sky-lesson";
 import { referencePages, unseenPages } from "@/sky/lib/lesson";
 import { lessonSplit, OLD_VIEW_KEY } from "@/sky/lib/lesson-split";
-import { hasPlace, lessonAt, lessonFor, NO_PLACE, type SavedPlace } from "@/sky/lib/place";
+import { hasPlace, lessonAt, lessonFor, NO_PLACE, withMarks, type SavedPlace } from "@/sky/lib/place";
 
 import { loadLesson } from "./actions";
 import { skyHref } from "./hrefs";
 import { useSkyData } from "./local";
 import { seePages, usePagesSeenAtOpen } from "./pages-seen";
 import { PitchMark } from "./pitch-reading";
-import { keepLesson, usePlaceAtOpen } from "./quiz-run-store";
+import { keepLesson, markLesson, usePlaceAtOpen } from "./quiz-run-store";
 import { readStored, useStored, writeStored } from "./stored";
 import { WrittenBlock } from "./written-block";
 import { seeId } from "./writes";
@@ -80,9 +80,19 @@ export function LessonClient({ sample, showcase, signedIn, initial, picks, accou
   const onPlace = useCallback(
     (place: { at: number; steps: number; star: string }) => {
       if (sample || showcase) return;
-      keepLesson(lessonAt(picks, { kind: "steps", ...place }, Date.now()), signedIn);
+      keepLesson(withMarks(lessonAt(picks, { kind: "steps", ...place }, Date.now()), kept), signedIn);
     },
-    [sample, showcase, picks, signedIn],
+    [sample, showcase, picks, signedIn, kept],
+  );
+  // A star opened for the first time marks its facts seen, and the facts that
+  // mark was the first one on are kept on the sitting, so forgetting the
+  // lesson can take them back (SAK-492).
+  const onOpen = useCallback(
+    async (id: string) => {
+      const first = await seeId(id);
+      markLesson(picks, first, signedIn);
+    },
+    [picks, signedIn],
   );
   // Which reference pages this learner has already been shown, read once for
   // the reason the place is read once: the lesson marks its own pages the
@@ -142,7 +152,7 @@ export function LessonClient({ sample, showcase, signedIn, initial, picks, accou
       written={written}
       hear={HearButton}
       pitch={PitchMark}
-      onOpen={sample || showcase ? undefined : seeId}
+      onOpen={sample || showcase ? undefined : onOpen}
       startAt={startAt}
       openPages={openPages}
       onPlace={sample || showcase ? undefined : onPlace}

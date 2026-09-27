@@ -28,11 +28,12 @@
 
 import { useMemo, useSyncExternalStore } from "react";
 
-import { placeDoc, readPlace, type SavedLesson, type SavedPlace } from "@/sky/lib/place";
+import { placeDoc, readPlace, withMarks, type PlaceEntry, type SavedLesson, type SavedPlace } from "@/sky/lib/place";
 import type { SavedRun } from "@/sky/lib/quiz-run";
 
 import { savePlace } from "./actions";
 import { readStored, useStored, writeStored } from "./stored";
+import { unlearnFacts } from "./writes";
 
 /** The browser's copy. A live key: it is in the note at the top of
  * storage-sweep.ts, not in its list of dead ones. The name is SAK-404's,
@@ -149,7 +150,49 @@ export function reportRun(run: SavedRun | null, signedIn: boolean): void {
  * when the learner steps, never on the way in, so it has nothing to say
  * about a lesson nobody has walked. Clearing it means the drill was opened,
  * and that has to land even when this page load has written nothing yet
- * (a lesson resumed on its last step, drilled without a step). */
+ * (a lesson resumed on its last step, drilled without a step).
+ *
+ * What the sitting has marked rides over from the slot as it stands, when the
+ * slot holds the same lesson (SAK-492): every writer builds the lesson from
+ * its part alone, and a step or a round written without the marks would lose
+ * what forgetting the lesson has to take back. */
 export function keepLesson(lesson: SavedLesson | null, signedIn: boolean): void {
-  keep({ ...placeAtOpen(), lesson }, signedIn);
+  const place = placeAtOpen();
+  keep({ ...place, lesson: withMarks(lesson, place.lesson) }, signedIn);
+}
+
+/** Add facts to what the lesson in the slot has marked, when the slot holds
+ * the lesson of these picks (SAK-492). The lesson has written its place by
+ * the time a star is opened, since it reports its opening step the moment it
+ * mounts, so a slot holding some other lesson means these marks are not this
+ * sitting's to keep. */
+export function markLesson(picks: readonly string[], facts: readonly string[], signedIn: boolean): void {
+  const lesson = placeAtOpen().lesson;
+  if (!facts.length || !lesson || lesson.picks.join(",") !== picks.join(",")) return;
+  keepLesson({ ...lesson, marked: facts }, signedIn);
+}
+
+/**
+ * Let go of something left part way through, for good (SAK-492). The one
+ * forget for both places that offer it: the Observatory's X on Continue, and
+ * Sessions' "Forget it forever" on an Unfinished row.
+ *
+ * A quiz only clears its slot. A lesson clears its slot and then takes back
+ * what the sitting marked, for each fact nobody has been quizzed on since, so
+ * the Observatory offers those items again. The marks are read from the entry
+ * the page was showing and from the slot as it stands, since either can hold
+ * the newer list. The promise settles once the account has the cleared place
+ * too, so a page that reads the account after this reads it without the
+ * place.
+ */
+export async function forgetPlace(entry: PlaceEntry, signedIn: boolean): Promise<void> {
+  if (entry.kind === "quiz") {
+    keepRun(null, signedIn);
+    await queue;
+    return;
+  }
+  const marked = withMarks(entry.lesson, placeAtOpen().lesson)?.marked ?? [];
+  keepLesson(null, signedIn);
+  await queue;
+  await unlearnFacts(marked);
 }

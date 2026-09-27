@@ -26,6 +26,7 @@ import {
   applyDropSeen,
   applySeen,
   applySessionMeta,
+  applyUnlearn,
   emptyHistory,
 } from "@/lib/history-ops";
 import {
@@ -156,6 +157,17 @@ export async function dropClaims(userId: string, facts: FactId[]): Promise<Histo
  * frontier reads as fresh again. */
 export async function dropSeen(userId: string, facts: FactId[]): Promise<HistoryFile> {
   return mutateHistory(userId, (hist) => applyDropSeen(hist, facts));
+}
+
+/** Take back the seen and learnedAt marks a forgotten Sky lesson made, for
+ * the facts with no quiz on them (SAK-492, see applyUnlearn). A fact's quiz
+ * aggregate lives in its own `progress_facts` row here rather than in the
+ * document, so a fact with a row is taken out of the list before the op runs:
+ * it has been quizzed, and its marks stay. */
+export async function unlearn(userId: string, facts: FactId[]): Promise<HistoryFile> {
+  const rows = await readFactRowsVersioned(userId, facts);
+  const unquizzed = facts.filter((f) => !rows.get(f)?.exists);
+  return mutateHistory(userId, (hist) => applyUnlearn(hist, unquizzed));
 }
 
 /** Retire an open confusion record at the learner's request. The underlying
