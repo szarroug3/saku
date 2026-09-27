@@ -136,6 +136,23 @@ test("applyDropClaims also deletes history.facts[f] — a claim withdrawal on an
   assert.equal(fresh, true, "isFactFresh now reports the reset word as due again");
 });
 
+// 2026-09-27. Sam opened を in a lesson, which marks it seen, and the Sky reads
+// a seen fact as met: off the Observatory, known on the Atlas. "I don't know
+// this" only withdrew a claim she had never made, so nothing changed.
+test("applyDropClaims also takes back the seen mark and the learnedAt stamp a lesson made, so the fact is brand new", () => {
+  const seen = applySeen(emptyHistory(), [fid("grammar:wo"), fid("grammar:wa")], 1_000);
+  assert.equal(seen.seen![fid("grammar:wo")], 1_000);
+  assert.equal(seen.learnedAt![fid("grammar:wo")], 1_000);
+
+  const dropped = applyDropClaims(seen, [fid("grammar:wo")]);
+
+  assert.equal(fid("grammar:wo") in (dropped.seen ?? {}), false, "the seen mark is gone");
+  assert.equal(fid("grammar:wo") in (dropped.learnedAt ?? {}), false, "and so is the stamp, so the next lesson to open it is the first");
+  assert.equal(dropped.seen![fid("grammar:wa")], 1_000, "the other fact keeps both");
+  assert.equal(dropped.learnedAt![fid("grammar:wa")], 1_000);
+  assert.equal(seen.seen![fid("grammar:wo")], 1_000, "the input is untouched");
+});
+
 test("applyDropClaims on a fact with NO facts aggregate (kana-like) still behaves as before — regression guard", () => {
   // Kana facts in real history are tracked purely via claims/learnedAt and never
   // get an independent facts[] aggregate, which is why the bug never showed up
@@ -382,14 +399,18 @@ test("applySessionMeta caps sessions at 200, exactly like applySession", () => {
   );
 });
 
-test("applyDropClaimsMeta drops the claim but leaves facts completely untouched", () => {
+test("applyDropClaimsMeta drops the claim, the seen mark and the stamp, but leaves facts completely untouched", () => {
   const start: HistoryFile = {
     ...emptyHistory(),
     claims: { [fid("a")]: 1, [fid("b")]: 2 } as HistoryFile["claims"],
+    seen: { [fid("a")]: 3, [fid("b")]: 4 } as HistoryFile["seen"],
+    learnedAt: { [fid("a")]: 1, [fid("b")]: 2 } as HistoryFile["learnedAt"],
     facts: { [fid("a")]: { seen: 9 } as HistoryFile["facts"][FactId] },
   };
   const out = applyDropClaimsMeta(start, [fid("a")]);
   assert.deepEqual(out.claims, { [fid("b")]: 2 });
+  assert.deepEqual(out.seen, { [fid("b")]: 4 });
+  assert.deepEqual(out.learnedAt, { [fid("b")]: 2 });
   assert.equal(out.facts, start.facts, "same reference — applyDropClaims' facts-delete is NOT done here");
 });
 

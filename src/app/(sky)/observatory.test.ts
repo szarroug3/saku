@@ -8,7 +8,7 @@ import { describe, it } from "node:test";
 
 import { patternEntry } from "@/data/grammar";
 import { CURRICULUM_PATTERNS } from "@/lib/grammar-lesson";
-import { emptyHistory } from "@/lib/history-ops";
+import { applyDropClaims, applySeen, emptyHistory } from "@/lib/history-ops";
 import { knownFactsOf, libEntry, type LibEntry } from "@/lib/library/entries";
 import type { FactAggregate, HistoryFile } from "@/types/store";
 import { pickState } from "@/sky/lib/cart";
@@ -236,6 +236,21 @@ describe("the sentence rules on offer", () => {
       assert.equal(s.needs?.[simple], undefined);
       assert.ok(items.some((it) => it.id === simple), "Simple is in the row");
       assert.equal(open(history, []), true);
+    });
+
+    // 2026-09-27. Sam opened を in a lesson, which marks it seen, and a seen
+    // pattern is met: off the row, and "I don't know this" on the Atlas
+    // withdrew a claim she had never made, so it stayed off. Now the button
+    // takes the seen mark with it, and を is offered again.
+    it("offers a pattern again after \"I don't know this\", even one only opened in a lesson", () => {
+      const wo = libEntry(patternEntry("wo"))!;
+      const seen = applySeen(knows("prenominal-form"), [...knownFactsOf(wo)], NOW);
+      assert.ok(!section(seen).items.some((it) => it.id === wo.id), "opened in a lesson, を is met and not offered");
+      assert.deepEqual(section(seen).s.needs?.[simple], [WA_GA], "and Simple waits on は vs が alone");
+
+      const dropped = applyDropClaims(seen, [...knownFactsOf(wo)]);
+      assert.ok(section(dropped).items.some((it) => it.id === wo.id), "after the button, を is back in the row");
+      assert.deepEqual(section(dropped).s.needs?.[simple], [WA_GA, wo.id], "and Simple waits on it again");
     });
 
     it("the same for a later type: Sequential waits on each of its five it has not met", () => {

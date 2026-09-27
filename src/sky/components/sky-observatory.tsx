@@ -198,8 +198,16 @@ export function SkyObservatory({ data, cap = COMFORTABLE_WEIGHT, lessonHref, ini
 
   return (
     <SkyPageShell eyebrow="Observatory" title="What would you like to learn next?" aside={resume && <ContinueButton entry={resume.entry} href={resume.href} onForget={resume.onForget} className="lg:w-[340px]" />} height={height}>
-      <div className="grid min-h-0 flex-1 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_340px]">
-        <div className="min-h-0 min-w-0 self-stretch overflow-y-auto pb-6 pr-1">
+      {/* One column below lg, and the whole of it scrolls: the sections, then
+          the sky, the meter and the picks with the Start button under them.
+          It used to be the grid at every width, with the sections' column the
+          only thing that scrolled, so on a phone the rail sat under the
+          sections past the bottom of the shell and nothing could reach it: no
+          meter, no picks, no way to start the lesson. At lg the two columns
+          are back, each scrolling on its own under the fixed heading, as the
+          lesson page does it. */}
+      <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto lg:grid lg:grid-cols-[minmax(0,1fr)_340px] lg:items-start lg:overflow-hidden">
+        <div className="min-w-0 shrink-0 pb-2 pr-1 lg:min-h-0 lg:shrink lg:self-stretch lg:overflow-y-auto lg:pb-6">
           {data.sections.filter((section) => !section.shut && !section.complete && waited(section.id, picks)).map((section) => {
             const ids = offered(section);
             // nothing to take right now (everything left waits on something): not shown
@@ -226,7 +234,7 @@ export function SkyObservatory({ data, cap = COMFORTABLE_WEIGHT, lessonHref, ini
           })}
         </div>
 
-        <aside className="flex min-h-0 flex-col gap-4 self-stretch lg:pb-6">
+        <aside className="flex shrink-0 flex-col gap-4 pb-6 lg:min-h-0 lg:shrink lg:self-stretch">
           <SkyPanel title="Your sky tonight" className="shrink-0 !p-4">
             <div data-sky="tonight" className="mt-3 overflow-hidden rounded-xl border border-sky-line">
               <SkyField items={data.items} roots={picks} tonight={new Set(picks)} graph={graph} width={340} height={230} pad={16} baseSize={40} contain seed="planetarium" label="Tonight's picks, as the constellations they will be" />
