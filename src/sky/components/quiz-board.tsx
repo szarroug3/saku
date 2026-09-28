@@ -77,7 +77,11 @@ export function QuizPrompt({ card, listening, answered, listenRef, hear: Hear }:
  * placed one to take it back, Check once every piece is down.
  *
  * `built` is the pieces placed so far, by their index in the deal, which is
- * how the loop keeps them; this draws them and says which index was touched. */
+ * how the loop keeps them; this draws them and says which index was touched.
+ *
+ * The sentence's end mark sits after the placed pieces rather than on the
+ * last one, and a piece whose word the learner has not met says what the
+ * word means under it (Sam, 2026-09-28). */
 export function QuizOrder({ order, built, onBuilt, onCheck }: {
   order: NonNullable<QuizCard["order"]>;
   built: readonly number[];
@@ -97,11 +101,18 @@ export function QuizOrder({ order, built, onBuilt, onCheck }: {
         {built.map((p, i) => (
           <button key={`${p}-${i}`} type="button" onClick={() => onBuilt(built.filter((_, j) => j !== i))} className={`rounded-lg border border-sky-accent bg-sky-card-strong px-3 py-1.5 text-[17px] text-sky-ink ${japaneseFont(order.pieces[p])}`}>{face(p)}</button>
         ))}
+        {built.length > 0 && order.tail && <span aria-hidden className={`text-[17px] text-sky-muted ${japaneseFont(order.tail)}`}>{order.tail}</span>}
       </div>
       <div className="flex flex-wrap justify-center gap-2">
         {order.pieces.map((piece, i) => {
           const placed = built.includes(i);
-          return <button key={i} type="button" disabled={placed} onClick={() => onBuilt([...built, i])} className={`rounded-lg border px-3 py-1.5 text-[17px] ${placed ? "border-transparent bg-sky-card/40 text-sky-muted/50" : "border-sky-line bg-sky-card text-sky-ink hover:border-sky-accent"} ${japaneseFont(piece)}`}>{face(i)}</button>;
+          const gloss = order.glosses?.[i];
+          return (
+            <button key={i} type="button" disabled={placed} onClick={() => onBuilt([...built, i])} className={`rounded-lg border px-3 py-1.5 text-[17px] ${placed ? "border-transparent bg-sky-card/40 text-sky-muted/50" : "border-sky-line bg-sky-card text-sky-ink hover:border-sky-accent"} ${japaneseFont(piece)}`}>
+              {face(i)}
+              {gloss && <span className={`block font-sky-ui text-[11px] leading-tight ${placed ? "text-sky-muted/50" : "text-sky-muted"}`}>{gloss}</span>}
+            </button>
+          );
         })}
       </div>
       <div className="flex justify-center"><SkyButton onClick={onCheck} disabled={built.length !== order.pieces.length}>Check</SkyButton></div>

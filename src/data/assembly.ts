@@ -116,6 +116,36 @@ const CURATED_ASSEMBLY: readonly AssemblyItem[] = [
     v: ["私", "本", "読む"],
     p: ["wo"],
   },
+  // Two more of the same shape (2026-09-28), so a learner who knows は, が and
+  // を and no verb form has five Simple sentences to build: a quiz drills a
+  // type on five (sentence-reach.ts), and the three above were the whole of
+  // what was within reach. The three below them are in the た-form and wait
+  // for it. Beginner words the vocabulary carries, so an unknown one gets its
+  // meaning on the card.
+  {
+    id: -4,
+    en: "I eat bread.",
+    jp: "私はパンを食べる。",
+    pieces: [
+      { t: "私は", h: "私" },
+      { t: "パンを", h: "パン" },
+      { t: "食べる。", h: "食べる" },
+    ],
+    v: ["私", "パン", "食べる"],
+    p: ["wo"],
+  },
+  {
+    id: -5,
+    en: "I listen to music.",
+    jp: "私は音楽を聞く。",
+    pieces: [
+      { t: "私は", h: "私" },
+      { t: "音楽を", h: "音楽" },
+      { t: "聞く。", h: "聞く" },
+    ],
+    v: ["私", "音楽", "聞く"],
+    p: ["wo"],
+  },
 
   // Te-form links and helpers.
   {

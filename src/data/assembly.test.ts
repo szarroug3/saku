@@ -175,18 +175,18 @@ describe("SAK-18: every sentence-ordering tier pattern is a real, creditable fac
     }
   });
 
-  // The concrete regression: the six hand-curated "Simple sentences" items
-  // (ids -1, -2, -3, -101, -102, -103) must each credit at least one real
-  // fact. Before the fix every one of these returned [] here.
+  // The concrete regression: the hand-curated "Simple sentences" items (ids
+  // -1 to -5, -101, -102, -103; eight since 2026-09-28) must each credit at
+  // least one real fact. Before the fix every one of these returned [] here.
   test("every curated Simple-sentences item credits a real fact", () => {
     const simpleTier = SENTENCE_ORDERING_TIERS[0];
     assert.equal(simpleTier.id, "simple");
     const curatedSimpleItems = ASSEMBLY.filter(
       (item) => item.id < 0 && sentenceOrderingTierForItem(item) === "simple",
     );
-    // Guard the guard: this must actually find the six curated items, or the
-    // rest of this test would vacuously pass.
-    assert.equal(curatedSimpleItems.length, 6);
+    // Guard the guard: this must actually find the eight curated items, or
+    // the rest of this test would vacuously pass.
+    assert.equal(curatedSimpleItems.length, 8);
     for (const item of curatedSimpleItems) {
       const facts = assemblyFacts(item);
       assert.ok(

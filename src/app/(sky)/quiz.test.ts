@@ -6,7 +6,8 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import { ASSEMBLY, canonicalOrder } from "@/data/assembly";
-import { GRAMMAR_SUBJECT } from "@/data/grammar";
+import { GRAMMAR_SUBJECT, patternMeaningFactId } from "@/data/grammar";
+import { sentenceTierMarkerFact } from "@/lib/sentence-ordering-progress";
 import { pieceSounds } from "@/data/sentence-readings";
 import { kanjiRow } from "@/data/kanji";
 import { pitchFactId } from "@/data/pitch-facts";
@@ -19,6 +20,7 @@ import { quizzableFacts } from "@/lib/library/reading-proof-facts";
 import { CURRICULUM_KEBS_ORDERED } from "@/lib/word-rank";
 import { buildGraph } from "@/sky/lib/graph";
 import { lessonSteps } from "@/sky/lib/lesson";
+import type { QuizCard } from "@/sky/lib/quiz";
 import type { FactId } from "@/types/facts";
 import type { HistoryFile } from "@/types/store";
 
@@ -27,6 +29,7 @@ import { grade } from "./grade";
 import { lessonFromPicks } from "./lesson";
 import { pickFacts } from "./observatory";
 import { cardsFor, quizCards, quizFromHistory, sampleCards } from "./quiz";
+import { sentencesToBuild } from "./sentence-reach";
 import { sampleHistory } from "./sample-learner";
 
 const NOW = Date.UTC(2026, 8, 5);
@@ -80,7 +83,9 @@ describe("the sample quiz", () => {
     assert.ok(order.id.startsWith("grammar:sentence-ordering-tier/"));
     assert.deepEqual([...order.order!.pieces].sort(), [...order.order!.answer].sort());
     assert.ok(order.order!.pieces.length < 2 || !order.order!.pieces.every((p, i) => p === order.order!.answer[i]), "not dealt in order");
-    assert.equal(order.answer, order.order!.answer.join(""));
+    // the end mark is off the pieces and after them (2026-09-28)
+    assert.equal(order.answer, order.order!.answer.join("") + (order.order!.tail ?? ""));
+    assert.ok(!order.order!.pieces.some((p) => /[。？！]$/.test(p)), "no piece carries the end mark");
     assert.ok(order.meta?.facts !== undefined);
   });
 
@@ -91,7 +96,70 @@ describe("the sample quiz", () => {
     assert.ok(order.sounds, "the dealt sentence has its readings");
     assert.equal(order.sounds.length, order.pieces.length);
     order.sounds.forEach((sound, i) => assert.equal(sound.map((r) => r.text).join(""), order.pieces[i], "a piece's readings spell the piece"));
-    assert.equal(order.answerSound?.map((r) => r.text).join(""), order.answer.join(""));
+    assert.equal(order.answerSound?.map((r) => r.text).join(""), order.answer.join("") + (order.tail ?? ""));
+  });
+});
+
+// Sam, 2026-09-28, on her first Simple drill after learning は vs が and を:
+// the one sentence it dealt turned on に and the た-form, its last piece
+// carried the 。 that gave it away, and 店 and 行く came with no meaning.
+describe("a sentence type's orderings (2026-09-28)", () => {
+  const SIMPLE = sentenceTierMarkerFact("simple");
+  const RULE = "writing-rule:sentence-rule-simple";
+  const PICKS = ["particles:wa-ga", "grammar:wo", RULE];
+  const knowsPatterns = (...ids: string[]): HistoryFile => ({ ...emptyHistory(), claims: Object.fromEntries(ids.map((id) => [patternMeaningFactId(id), NOW])) });
+  const itemOf = (card: QuizCard) => ASSEMBLY.find((it) => String(it.id) === card.meta?.assembly)!;
+
+  it("deals five sentences of the type, each its own card of the type's marker", () => {
+    const cards = quizCards(emptyHistory(), [SIMPLE], NOW, { picks: PICKS });
+    assert.equal(cards.length, 5);
+    assert.equal(new Set(cards.map((c) => c.id)).size, 5, "ids unique");
+    for (const c of cards) {
+      assert.match(c.id, /^grammar:sentence-ordering-tier\/simple#-?\d+$/);
+      assert.equal(c.answerId, SIMPLE, "every card is the type's marker");
+      assert.equal(c.item.id, RULE);
+    }
+    assert.equal(new Set(cards.map((c) => c.meta?.assembly)).size, 5, "five different sentences");
+  });
+
+  it("deals only sentences within reach, the ones tonight's patterns turn on first", () => {
+    const cards = quizCards(emptyHistory(), [SIMPLE], NOW, { picks: PICKS });
+    for (const c of cards) {
+      const item = itemOf(c);
+      assert.ok(item.p.every((p) => ["wa", "ga", "wo"].includes(p)), `${item.jp} turns on ${item.p.join(", ")}, which was not taught`);
+      assert.ok(!["-101", "-102", "-103"].includes(c.meta!.assembly), `${item.jp} is in the た-form, which was not taught`);
+      assert.ok(item.p.includes("wo"), "を is what tonight taught, so its sentences come first");
+    }
+  });
+
+  it("keeps the end mark off the last piece and hands it to the card as its tail", () => {
+    const [card] = cardsFor(emptyHistory(), [`${SIMPLE}#-1`], NOW);
+    assert.equal(card.meta?.assembly, "-1", "a card named by its sentence deals that sentence");
+    assert.deepEqual([...card.order!.answer], ["私は", "水を", "飲む"]);
+    assert.equal(card.order!.tail, "。");
+    assert.equal(card.answer, "私は水を飲む。");
+    assert.equal(card.order!.answerSound?.map((r) => r.text).join(""), "私は水を飲む。");
+    const last = card.order!.sounds![card.order!.pieces.indexOf("飲む")];
+    assert.equal(last.map((r) => r.text).join(""), "飲む", "the last piece's readings lose the mark too");
+    const [question] = cardsFor(emptyHistory(), [`${SIMPLE}#-2`], NOW);
+    assert.equal(question.order!.tail, "？");
+  });
+
+  it("says what a piece's word means when the learner has not met it, and nothing when they have", () => {
+    const [card] = cardsFor(emptyHistory(), [`${SIMPLE}#-1`], NOW);
+    const water = card.order!.pieces.indexOf("水を");
+    assert.ok(card.order!.glosses?.[water], "水 is not met, so 水を says what it means");
+    assert.equal(card.order!.glosses![water], "water", "the first sense, without the dictionary's aside");
+    const known: HistoryFile = { ...emptyHistory(), claims: { [wordMeaningFactId("水")]: NOW, [wordMeaningFactId("私")]: NOW, [wordMeaningFactId("飲む")]: NOW } };
+    const [met] = cardsFor(known, [`${SIMPLE}#-1`], NOW);
+    assert.equal(met.order!.glosses, undefined, "every word met, nothing to say");
+  });
+
+  it("deals the た-form sentences once the た-form is known", () => {
+    const later = knowsPatterns("wa", "ga", "wo", "ni", "de", "ta-form");
+    const pool = sentencesToBuild("simple", later, [], Infinity).map((it) => it.id);
+    for (const id of [-101, -102, -103]) assert.ok(pool.includes(id), `${id} is back in the pool`);
+    assert.ok(!sentencesToBuild("simple", knowsPatterns("wa", "ga", "wo", "ni", "de"), [], Infinity).some((it) => it.id === -102), "and not before");
   });
 });
 

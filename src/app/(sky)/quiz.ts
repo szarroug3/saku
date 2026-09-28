@@ -13,7 +13,7 @@ import { derivationLines, type Derivation } from "@/lib/grammar/derivation";
 import { rollConstructionItem } from "@/lib/engine/number-quiz";
 import { pitchFactId, PITCH_SUBJECT } from "@/data/pitch-facts";
 import { pitchInstruction, rollPitchQuestion } from "@/lib/pitch-quiz";
-import { assemblyFacts, canonicalOrder, pickAssemblyForTiers } from "@/data/assembly";
+import { assemblyFacts, canonicalOrder, type AssemblyItem } from "@/data/assembly";
 import { pieceSounds } from "@/data/sentence-readings";
 import { isSentenceTierMarkerFact, sentenceTierMarkerFact } from "@/lib/sentence-ordering-progress";
 import { confusableWith, SENTENCE_RULE_KIND } from "@/lib/library/entries";
@@ -42,7 +42,9 @@ import type { Direction } from "@/types/sky";
 import type { HistoryFile } from "@/types/store";
 
 import { offerPicker, pickFacts } from "./observatory";
+import { standingFor } from "./learner";
 import { readingRuleFor } from "./quiz-rules";
+import { SENTENCE_END, sentenceOf, sentencesToBuild } from "./sentence-reach";
 import { teachFor } from "./teach";
 
 /** The basket: how many cards a session asks (SAK-311's cap). It is the
@@ -60,6 +62,10 @@ export interface QuizOptions {
   pitch?: boolean;
   audio?: boolean;
   everyWay?: boolean;
+  /** Tonight's picks, when the deck is a lesson's: a sentence type's
+   * ordering cards build the sentences that turn on what those taught first
+   * (sentence-reach.ts). */
+  picks?: readonly string[];
 }
 
 /** Whether a fact has never been put to the learner: nothing recorded
@@ -131,7 +137,7 @@ export function quizFromHistory(history: HistoryFile, picks: readonly string[], 
   const facts = quizFacts(history, picks, now, options.pitch ?? true);
   // a lesson's quiz asks every way it can (SAK-447); the daily review keeps
   // one card to a fact
-  return shuffleDeck(quizCards(history, facts, now, { ...options, ...(picks.length ? { everyWay: true } : {}) }));
+  return shuffleDeck(quizCards(history, facts, now, { ...options, ...(picks.length ? { everyWay: true, picks } : {}) }));
 }
 
 /** Why a wrong choice was on the board, in a few words, or nothing when the
@@ -394,8 +400,9 @@ export function quizCards(history: HistoryFile, facts: readonly FactId[], now = 
   // second time and costs a card of the eight it has.
   const asked = new Set<string>();
   for (const fact of facts) {
-    // a sentence tier's marker is asked as an ordering (SAK-346)
-    if (isSentenceTierMarkerFact(fact)) { const c = orderCard(history, fact, now); if (c) cards.push(c); continue; }
+    // a sentence tier's marker is asked as orderings (SAK-346): five of the
+    // type's sentences, the ones tonight's patterns turn on first
+    if (isSentenceTierMarkerFact(fact)) { cards.push(...orderCards(history, fact, now, opts.picks ?? [])); continue; }
     const info = factInfo(fact);
     if (!info) continue;
     // a pitch fact is the app's pitch question, as a card of its own
@@ -598,28 +605,70 @@ export function sampleCards(history: HistoryFile, now = Date.now()): QuizCard[] 
   return cards;
 }
 
-/** A sentence tier's ordering (SAK-346): one of the tier's sentences the
- * learner can read, its pieces dealt shuffled, the English as the prompt,
- * the app's one accepted order as the answer. The card is the tier's
- * marker fact; the recorder credits the sentence's pattern facts, as the
+/** A sentence type's marker and the sentence one of its cards built, from
+ * the card's id: the marker, then `#` and the sentence's own id. A bare
+ * marker names no sentence. */
+function orderCardId(id: string): { marker: FactId; sentence?: number } {
+  const m = /^(.+?)#(-?\d+)$/.exec(id);
+  return m ? { marker: m[1] as FactId, sentence: Number(m[2]) } : { marker: id as FactId };
+}
+
+/** A sentence type's orderings (SAK-346): five of the type's sentences the
+ * learner can build (sentence-reach.ts), each its pieces dealt shuffled, the
+ * English as the prompt, the app's one accepted order as the answer. Every
+ * card is the type's marker fact, with the sentence's id after a `#` so a
+ * deck holds five cards of one fact and a resumed deck deals the same
+ * sentences again; the recorder credits the sentence's pattern facts, as the
  * app's assembly drill does. */
-function orderCard(history: HistoryFile, marker: FactId, now = Date.now()): QuizCard | undefined {
+function orderCards(history: HistoryFile, id: FactId, now: number, picks: readonly string[]): QuizCard[] {
+  const { marker, sentence } = orderCardId(id as string);
   const tierId = (marker as string).replace(/^grammar:sentence-ordering-tier\//, "");
   const entry = (LIB_ENTRIES_BY_KIND.get(SENTENCE_RULE_KIND) ?? []).find((e) => knownFactsOf(e).includes(sentenceTierMarkerFact(tierId)));
-  const item = pickAssemblyForTiers(history, [tierId]);
   const pick = entry ? offerPicker(history, now).offerPick(entry.id) : undefined;
-  if (!item || !pick) return undefined;
-  const answer = canonicalOrder(item);
+  if (!pick) return [];
+  // a card named by its sentence deals that sentence, whatever is within reach
+  const named = sentence === undefined ? undefined : sentenceOf(tierId, history, sentence);
+  const items = sentence === undefined ? sentencesToBuild(tierId, history, picks) : named ? [named] : [];
+  return items.map((item) => orderCard(history, marker, item, pick, now));
+}
+
+/** One sentence as an ordering card. */
+function orderCard(history: HistoryFile, marker: FactId, item: AssemblyItem, pick: SkyItem, now: number): QuizCard {
+  // The sentence's end mark comes off its last piece and goes after the
+  // placed ones (Sam, 2026-09-28: "the punctuation gives away the last
+  // word"). The readings are looked up on the whole sentence first, since
+  // that is what they are keyed by, and the mark comes off the last run.
+  const whole = canonicalOrder(item);
+  const tail = SENTENCE_END.exec(whole[whole.length - 1] ?? "")?.[0];
+  const answer = whole.map((p, i) => (i === whole.length - 1 ? p.replace(SENTENCE_END, "") : p));
+  const soundsWhole = pieceSounds(item.jp, whole);
+  const sounds = soundsWhole?.map((line, i) => {
+    if (i !== whole.length - 1 || !tail) return line;
+    const runs = line.map((r) => ({ ...r }));
+    const last = runs[runs.length - 1];
+    if (last) last.text = last.text.replace(SENTENCE_END, "");
+    return runs.filter((r) => r.text);
+  });
   // the deal as indices into the answer, so each piece keeps its furigana
   const deal = answer.map((_, i) => i);
   for (let i = deal.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [deal[i], deal[j]] = [deal[j], deal[i]]; }
   // a deal that is already the answer is no question; deal again once
   if (deal.every((d, i) => answer[d] === answer[i]) && deal.length > 1) deal.push(deal.shift()!);
   const pieces = deal.map((d) => answer[d]);
-  const sounds = pieceSounds(item.jp, answer);
+  // what a piece's word means, for a word the learner has not met (Sam,
+  // 2026-09-28: "if the user doesn't know a word, they need the definition"):
+  // the first sense, without the dictionary's asides, since it sits under a
+  // piece ("water", not "water (esp. cool or cold)")
+  const glossOf = (head: string | null): string | undefined => {
+    const id = head ? entryForGlyph(VOCAB_SUBJECT, head) : undefined;
+    const e = id ? libEntry(id) : undefined;
+    const meaning = e && !standingFor(e, history, now).met ? e.meanings[0] : undefined;
+    return meaning?.replace(/\s*\([^)]*\)/g, "").split(";")[0].trim() || undefined;
+  };
+  const glosses = deal.map((d) => glossOf(item.pieces[d].h));
   const agg = history.facts?.[marker];
   return {
-    id: marker,
+    id: `${marker}#${item.id}`,
     item: pick,
     prompt: { glyph: item.en, jp: false },
     instruction: "Put the pieces in the order that says this.",
@@ -628,7 +677,12 @@ function orderCard(history: HistoryFile, marker: FactId, now = Date.now()): Quiz
     options: [],
     answerId: marker,
     answer: item.jp,
-    order: { pieces, answer, ...(sounds ? { sounds: deal.map((d) => sounds[d]), answerSound: sounds.flat() } : {}) },
+    order: {
+      pieces, answer,
+      ...(sounds && soundsWhole ? { sounds: deal.map((d) => sounds[d]), answerSound: soundsWhole.flat() } : {}),
+      ...(tail ? { tail } : {}),
+      ...(glosses.some(Boolean) ? { glosses } : {}),
+    },
     seen: agg?.seen ?? 0,
     missed: agg?.missed ?? 0,
     teach: teachFor(pick),

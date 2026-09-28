@@ -161,8 +161,14 @@ export interface QuizCard {
    * same order as `pieces`: the task is the order, so a reading gives nothing
    * away. `answerSound` is the whole sentence the same way, for the answer
    * line. Either is absent when the sentence has no readings, and the pieces
-   * print as they are. */
-  order?: { pieces: readonly string[]; answer: readonly string[]; sounds?: readonly SoundLine[]; answerSound?: SoundLine };
+   * print as they are.
+   *
+   * `tail` is the mark the sentence ends on (。, ？), kept off the pieces and
+   * drawn after them, since a piece carrying it gave away which one goes last
+   * (Sam, 2026-09-28). `glosses` is what each piece's word means, in the
+   * same order as `pieces`, for the words the learner has not met, and
+   * nothing for the rest: a learner who does not know 店 cannot place 店に. */
+  order?: { pieces: readonly string[]; answer: readonly string[]; sounds?: readonly SoundLine[]; answerSound?: SoundLine; tail?: string; glosses?: readonly (string | undefined)[] };
   /** How many times this fact has been seen, and missed, before tonight. */
   seen: number;
   missed: number;
