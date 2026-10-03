@@ -52,6 +52,9 @@ const PAGES = [
     ],
   },
   { path: "/lesson?picks=" + encodeURIComponent("kanji:日"), name: "lesson", reveal: [{ role: "button", name: /^日/ }] },
+  // a word pair's card, whose word pages have a hear button in the title's
+  // row (SAK-493); the うん pill turns to the second word's page
+  { path: "/lesson?picks=" + encodeURIComponent("words:word:はい-word:うん"), name: "lesson, a word pair", reveal: [{ role: "button", name: /^うん$/ }] },
   { path: "/practice?sample", name: "practice", reveal: [{ role: "button", name: /^Kana/ }] },
   { path: "/settings", name: "settings", reveal: [] },
   { path: "/sessions?sample", name: "sessions", reveal: [{ role: "button", name: /Quiz · / }] },
