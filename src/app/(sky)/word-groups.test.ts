@@ -23,6 +23,7 @@ import { lessonFromPicks } from "./lesson";
 import { beyondWords, offerings, pickFacts } from "./observatory";
 import { tileOf } from "./particle-groups";
 import { quizFromHistory } from "./quiz";
+import { teachFor } from "./teach";
 import { WORD_GROUPS, wordGroup } from "./word-groups";
 
 const NOW = Date.UTC(2026, 9, 3);
@@ -130,6 +131,17 @@ describe("a word group's lesson", () => {
       assert.ok(ex, `${page.eyebrow} has no sentence`);
       assert.ok(ex.en.length > 0);
     }
+  });
+
+  it("gives each word's page what its hear button says: the word, its reading and its pitch, as the word's own card has them", () => {
+    const pages = lessonFromPicks(emptyHistory(), [YES]).teach[YES]?.pages ?? [];
+    for (const [i, word] of ["はい", "うん"].entries()) {
+      const own = teachFor({ id: `word:${word}`, kind: "word", glyph: word, english: "", standing: "not-seen" });
+      // the pitch is the word card's own, which is nothing for a word the
+      // pitch table does not have, and then the button says it plain
+      assert.deepEqual(pages[i].say, { word, reading: own.reading, pitch: own.pitch });
+    }
+    assert.equal(pages[2].say, undefined, "the page telling them apart says nothing");
   });
 
   it("is quizzed on each word's own cards", () => {

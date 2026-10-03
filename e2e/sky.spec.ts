@@ -2411,8 +2411,23 @@ test("はい and うん are one tile, one pick and one card headed はい vs う
   const pager = card.getByRole("navigation", { name: "Pages" }).getByRole("button");
   await expect(pager).toHaveCount(3);
   await expect(pager).toHaveText(["はい", "うん", "はい vs うん"]);
+  // each word's page says its own word, from a hear button in the title's
+  // row, centered on it; the card's head says nothing, since its name is two
+  // words, and neither does the page telling them apart
+  const hear = (word: string) => card.getByRole("button", { name: new RegExp(`^Hear ${word}( |$)`) });
+  for (const [i, word, other] of [[0, "はい", "うん"], [1, "うん", "はい"]] as const) {
+    await pager.nth(i).click();
+    await expect(hear(word)).toHaveCount(1);
+    await expect(hear(other)).toHaveCount(0);
+    const title = card.getByRole("heading", { name: `${word} yes`, exact: true });
+    const [a, b] = [await title.boundingBox(), await hear(word).boundingBox()];
+    if (!a || !b) throw new Error("no title or no button");
+    expect(Math.abs(a.y + a.height / 2 - (b.y + b.height / 2))).toBeLessThanOrEqual(1);
+  }
+  await expect(card.getByRole("button", { name: /^Hear はい vs/ })).toHaveCount(0);
   await pager.nth(2).click();
   await expect(card.getByText(/うん is the casual one/)).toBeVisible();
+  await expect(card.getByRole("button", { name: /^Hear / })).toHaveCount(0);
   // and it is one star in the lesson's sky
   const sky = page.locator('svg[aria-label^="Tonight\'s constellations"]');
   await expect(sky.locator("[data-star]")).toHaveCount(1);
