@@ -7264,3 +7264,13 @@ Sam, 2026-10-02, on the 〜な form lesson ("Adjectives before nouns"): it teach
 **Screenshots.** In `saku-tasks/screenshots/sak-494/`: `na-form-opens.png`, `na-form-keiyoshi.png`, `te-form-godan-ichidan.png` and `atlas-keiyoshi-term.png`.
 
 **Not changed.** On the Atlas Terms shelf the tile "Keiyōshi/keiyōdōshi" is cut off at the right edge, because the name has no space to wrap at. The concept's tile did the same before this card.
+
+## 〜てもいい on an adjective, and a look at the Tatoeba sentences (SAK-497)
+
+Sam, 2026-10-02: the 〜てもいい lesson's adjective row read たかくてもいい as "may be expensive", which sounds like a guess about the price.
+
+**The change.** `appliedGloss` in `src/data/grammar/auto-page.ts` now turns "may do X" on an adjective or noun row into "it's okay even if it's X", so the row reads "it's okay even if it's expensive". The recipe's own gloss is still "may do X" and the verb rows still read "may go". Nothing else in the derive tables uses a modal on a non-verb row. "must be X (I'm sure)", "might be X" and "couldn't possibly be X" read right on an adjective or noun. The quiz instruction builds its own line in `src/lib/quiz-instruction.ts` and still says "may be たかい"; that file was outside this card.
+
+**Tests.** `auto-page.test.ts` pins the te-permission adjective row to "it's okay even if it's expensive".
+
+**The gates.** `npx tsc --noEmit` and `npx eslint src e2e scripts` clean. 4,388 unit tests, 4,387 pass and 1 skipped. 90 e2e pass. `scripts/unreachable.mjs --list` at zero and `scripts/button-centering.mjs` at zero over 1px across 9 pages. `scripts/unused-exports.mjs` lists 3 and 5 in `sentence-reach.ts` and `place.ts`, the same on main before this change.
