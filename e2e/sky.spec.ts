@@ -2575,3 +2575,26 @@ test("on a phone the atlas panel has its close and no widen button", async ({ pa
   await page.setViewportSize({ width: 1440, height: 900 });
   await expect(page.getByRole("button", { name: "Widen this panel" })).toBeVisible();
 });
+
+test("the 〜てもいい lesson builds it on a verb, both adjectives and a noun (SAK-496)", async ({ page }) => {
+  // Sam, 2026-10-02: the lesson had rows for verbs and い-adjectives only. A
+  // な-adjective takes で (しずかでもいい) and a noun takes でもいい whole
+  // (ほんでもいい), and neither was taught anywhere. Signed out, as the suite runs.
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto(`/lesson?picks=${encodeURIComponent("grammar:te-permission")}`);
+  await expect(page.getByText(/^Step \d+ of \d+$/)).toBeVisible();
+  // the verb and い-adjective meanings are SAK-497's to settle, so only the
+  // two new rows have theirs checked
+  const rows: [string, string, string?][] = [
+    ["たべる", "たべてもいい"],
+    ["たかい", "たかくてもいい"],
+    ["しずか", "しずかでもいい", "it's okay even if it's quiet"],
+    ["ほん", "ほんでもいい", "a book is fine too"],
+  ];
+  for (const [word, built, meaning] of rows) {
+    const row = page.getByRole("row").filter({ hasText: built });
+    await expect(row, word).toHaveCount(1);
+    await expect(row).toContainText(word);
+    if (meaning) await expect(row).toContainText(meaning);
+  }
+});

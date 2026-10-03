@@ -82,3 +82,22 @@ describe("appliedGloss on a non-verb vehicle (SAK-191)", () => {
     assert.equal(sectionGloss("node", "な-adjectives"), "because quiet");
   });
 });
+
+describe("〜てもいい on all four kinds of word (SAK-496)", () => {
+  test("the page has a section for verbs, both adjectives and nouns, in that order", () => {
+    const page = autoPatternPage(recipe("te-permission")!);
+    assert.deepEqual(
+      page.deriveTables?.map((t) => t.title),
+      ["Verbs", "い-adjectives", "な-adjectives", "Nouns"],
+    );
+  });
+
+  test("the な-adjective and noun rows read with their own written meanings", () => {
+    const page = autoPatternPage(recipe("te-permission")!);
+    const row = (title: string) => page.deriveTables!.find((t) => t.title === title)!.rules[0];
+    assert.equal(row("な-adjectives").result, "しずかでもいい");
+    assert.equal(sectionGloss("te-permission", "な-adjectives"), "it's okay even if it's quiet");
+    assert.equal(row("Nouns").result, "ほんでもいい");
+    assert.equal(sectionGloss("te-permission", "Nouns"), "a book is fine too");
+  });
+});

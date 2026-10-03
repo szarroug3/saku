@@ -99,6 +99,18 @@ export interface Attachment {
   /** Kana spelling of `add`, when the normal written suffix contains kanji.
    * This is the authoritative typed-production target. */
   readonly kanaAdd?: string;
+  /**
+   * What the pattern means on THIS host, written by hand, with X where the
+   * example word goes. The lesson's build table reads it for this host's
+   * Meaning column instead of filling the recipe's `gloss`.
+   *
+   * For a host whose English the recipe's gloss does not say. 〜てもいい's gloss
+   * is "may do X", and that is right for a verb, but でもいい on a noun says the
+   * noun is acceptable ("a student is fine too"), which no filling of "may do X"
+   * produces. The recipe's `gloss` stays as it is, because the gloss fill reads
+   * its wording as a signal (SAK-191, SAK-193). Absent on almost every row.
+   */
+  readonly meaning?: string;
 }
 
 export interface Recipe {
@@ -477,11 +489,17 @@ export const RECIPES: readonly Recipe[] = [
     attach: [
       { host: "verb", form: "te", add: "もいい" },
       { host: "adj-i", form: "te", add: "もいい" },
+      // the て-form of a な-adjective is で (静かで), so this reads 静かでもいい
+      { host: "adj-na", form: "te", add: "もいい", meaning: "it's okay even if it's X" },
+      // a noun takes no form; it takes でもいい whole (学生でもいい)
+      { host: "noun", form: null, add: "でもいい", meaning: "X is fine too" },
     ],
     note:
-      "A て-form pattern, so its production splits by verb class — 買ってもいい, " +
-      "待ってもいい, 帰ってもいい, … — while 高くてもいい is tracked separately " +
-      "as its い-adjective rule.",
+      "A て-form pattern, so its production splits by verb class (買ってもいい, " +
+      "待ってもいい, 帰ってもいい, …), while 高くてもいい and 静かでもいい are tracked " +
+      "separately as their adjective rules. The noun row (学生でもいい) adds a fixed " +
+      "string to the bare noun, so it is taught on the page and carries no " +
+      "production fact of its own (SAK-496).",
   },
   {
     id: "te-prohibition",

@@ -143,6 +143,32 @@ describe("deriveProduction — a genuine two-step derivation (te-permission, 〜
   });
 });
 
+describe("deriveProduction: 〜てもいい on a な-adjective and a noun (SAK-496)", () => {
+  const tePermission = byId("te-permission");
+
+  test("しずか: the て-form adds で, then もいい", () => {
+    const d = deriveProduction(tePermission, "adj-na", "しずか", "adj-na");
+    assert.ok(d);
+    assert.equal(d.answer, "しずかでもいい");
+    assert.equal(d.step1?.trim, undefined);
+    assert.equal(d.step1?.add, "で");
+    assert.equal(d.step1?.to, "しずかで");
+    assert.equal(d.step2?.from, "しずかで");
+    assert.equal(d.step2?.add, "もいい");
+    assert.equal(d.title, "な-adjective");
+  });
+
+  test("学生: no form to build, でもいい goes on the bare noun", () => {
+    const d = deriveProduction(tePermission, "noun", "学生", null);
+    assert.ok(d);
+    assert.equal(d.answer, "学生でもいい");
+    assert.equal(d.step1, undefined);
+    assert.equal(d.step2?.from, "学生");
+    assert.equal(d.step2?.add, "でもいい");
+    assert.equal(d.title, undefined);
+  });
+});
+
 describe("deriveProduction — no BASE→FORM step: single-equation fallback", () => {
   test("a noun attachment (dake, form: null) has no step 1, and no title", () => {
     const d = deriveProduction(byId("dake"), "noun", "本", null);

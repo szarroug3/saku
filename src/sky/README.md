@@ -7226,3 +7226,19 @@ Sam, 2026-09-26, on the Observatory's "Continue your lesson (step 2 of 3)" butto
 **Screenshots.** `.logs/sak-492/continue-with-x.png` (the button with its X), `continue-with-x-page.png`, `continue-with-x-phone.png` (400px wide), `forget-confirm.png` (the confirm line) and `forget-confirm-page.png`. Measured on the built page: the X is 28px in a 38px button, 5px from its top, right and bottom edges, and 0px off the button's middle line. The words are 0px off the button's center on both axes and 33px clear of the X at the Observatory's 340px width, and about 7px clear at phone width.
 
 **The gates.** `npx tsc --noEmit` and `npx eslint src e2e scripts` clean. 4,373 unit tests, 4,372 pass and 1 skipped. 88 e2e pass. `scripts/unreachable.mjs --list` at zero, `scripts/unused-exports.mjs` at zero on both lists, and `scripts/button-centering.mjs` at zero over 1px across 9 pages.
+
+## 〜てもいい on な-adjectives and nouns (SAK-496)
+
+Sam, 2026-10-02: the 〜てもいい (may do X) lesson had a row for verbs and a row for い-adjectives. A な-adjective and a noun take でもいい, and nothing taught it.
+
+**The recipe.** `te-permission` in `src/data/grammar/recipes.ts` has two more attachments. The な-adjective one is `{ host: "adj-na", form: "te", add: "もいい" }`. A な-adjective's て-form is で, so しずか (quiet) builds しずかでもいい. The noun one is `{ host: "noun", form: null, add: "でもいい" }`, so 学生 (student) builds 学生でもいい. Both were run through `deriveProduction` in `src/lib/grammar/derivation.ts` first. しずか comes out as しずか + で → しずかで, then しずかで + もいい → しずかでもいい, titled な-adjective. 学生 has no first step and comes out as 学生 + でもいい → 学生でもいい.
+
+**The Meaning column.** An attachment can now carry `meaning`, written by hand with X where the example word goes. The lesson's build table in `src/data/grammar/auto-page.ts` uses it for that host's row in place of filling the recipe's gloss. The な-adjective row reads "it's okay even if it's quiet" and the noun row reads "a book is fine too", since the table's noun example is ほん (book). The recipe's `gloss` is unchanged.
+
+**The quiz.** The な-adjective row is a new production card, `grammar:te-permission/production@adj-na`. It is drilled on 静か, 元気 (healthy) or 便利 (handy) when the learner knows one, and in kana when she knows none. The noun row is the bare noun plus a fixed string, so it is taught on the page and has no card of its own, like the noun row of 〜ので.
+
+**Tests.** `audit-grammar.test.ts` builds しずかでもいい and 学生でもいい. `derivation.test.ts` checks both derivations step by step. `auto-page.test.ts` checks the four sections in order and the two new meanings. `example.test.ts` and `formula.test.ts` take the new な-adjective card and the unscored noun row. In `e2e/sky.spec.ts`, a signed-out visitor opens the lesson and finds the four rows. The generated indexes and catalogues were rebuilt.
+
+**Screenshots.** In `saku-tasks/screenshots/sak-496/`: `te-permission-lesson-1440.png` (the top of the lesson card), `te-permission-lesson-1440-scrolled.png` (the な-adjective and noun rows) and `te-permission-adj-na-drill-1440.png` (the new card dealt in kana to a learner who knows no な-adjective).
+
+**The gates.** `npx tsc --noEmit` and `npx eslint src e2e scripts` clean. 4,394 unit tests, 4,393 pass and 1 skipped. 91 e2e pass. `scripts/unreachable.mjs --list` at zero and `scripts/button-centering.mjs` at zero over 1px across 9 pages. `scripts/unused-exports.mjs` lists 3 and 5 in `src/app/(sky)/sentence-reach.ts` and `src/sky/lib/place.ts`, the same on main before this card.

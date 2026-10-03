@@ -280,6 +280,9 @@ const RECIPE_CASES: readonly RecipeCase[] = [
   { id: "te-request", word: "読む", cls: "v5m", expected: "読んでください" },
   { id: "te-kara", word: "行く", cls: "v5k-s", expected: "行ってから" },
   { id: "te-permission", word: "高い", cls: "adj-i", expected: "高くてもいい" },
+  // a な-adjective's て-form is で, and a noun takes でもいい whole (SAK-496)
+  { id: "te-permission", word: "しずか", cls: "adj-na", expected: "しずかでもいい" },
+  { id: "te-permission", word: "学生", cls: null, expected: "学生でもいい" },
   { id: "te-mo", word: "泳ぐ", cls: "v5g", expected: "泳いでも" },
 
   // ない-series, including the trim-い rows.

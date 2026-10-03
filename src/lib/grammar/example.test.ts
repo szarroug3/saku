@@ -110,7 +110,9 @@ describe("a production fact per HOST, where the hosts are different rules", () =
 
   test("each 〜て pattern scores the adjective forms it actually attaches to", () => {
     assert.deepEqual(productionHosts(byId("te-sequence")), ["adj-i", "adj-na"]);
-    assert.deepEqual(productionHosts(byId("te-permission")), ["adj-i"]);
+    // the noun row (学生でもいい) adds a fixed string to the bare word, so it
+    // scores nothing of its own
+    assert.deepEqual(productionHosts(byId("te-permission")), ["adj-i", "adj-na"]);
     assert.deepEqual(productionHosts(byId("te-mo")), ["adj-i"]);
   });
 

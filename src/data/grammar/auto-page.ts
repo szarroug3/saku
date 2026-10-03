@@ -235,6 +235,14 @@ function appliedGloss(gloss: string, ex: ExampleWord): string {
   );
 }
 
+/** A host's hand-written meaning (an attachment's `meaning`) with its X filled
+ * by the example word: "X is fine too" on ほん reads "a book is fine too". A
+ * noun takes an article, an adjective takes none. */
+function handMeaning(meaning: string, ex: ExampleWord): string {
+  const filled = ex.cls === null ? `${/^[aeiou]/i.test(ex.en) ? "an" : "a"} ${ex.en}` : ex.en;
+  return meaning.replace(/\bX\b/g, filled);
+}
+
 /** The derivation rows for a pattern on a host: for each accepted example, the
  * dictionary verb, the form the pattern attaches to (omitted where the word is
  * taken unchanged), the finished pattern, and what the finished pattern means.
@@ -268,7 +276,7 @@ function deriveRows(r: Recipe, host: Host, limit = 3, labelClass = false): Intro
       verb: ex.word,
       form,
       result: built.value,
-      gloss: appliedGloss(r.gloss, ex),
+      gloss: attach.meaning ? handMeaning(attach.meaning, ex) : appliedGloss(r.gloss, ex),
       ...(classLabel ? { classLabel } : {}),
     });
     if (rows.length >= limit) break;
