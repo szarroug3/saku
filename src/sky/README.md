@@ -7226,3 +7226,12 @@ Sam, 2026-09-26, on the Observatory's "Continue your lesson (step 2 of 3)" butto
 **Screenshots.** `.logs/sak-492/continue-with-x.png` (the button with its X), `continue-with-x-page.png`, `continue-with-x-phone.png` (400px wide), `forget-confirm.png` (the confirm line) and `forget-confirm-page.png`. Measured on the built page: the X is 28px in a 38px button, 5px from its top, right and bottom edges, and 0px off the button's middle line. The words are 0px off the button's center on both axes and 33px clear of the X at the Observatory's 340px width, and about 7px clear at phone width.
 
 **The gates.** `npx tsc --noEmit` and `npx eslint src e2e scripts` clean. 4,373 unit tests, 4,372 pass and 1 skipped. 88 e2e pass. `scripts/unreachable.mjs --list` at zero, `scripts/unused-exports.mjs` at zero on both lists, and `scripts/button-centering.mjs` at zero over 1px across 9 pages.
+## 〜てもいい on an adjective, and a look at the Tatoeba sentences (SAK-497)
+
+Sam, 2026-10-02: the 〜てもいい lesson's adjective row read たかくてもいい as "may be expensive", which sounds like a guess about the price.
+
+**The change.** `appliedGloss` in `src/data/grammar/auto-page.ts` now turns "may do X" on an adjective or noun row into "it's okay even if it's X", so the row reads "it's okay even if it's expensive". The recipe's own gloss is still "may do X" and the verb rows still read "may go". Nothing else in the derive tables uses a modal on a non-verb row. "must be X (I'm sure)", "might be X" and "couldn't possibly be X" read right on an adjective or noun. The quiz instruction builds its own line in `src/lib/quiz-instruction.ts` and still says "may be たかい"; that file was outside this card.
+
+**Tests.** `auto-page.test.ts` pins the te-permission adjective row to "it's okay even if it's expensive".
+
+**The gates.** `npx tsc --noEmit` and `npx eslint src e2e scripts` clean. 4,388 unit tests, 4,387 pass and 1 skipped. 90 e2e pass. `scripts/unreachable.mjs --list` at zero and `scripts/button-centering.mjs` at zero over 1px across 9 pages. `scripts/unused-exports.mjs` lists 3 and 5 in `sentence-reach.ts` and `place.ts`, the same on main before this change.

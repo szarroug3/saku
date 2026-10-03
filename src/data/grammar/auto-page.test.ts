@@ -35,8 +35,13 @@ describe("appliedGloss on a non-verb vehicle (SAK-191)", () => {
     );
   });
 
-  test("te-permission: 'may do X' takes the modal's bare copula", () => {
-    assert.equal(sectionGloss("te-permission", "い-adjectives"), "may be expensive");
+  // SAK-497: "may be expensive" read as a guess about the price. 〜てもいい on
+  // an adjective says the price is acceptable.
+  test("te-permission: an adjective row says it's okay even so", () => {
+    assert.equal(
+      sectionGloss("te-permission", "い-adjectives"),
+      "it's okay even if it's expensive",
+    );
   });
 
   test("ta-form: 'did X' becomes the copula's past tense", () => {

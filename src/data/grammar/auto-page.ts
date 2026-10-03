@@ -165,12 +165,13 @@ function pageHost(r: Recipe): Host {
  * eat = "may eat" — so the scaffolding words ("do", "doing") do not survive into
  * the reading. A noun or adjective is mostly filled plainly, but a few glosses
  * are STILL phrased as if the vehicle were a verb — "do X, and then" (te-sequence),
- * "may do X" (te-permission), "did X" (ta-form), or a verb-only leading half
+ * "did X" (ta-form), or a verb-only leading half
  * before " / too X" / " / looks X" (sugiru, sou-appearance) — and those get the
- * inverse treatment: the scaffold word is swapped for the copula ("is X", "may be
- * X", "was X") or its verb-only half is dropped, so a non-verb row never reads as
- * if it were one ("do good" / "looks like it will good"). A gloss with no X slot
- * is left as it is. */
+ * inverse treatment: the scaffold word is swapped for the copula ("is X", "was
+ * X") or its verb-only half is dropped, so a non-verb row never reads as if it
+ * were one ("do good" / "looks like it will good"). "may do X" (te-permission)
+ * is rewritten whole as "it's okay even if it's X", because "may be X" reads as
+ * a guess (SAK-497). A gloss with no X slot is left as it is. */
 function appliedGloss(gloss: string, ex: ExampleWord): string {
   if (!/\bX\b/.test(gloss)) return gloss;
   if (!ex.ing) {
@@ -185,6 +186,11 @@ function appliedGloss(gloss: string, ex: ExampleWord): string {
         // it so the X-only half stands alone — the inverse of the verb branch's
         // own adjective-only-alt strip below.
         .replace(/^.*? \/ (?=(?:too|looks?) X\b)/, "")
+        // "may do X" is permission on a verb ("may go"), but "may be expensive"
+        // reads as a guess about the price. On an adjective or noun, 〜てもいい
+        // means the thing is acceptable even so (SAK-497), and the English has
+        // to say that. The raw gloss stays "may do X" for the verb rows.
+        .replace(/^may do X\b/, `it's okay even if it's ${filled}`)
         // "do X" is verb scaffolding a non-verb predicate cannot carry. At the
         // start of a clause it reads as a finite verb ("is X, and then…"); after
         // a modal ("may do X") it needs the bare copula the modal already calls
