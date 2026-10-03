@@ -37,6 +37,13 @@
 //     both keb and the taught reading agree.
 //   - the pair is unambiguous within Kanjium itself — no two rows disagree.
 //
+// KANA HEADWORDS (SAK-503). Kanjium leaves the reading column EMPTY when the
+// headword is already kana: はい is `はい<TAB><TAB>1`, not `はい<TAB>はい<TAB>1`.
+// So a vocab row written only in kana (taught reading equals keb) is also
+// looked up under `keb<TAB>` with an empty reading. The same drop rules apply
+// to that key, and if both spellings of the key exist they must agree. Before
+// this, every kana-only word (はい, うん, あの, うっかり...) got no pitch at all.
+//
 // Anything that fails a check is dropped, counted, and reported. Partial and
 // certain beats complete and guessed.
 //
@@ -52,7 +59,7 @@
 
 import { readFile, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 import { moraCount } from "./mora.mjs";
 import {
@@ -70,7 +77,7 @@ const GENDIR = resolve(REPO, "src/data/generated");
 /** Parse the raw accent file into a (word\treading) → downstep map, keeping only
  * rows whose accent is a single clean integer and that no other row disagrees
  * with. Ambiguous keys are removed entirely rather than resolved. */
-function parseAccents(text) {
+export function parseAccents(text) {
   const seen = new Map(); // key -> Set<string> of raw accent strings
   for (const line of text.split("\n")) {
     if (!line) continue;
@@ -98,7 +105,38 @@ function parseAccents(text) {
     }
     clean.set(key, Number.parseInt(accent, 10));
   }
-  return { clean, stats };
+  return { clean, seen: new Set(seen.keys()), stats };
+}
+
+/** The Kanjium keys one vocab word can match: `keb<TAB>reading`, plus
+ * `keb<TAB>` (empty reading) when the word is written only in kana, since
+ * Kanjium leaves the reading blank for a kana headword (SAK-503). */
+function candidateKeys(keb, reading) {
+  const keys = [`${keb}\t${reading}`];
+  if (reading === keb) keys.push(`${keb}\t`);
+  return keys;
+}
+
+/** Look one vocab word up in the parsed accents. Returns
+ *   { downstep }   when every key it can match that Kanjium has is clean and
+ *                  they all agree on one value,
+ *   { ambiguous }  when Kanjium has the word but any of its keys was dropped
+ *                  as ambiguous or multi-value, or two keys disagree,
+ *   {}             when Kanjium does not have the word at all.
+ * Ambiguity is never resolved: one dropped key means no pitch. */
+export function lookupPitch({ clean, seen }, keb, reading) {
+  const values = new Set();
+  let present = false;
+  let dropped = false;
+  for (const key of candidateKeys(keb, reading)) {
+    if (!seen.has(key)) continue;
+    present = true;
+    if (clean.has(key)) values.add(clean.get(key));
+    else dropped = true;
+  }
+  if (!present) return {};
+  if (dropped || values.size !== 1) return { ambiguous: true };
+  return { downstep: [...values][0] };
 }
 
 /** The reading a word is TAUGHT with, mirroring src/data/vocab.ts's withSenses:
@@ -130,6 +168,10 @@ const REGRESSION_SAMPLE = [
   ["節", "ふし"],
   ["仏", "ほとけ"], // ambiguous in Kanjium ("0,3") — must resolve to no value
   ["悪口", "あっこう"], // ambiguous in Kanjium ("0,3") — must resolve to no value
+  // SAK-503: kana headwords, stored in Kanjium with an empty reading column.
+  ["はい", "はい"], // 1
+  ["うん", "うん"], // 1
+  ["ええ", "ええ"], // ambiguous in Kanjium ("1,2,0") — must resolve to no value
 ];
 
 /** Re-derive the correct downstep for one (keb, reading) pair directly from
@@ -139,11 +181,15 @@ const REGRESSION_SAMPLE = [
  * undefined when there is no matching row, the rows disagree, or the shared
  * accent is a comma/parenthesis alternative — matching the ingest's own
  * "ambiguous means no pitch" rule via a separate implementation. */
-function independentLookup(rawText, keb, reading) {
-  const prefix = `${keb}\t${reading}\t`;
+export function independentLookup(rawText, keb, reading) {
+  // A kana headword also matches Kanjium's empty-reading row (SAK-503).
+  const prefixes = [`${keb}\t${reading}\t`];
+  if (reading === keb) prefixes.push(`${keb}\t\t`);
   const accents = new Set();
   for (const line of rawText.split("\n")) {
-    if (line.startsWith(prefix)) accents.add(line.slice(prefix.length));
+    for (const prefix of prefixes) {
+      if (line.startsWith(prefix)) accents.add(line.slice(prefix.length));
+    }
   }
   if (accents.size !== 1) return undefined;
   const [accent] = accents;
@@ -184,7 +230,8 @@ async function main() {
   verifySource("kanjium", { accept: acceptSource() });
   const text = await readFile(archivePath("kanjium"), "utf8");
 
-  const { clean, stats } = parseAccents(text);
+  const parsed = parseAccents(text);
+  const { clean, stats } = parsed;
 
   const vocab = JSON.parse(
     await readFile(resolve(GENDIR, "vocab.json"), "utf8"),
@@ -206,9 +253,9 @@ async function main() {
   const outOfRange = []; // dropped: downstep past the taught reading's last mora
   for (const row of vocab) {
     const reading = taughtReading(row, senses);
-    const key = `${row.keb}\t${reading}`;
-    if (clean.has(key)) {
-      const downstep = clean.get(key);
+    const hit = lookupPitch(parsed, row.keb, reading);
+    if (hit.downstep !== undefined) {
+      const { downstep } = hit;
       // VALIDITY INVARIANT. An accent falls on some mora 0..moraCount; a downstep
       // larger than the reading's mora count is impossible and renders a drop past
       // the end of the word. This catches a wrong Kanjium row.
@@ -221,10 +268,8 @@ async function main() {
       }
       out[row.keb] = downstep;
       matched++;
-    } else if (
+    } else if (hit.ambiguous) {
       // The pair exists in Kanjium but only as an ambiguous / multi-value row.
-      text.includes(`${row.keb}\t${reading}\t`)
-    ) {
       hitButDropped++;
     }
   }
@@ -266,7 +311,9 @@ async function main() {
   );
 }
 
-main().catch((err) => {
-  process.stderr.write(`${err.stack ?? err}\n`);
-  process.exit(1);
-});
+if (import.meta.url === pathToFileURL(process.argv[1] ?? "").href) {
+  main().catch((err) => {
+    process.stderr.write(`${err.stack ?? err}\n`);
+    process.exit(1);
+  });
+}
