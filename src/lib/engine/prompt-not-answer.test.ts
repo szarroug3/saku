@@ -24,6 +24,7 @@ import { describe, test } from "node:test";
 
 import { GRAMMAR_SUBJECT } from "../../data/grammar/index.ts";
 import { KANA_SUBJECT } from "../../data/characters.ts";
+import { PITCH_SUBJECT } from "../../data/pitch.ts";
 import { KANJI_SUBJECT } from "../../data/kanji.ts";
 import {
   VOCAB_SUBJECT,
@@ -33,7 +34,7 @@ import {
   wordUnitReadingFactId,
 } from "../../data/vocab.ts";
 import { ALL_FACTS, factInfo } from "../facts.ts";
-import { questionsFor } from "./question.ts";
+import { mcOnlyIn, questionsFor } from "./question.ts";
 import type { FactId } from "@/types/facts";
 import type { Direction } from "@/types/sky";
 
@@ -61,6 +62,11 @@ const VIOLATIONS: Violation[] = (() => {
   const out: Violation[] = [];
   for (const fact of ALL_FACTS) {
     const qt = questionsFor(fact);
+    // A pitch card is never answered in text: it plays two clips of the same
+    // reading and the learner picks one. Its `check` accepts the reading only so
+    // a reveal of it grades. For a word written in kana (はい, うっかり, SAK-503)
+    // the shown word IS that reading, which says nothing about the pick.
+    if (factInfo(fact)?.subject === PITCH_SUBJECT) continue;
     for (const dir of DIRS) {
       const shown = qt.prompt(fact, dir).glyph;
       if (!shown.trim()) continue;
@@ -104,6 +110,18 @@ describe("a card never accepts its own prompt", () => {
       VIOLATIONS.filter((v) => v.dir === "jp2en"),
       [],
     );
+  });
+});
+
+describe("a pitch card is a pick, not a typed answer", () => {
+  test("so a kana word showing its own reading hands nothing away", () => {
+    const fact = ALL_FACTS.find((f) => f === "word:はい/pitch");
+    assert.ok(fact, "はい carries a pitch fact (SAK-503)");
+    const q = questionsFor(fact);
+    for (const dir of DIRS) {
+      assert.ok(mcOnlyIn(fact, dir), `the pitch card must stay a pick in ${dir} for the skip above to hold`);
+    }
+    assert.equal(q.distractors(fact, 4).length, 0, "no text options either");
   });
 });
 
