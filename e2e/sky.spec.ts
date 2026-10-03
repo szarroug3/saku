@@ -2638,3 +2638,17 @@ test("the 〜てもいい lesson builds it on a verb, both adjectives and a noun
     if (meaning) await expect(row).toContainText(meaning);
   }
 });
+
+test("a word written only in kana carries its pitch, drawn over the word itself (SAK-503)", async ({ page }) => {
+  // Sam, on the はい vs うん card: "do these words not have pitch?" Kanjium has
+  // them with a blank reading, and the ingest never matched that row. A kana
+  // word is its own reading, so the line goes over the word.
+  await page.goto(`/atlas?sample&entry=${encodeURIComponent("word:はい")}`);
+  await expect(page.getByLabel("はい, pitch accent: atamadaka (drops after the first mora)")).toBeVisible();
+  await page.goto(`/atlas?sample&entry=${encodeURIComponent("word:うっかり")}`);
+  await expect(page.getByLabel("うっかり, pitch accent: drops after mora 3")).toBeVisible();
+  // ええ has three accents in Kanjium, so it still has none here
+  await page.goto(`/atlas?sample&entry=${encodeURIComponent("word:ええ")}`);
+  await expect(page.getByRole("heading", { name: "What would you like to know?" })).toBeVisible();
+  await expect(page.getByLabel(/^ええ, pitch accent/)).toHaveCount(0);
+});
