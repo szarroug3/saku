@@ -43,6 +43,7 @@
 // so where a word has more to it than one honest paragraph, this says the honest
 // paragraph and stops.
 
+import { ADJECTIVE_TYPES_CONCEPT_PAGES, VERB_TYPES_CONCEPT_PAGES } from "@/data/grammar/lessons";
 import {
   DAKUTEN_H,
   DAKUTEN_K,
@@ -410,6 +411,33 @@ export const TERMS: readonly Term[] = [
     ],
     searchAlso: ["keigo", "honorific", "humble", "sonkeigo", "kenjougo", "kenjogo", "polite speech", "politeness"],
     cards: [KEIGO_TRACK],
+  },
+  // The two word classes the grammar lessons are built on (SAK-494). Each one
+  // shares its name with a grammar concept (src/data/grammar-concepts.ts), so
+  // its page shows the concept's cards, the same pages lessons 1 and 2 teach
+  // with, and the Atlas files the concept under this term. A grammar lesson
+  // that teaches either card lists this page in its References.
+  {
+    id: "godan-ichidan",
+    name: "Godan/ichidan",
+    summary: "The two groups of Japanese verbs: godan (う-verbs) and ichidan (る-verbs).",
+    body: [
+      "Every Japanese verb is a godan verb, an ichidan verb, or one of the two irregular verbs する “to do” and くる “to come”. Godan verbs are also called う-verbs, and ichidan verbs are called る-verbs.",
+      "The group decides how each form of the verb is built.",
+    ],
+    searchAlso: ["godan", "ichidan", "verb types", "verb groups", "verb classes", "u-verb", "ru-verb", "う-verb", "る-verb", "irregular verbs"],
+    cards: VERB_TYPES_CONCEPT_PAGES,
+  },
+  {
+    id: "keiyoshi-keiyodoshi",
+    name: "Keiyōshi/keiyōdōshi",
+    summary: "The two kinds of Japanese adjectives: keiyōshi (い-adjectives) and keiyōdōshi (な-adjectives).",
+    body: [
+      "Keiyōshi are the い-adjectives, like たかい “expensive”. Keiyōdōshi are the な-adjectives, like しずか “quiet”, and they add な before a noun.",
+      "The kind decides how the adjective changes in each form.",
+    ],
+    searchAlso: ["keiyoshi", "keiyōshi", "keiyoushi", "keiyodoshi", "keiyōdōshi", "keiyoudoushi", "adjective types", "i-adjective", "na-adjective", "い-adjective", "な-adjective"],
+    cards: ADJECTIVE_TYPES_CONCEPT_PAGES,
   },
   {
     id: "pitch-accent",

@@ -7226,3 +7226,24 @@ Sam, 2026-09-26, on the Observatory's "Continue your lesson (step 2 of 3)" butto
 **Screenshots.** `.logs/sak-492/continue-with-x.png` (the button with its X), `continue-with-x-page.png`, `continue-with-x-phone.png` (400px wide), `forget-confirm.png` (the confirm line) and `forget-confirm-page.png`. Measured on the built page: the X is 28px in a 38px button, 5px from its top, right and bottom edges, and 0px off the button's middle line. The words are 0px off the button's center on both axes and 33px clear of the X at the Observatory's 340px width, and about 7px clear at phone width.
 
 **The gates.** `npx tsc --noEmit` and `npx eslint src e2e scripts` clean. 4,373 unit tests, 4,372 pass and 1 skipped. 88 e2e pass. `scripts/unreachable.mjs --list` at zero, `scripts/unused-exports.mjs` at zero on both lists, and `scripts/button-centering.mjs` at zero over 1px across 9 pages.
+## A grammar lesson lists the word classes it teaches (SAK-494)
+
+Sam, 2026-10-02, on the 〜な form lesson ("Adjectives before nouns"): it teaches い-adjectives and な-adjectives, and the page about them never showed up under References. "All lesson items should show reference sections for anything referenced in the lesson."
+
+**What was wrong.** The References panel of every grammar lesson was empty. `walkFor` in `src/app/(sky)/lesson.ts` holds each page the app's lesson walk puts out until the next item step, and then files it behind the star that item belongs to. A grammar lesson's walk has no item steps, because its drills are the star itself. So its pages were held and then dropped when the walk ended. The 〜な form lesson lost the Grammar opener, Okurigana and the adjective classes card. The て-form lesson lost the verb groups card.
+
+**The two terms.** `src/data/terms.ts` has two new terms, `godan-ichidan` ("Godan/ichidan") and `keiyoshi-keiyodoshi` ("Keiyōshi/keiyōdōshi"). Each name is the name of a grammar concept, the way Keigo's is, so `conceptTwin` in `teach.ts` shows the concept's card on the term's page and the Atlas files the concept under the term (`twinned` in `atlas.ts`). Their `cards` are the lesson's own cards (`VERB_TYPES_CONCEPT_PAGES` and `ADJECTIVE_TYPES_CONCEPT_PAGES`). `GRAMMAR_CARD_TERM` in `src/lib/lesson-steps.ts` maps `gl-verb-types` and `gl-adjective-types` to them, so the walk puts out a term step for each, as it does for okurigana's two cards.
+
+**The walk.** `walkFor` now files the pages still waiting at the end behind the first star not yet passed. It also skips a grammar page that is the star's own card (`ownGrammarPages`): a form's Library pages, or the generated pattern page, which the star's card already shows. Across the 111 grammar lessons, what is left is the Grammar opener, Okurigana and Keiyōshi/keiyōdōshi in the 〜な form lesson, and Godan/ichidan in the て-form lesson. Every other grammar lesson still lists nothing.
+
+**What the learner sees.** A fresh learner opening the 〜な form lesson sees Grammar, Okurigana and Keiyōshi/keiyōdōshi under References, each marked "term". The lesson opens on Grammar, the first page not yet read (SAK-467). Next walks Grammar, the two Okurigana cards and then Keiyōshi/keiyōdōshi, still on step 1, and then opens the star. The て-form lesson lists Godan/ichidan alone and opens on it. A page already read is listed and not opened, as before.
+
+**Decision the card left open.** The card expected Keiyōshi/keiyōdōshi to be the page the 〜な form lesson opens on. It is the third, since Grammar and Okurigana come before it in the lesson and are pages the lesson teaches too. The e2e checks that Next reaches it before the order starts.
+
+**Generated files.** `library-index.json` (`npm run build:library-index`) and `atlas-catalogue.json` (`npm run build:catalogues`) were rebuilt for the two terms. The Terms shelf holds 25 tiles.
+
+**Tests.** `lesson.test.ts`: the 〜な form lesson lists Keiyōshi/keiyōdōshi once and Okurigana; the て-form lesson lists Godan/ichidan alone; no grammar lesson lists its star's own pages, and the ない form lesson lists nothing. `observatory.test.ts`: the two terms are on the Terms shelf and their concepts are folded away. `terms.test.ts` names the two new terms and accepts their lesson cards. `e2e/sky.spec.ts`, "a grammar lesson lists the word classes it teaches and opens on them (SAK-494)": signed out, the 〜な form lesson lists Keiyōshi/keiyōdōshi and Okurigana and not the form's own page, opens on its first page, and Next reaches the adjective classes card on step 1; the て-form lesson lists Godan/ichidan and opens on it.
+
+**Screenshots.** In `saku-tasks/screenshots/sak-494/`: `na-form-opens.png`, `na-form-keiyoshi.png`, `te-form-godan-ichidan.png` and `atlas-keiyoshi-term.png`.
+
+**Not changed.** On the Atlas Terms shelf the tile "Keiyōshi/keiyōdōshi" is cut off at the right edge, because the name has no space to wrap at. The concept's tile did the same before this card.

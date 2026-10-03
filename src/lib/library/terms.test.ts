@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
+import { ADJECTIVE_TYPES_CONCEPT_PAGES, VERB_TYPES_CONCEPT_PAGES } from "@/data/grammar/lessons";
 import { bodyFor } from "@/data/marks";
 import { PHASE_INTROS } from "@/data/phase-intros";
 import { TRACK_INTROS, VARIANT_INTRO } from "@/data/track-intros";
@@ -37,6 +38,8 @@ const EXPECTED = [
   "counter",
   "particle",
   "keigo",
+  "godan-ichidan",
+  "keiyoshi-keiyodoshi",
   "pitch-accent",
   "mora",
 ];
@@ -128,6 +131,9 @@ const SHIPPED = new Set([
   ...Object.values(TRACK_INTROS),
   // The variant-form concept card, folded into the radical term page.
   VARIANT_INTRO,
+  // The grammar lessons' two word-class cards (SAK-494).
+  ...VERB_TYPES_CONCEPT_PAGES,
+  ...ADJECTIVE_TYPES_CONCEPT_PAGES,
 ]);
 
 /** The words the app uses but teaches no card about. Their pages are the

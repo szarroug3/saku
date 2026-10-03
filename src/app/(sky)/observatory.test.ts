@@ -7,6 +7,8 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import { patternEntry } from "@/data/grammar";
+import { GRAMMAR_CONCEPT_SUBJECT, grammarConceptEntry } from "@/data/grammar-concepts";
+import { TERM_SUBJECT, termEntry } from "@/data/terms";
 import { CURRICULUM_PATTERNS } from "@/lib/grammar-lesson";
 import { applyDropClaims, applySeen, emptyHistory } from "@/lib/history-ops";
 import { knownFactsOf, libEntry, type LibEntry } from "@/lib/library/entries";
@@ -379,5 +381,16 @@ describe("a met item that has slipped", () => {
     const recipe = { ...EMPTY_RECIPE, collections: ["words"], statuses: ["slipping" as const], size: "all" as const };
     const preview = practicePreview(missedAndCold(id), recipe, NOW);
     assert.ok(preview.items.some((p) => p.item.id === id), "the slipping word is in the pool");
+  });
+});
+
+describe("a term that names a grammar concept is one Atlas entry (SAK-494)", () => {
+  it("files the word classes once, under Terms", () => {
+    const terms = new Set(all(TERM_SUBJECT).map((e) => e.id));
+    const concepts = new Set(all(GRAMMAR_CONCEPT_SUBJECT).map((e) => e.id));
+    for (const [term, concept] of [["keiyoshi-keiyodoshi", "adjective-types"], ["godan-ichidan", "verb-classes"]]) {
+      assert.ok(terms.has(termEntry(term)), `${term} is on the Terms shelf`);
+      assert.ok(!concepts.has(grammarConceptEntry(concept)), `${concept} is folded into its term`);
+    }
   });
 });

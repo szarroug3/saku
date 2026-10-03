@@ -462,6 +462,46 @@ test("a reference page nobody has read opens the lesson, and is listed ever afte
   await expect(order.getByRole("button").first()).toHaveAttribute("aria-current", "step");
 });
 
+test("a grammar lesson lists the word classes it teaches and opens on them (SAK-494)", async ({ page }) => {
+  // Sam, 2026-10-02: the 〜な form lesson teaches い- and な-adjectives and
+  // its References never listed the page about them. A grammar lesson has no
+  // item steps, so none of its pages reached the panel at all. Signed out
+  // and fresh, so every page is one nobody has read.
+  const references = page.getByRole("list").nth(1);
+  const step = page.getByText(/^Step \d+ of \d+$/);
+  const card = page.locator('[data-lesson-cell="card"]');
+  await page.setViewportSize({ width: 1440, height: 900 });
+
+  await page.goto(`/lesson?picks=${encodeURIComponent("grammar:prenominal-form")}`);
+  await expect(page.getByRole("heading", { name: "References", exact: true })).toBeVisible();
+  const rows = references.getByRole("listitem");
+  await expect(rows.filter({ hasText: "Keiyōshi/keiyōdōshi" })).toHaveCount(1);
+  await expect(rows.filter({ hasText: "Okurigana" })).toHaveCount(1);
+  // the form's own page is the star's card, so it is not listed beside it
+  await expect(rows.filter({ hasText: "Adjectives before nouns" })).toHaveCount(0);
+
+  // the lesson opens on the first unread page and Next walks the list in
+  // order, still on step one, until it reaches the adjective classes. A page
+  // with two cards (Okurigana) takes two presses, so this presses until the
+  // row is picked out rather than counting rows.
+  const classes = references.getByRole("button").filter({ hasText: "Keiyōshi/keiyōdōshi" });
+  await expect(references.getByRole("button").first()).toHaveAttribute("aria-current", "true");
+  for (let i = 0; i < 8 && (await classes.getAttribute("aria-current")) !== "true"; i++) {
+    await page.getByRole("button", { name: "Next", exact: true }).click();
+  }
+  await expect(step).toHaveText(/^Step 1 of \d+$/);
+  await expect(classes).toHaveAttribute("aria-current", "true");
+  await expect(card).toContainText("Keiyōshi and keiyōdōshi.");
+
+  // the て-form lesson does the same for the verb groups, and it is the one
+  // page there, so it is the one the lesson opens on
+  await page.goto(`/lesson?picks=${encodeURIComponent("grammar:te-sequence")}`);
+  await expect(references.getByRole("listitem")).toHaveCount(1);
+  await expect(references.getByRole("button").first()).toHaveAttribute("aria-current", "true");
+  await expect(references.getByRole("button").first()).toContainText("Godan/ichidan");
+  await expect(card).toContainText("Godan and Ichidan.");
+});
+
 test("the lesson is a two by two, and each row's two panels are one height", async ({ page }) => {
   // SAK-446. References sits beside the constellation and the order beside
   // the card, in one grid with two rows, so the heights agree exactly rather
