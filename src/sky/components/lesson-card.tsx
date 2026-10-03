@@ -232,7 +232,8 @@ export function LessonCard({ item, teach, madeOf, partOf, onSelect, onRead, writ
               ? <Pitch reading={reading} downstep={teach.pitch} className={`font-sky-display text-[22px] text-sky-muted ${japaneseFont(reading)}`} />
               : <span className={`font-sky-display text-[22px] text-sky-muted ${japaneseFont(reading)}`}>{reading}</span>
           )}
-          {Hear && (item.kind === "kana" || item.kind === "word" || item.kind === "counter" || item.kind === "keigo") && !item.glyph.includes("〜") && (
+          {/* a pair taught on one card (はい vs うん) is two words, and its name is not a thing to say (SAK-493) */}
+          {Hear && (item.kind === "kana" || item.kind === "word" || item.kind === "counter" || item.kind === "keigo") && !item.glyph.includes("〜") && !item.oneCard && (
             <Hear glyph={item.kind === "kana" ? item.glyph : (reading ?? item.glyph)} word={item.kind === "kana" ? undefined : item.glyph} downstep={teach?.pitch ?? undefined} />
           )}
         </span>
