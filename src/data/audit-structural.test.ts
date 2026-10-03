@@ -294,8 +294,8 @@ describe("pitch accent stays in range and only on kept words", () => {
     assert.deepEqual(orphans, [], `pitch for non-vocab words: ${orphans.slice(0, 5).join(", ")}`);
   });
 
-  test("coverage matches the documented Kanjium ingest (8,684 words)", () => {
-    assert.equal(Object.keys(PITCH).length, 8684);
+  test("coverage matches the documented Kanjium ingest (9,428 words)", () => {
+    assert.equal(Object.keys(PITCH).length, 9428);
   });
 
   test("spot-checks against the reference values in pitch.ts", () => {
