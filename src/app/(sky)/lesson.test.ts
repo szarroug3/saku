@@ -124,3 +124,29 @@ describe("every reference is listed every time", () => {
     assert.deepEqual(pages(sRow(claimed)), pages(sRow(fresh)));
   });
 });
+
+describe("a grammar lesson lists the pages it leans on (SAK-494)", () => {
+  const fresh = emptyHistory();
+  const pages = (pick: string) => references(lessonFromPicks(fresh, [pick], NOW)).filter((id) => id.startsWith("page:"));
+
+  it("lists the adjective classes behind the 〜な form, once", () => {
+    const listed = pages("grammar:prenominal-form");
+    assert.equal(listed.filter((id) => id === "page:term:keiyoshi-keiyodoshi").length, 1);
+    assert.ok(listed.includes("page:term:okurigana"), "okurigana is taught here too");
+  });
+
+  it("lists the verb groups behind the て-form", () => {
+    assert.deepEqual(pages("grammar:te-sequence"), ["page:term:godan-ichidan"]);
+  });
+
+  it("does not list the star's own pages a second time", () => {
+    // the star's card already shows the form's own pages, so only the cards
+    // it leans on are listed beside it
+    for (const pick of ["grammar:prenominal-form", "grammar:te-sequence", "grammar:nai-form", "grammar:te-kara"]) {
+      for (const id of pages(pick)) {
+        assert.ok(!/gl-prenominal-form|gl-te-form-use|gl-te-build|gl-auto-|gl-nai/.test(id), `${pick} lists ${id}`);
+      }
+    }
+    assert.deepEqual(pages("grammar:nai-form"), []);
+  });
+});

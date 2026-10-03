@@ -11,6 +11,9 @@
 
 import { COUNTER_CURRICULUM, counterEntry } from "@/data/counters";
 import { patternEntry } from "@/data/grammar";
+import { autoPatternPage } from "@/data/grammar/auto-page";
+import { formLibraryPages, grammarLessonsForFacts } from "@/data/grammar/lessons";
+import { RECIPES } from "@/data/grammar/recipes";
 import { KEIGO_SETS, keigoSetEntry } from "@/data/keigo";
 import { VERB_PAIRS } from "@/data/transitivity";
 import { pairEntry } from "@/data/transitivity-facts";
@@ -178,6 +181,7 @@ function walkFor(starIds: readonly string[], history: HistoryFile, offer: Offeri
   // app's next item: a piece with no facts of its own (艹) is a star here
   // but never an item there, and a page must not land after it
   let cursor = 0;
+  const own = ownGrammarPages(facts);
   for (const step of appLessonSteps(facts, history, undefined, true)) {
     if (step.type === "item") {
       const reading = taughtReading(step.item.facts);
@@ -189,6 +193,7 @@ function walkFor(starIds: readonly string[], history: HistoryFile, offer: Offeri
       pending = [];
       cursor = at + 1;
     } else if (step.type === "intro") {
+      if (own.has(step.intro.id)) continue;
       if (step.intro.id === TSU_INTRO.id) { push("intro", offer.offerPick(TSU_RULE)); continue; }
       // an intro with no entry of its own is a page to read, named the way
       // the app's own rail names it: a short name, else the eyebrow
@@ -206,5 +211,23 @@ function walkFor(starIds: readonly string[], history: HistoryFile, offer: Offeri
       push("term", item, { ...whole, pages: whole.pages?.map((pg) => ({ ...pg, tables: pg.tables?.filter((t) => t.title === title) })) });
     }
   }
+  // A grammar lesson's walk has no item steps: its drills are the star
+  // itself. So nothing above ever handed its pages to a star, and the
+  // References panel of every grammar lesson came up empty (SAK-494). Pages
+  // still waiting stand behind the first star not yet passed.
+  if (cursor < starIds.length) for (const page of pending) pages.push({ ...page, before: starIds[cursor] });
   return pages;
+}
+
+/** The pages a grammar lesson teaches that are its star's own card: a form's
+ * Library pages, else the generated pattern page (`grammarPages` in
+ * teach.ts). The star already shows them, so the walk's copy is not a page to
+ * read beside it. What is left is what the lesson leans on: the Grammar
+ * opener, okurigana and the two word classes. */
+function ownGrammarPages(facts: readonly FactId[]): Set<string> {
+  const ids = grammarLessonsForFacts(facts).flatMap((lesson) => lesson.recipeIds ?? [lesson.primaryPattern]);
+  return new Set(ids.flatMap((id) => {
+    const recipe = RECIPES.find((r) => r.id === id);
+    return [...formLibraryPages(id).map((p) => p.id), ...(recipe ? [autoPatternPage(recipe).id] : [])];
+  }));
 }

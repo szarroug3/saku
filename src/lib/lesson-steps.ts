@@ -70,7 +70,7 @@ import { COUNTER_ENTRIES, counterForm } from "@/data/counters";
 import { termEntry } from "@/data/terms";
 import { TRACK_INTROS, TSU_INTRO, type TrackId } from "@/data/track-intros";
 import { vocabRow, wordReadingFactId } from "@/data/vocab";
-import { grammarLessonsForFacts } from "@/data/grammar/lessons";
+import { ADJECTIVE_TYPES_CONCEPT_PAGES, grammarLessonsForFacts, VERB_TYPES_CONCEPT_PAGES } from "@/data/grammar/lessons";
 import { itemsFromFacts, type LessonItem } from "@/lib/lesson-items";
 import { spineIntroPlan } from "@/lib/spine-intros";
 import { startedTracks, trackOfItem } from "@/lib/track-open";
@@ -147,6 +147,10 @@ const SPINE_TERM: Readonly<Record<string, string>> = {
 const GRAMMAR_CARD_TERM: Readonly<Record<string, string>> = {
   [OKURIGANA_INTRO.id]: "okurigana",
   [OKURIGANA_MOVING.id]: "okurigana",
+  // The two class cards (SAK-494): each term's page is the concept of the same
+  // name, which renders this very card.
+  [VERB_TYPES_CONCEPT_PAGES[0].id]: "godan-ichidan",
+  [ADJECTIVE_TYPES_CONCEPT_PAGES[0].id]: "keiyoshi-keiyodoshi",
 };
 
 /** The kana section a step's glyph belongs to, or null for anything that isn't
