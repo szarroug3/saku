@@ -2384,6 +2384,40 @@ test("は and が are one tile, one pick and one card headed は vs が (SAK-491
   }
 });
 
+test("はい and うん are one tile, one pick and one card headed はい vs うん (SAK-493)", async ({ page }) => {
+  // The Words row opened on "yes, yes, no, no" with nothing telling the two
+  // "yes" tiles apart. Sam, 2026-10-02: teach each pair as one item, the way
+  // は and が are one.
+  await page.goto("/observatory?sample");
+  const row = page.locator("section", { has: page.getByRole("heading", { name: "Words", exact: true }) });
+  const tile = row.getByRole("button").filter({ hasText: "yes, polite and casual" });
+  await expect(tile).toHaveCount(1);
+  await expect(row.getByRole("button").filter({ hasText: "no, polite and casual" })).toHaveCount(1);
+  // no tile says plain "yes" or "no" any more
+  await expect(row.getByText("yes", { exact: true })).toHaveCount(0);
+  await expect(row.getByText("no", { exact: true })).toHaveCount(0);
+  await tile.click();
+  await expect(tile).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByText("1 Pick", { exact: true })).toBeVisible();
+  await page.getByRole("link", { name: "Start lesson" }).click();
+  await expect(page).toHaveURL(/\/lesson\?/);
+
+  // one step, and its card is headed by the pair, with a page per word and
+  // the page that tells them apart
+  await expect(page.getByText("Step 1 of 1", { exact: true })).toBeVisible();
+  const card = page.locator('[data-lesson-cell="card"]');
+  await expect(card.getByText("はい vs うん", { exact: true }).first()).toBeVisible();
+  await expect(card.getByText("yes, polite and casual", { exact: true })).toBeVisible();
+  const pager = card.getByRole("navigation", { name: "Pages" }).getByRole("button");
+  await expect(pager).toHaveCount(3);
+  await expect(pager).toHaveText(["はい", "うん", "はい vs うん"]);
+  await pager.nth(2).click();
+  await expect(card.getByText(/うん is the casual one/)).toBeVisible();
+  // and it is one star in the lesson's sky
+  const sky = page.locator('svg[aria-label^="Tonight\'s constellations"]');
+  await expect(sky.locator("[data-star]")).toHaveCount(1);
+});
+
 test("the particles picked for tonight are moons, and nothing there is a planet", async ({ page }) => {
   // SAK-465. Five particles picked used to be five ringed planets in one
   // cluster: the biggest body in the sky drawn on its most ordinary thing
