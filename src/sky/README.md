@@ -7226,3 +7226,33 @@ Sam, 2026-09-26, on the Observatory's "Continue your lesson (step 2 of 3)" butto
 **Screenshots.** `.logs/sak-492/continue-with-x.png` (the button with its X), `continue-with-x-page.png`, `continue-with-x-phone.png` (400px wide), `forget-confirm.png` (the confirm line) and `forget-confirm-page.png`. Measured on the built page: the X is 28px in a 38px button, 5px from its top, right and bottom edges, and 0px off the button's middle line. The words are 0px off the button's center on both axes and 33px clear of the X at the Observatory's 340px width, and about 7px clear at phone width.
 
 **The gates.** `npx tsc --noEmit` and `npx eslint src e2e scripts` clean. 4,373 unit tests, 4,372 pass and 1 skipped. 88 e2e pass. `scripts/unreachable.mjs --list` at zero, `scripts/unused-exports.mjs` at zero on both lists, and `scripts/button-centering.mjs` at zero over 1px across 9 pages.
+
+## はい and うん are one item, and so are いいえ and いや (SAK-493)
+
+The Planetarium's Words row opened on four tiles reading yes, yes, no, no. はい and うん both gloss "yes" and いいえ and いや both gloss "no", and a tile shows English only, so nothing told the two "yes" tiles apart. Sam, 2026-10-02: teach each pair as one item, the way は and が are one (SAK-491).
+
+**Where the pairs come from.** `WORD_CONTRAST_PAIRS` in `src/data/word-contrast-notes.ts`, the pairs with a `together` field, which carries the pair's meaning line. Two are marked: はい / うん ("yes, polite and casual") and いいえ / いや ("no, polite and casual"). The generated ずる/じる pairs are never marked: those are one verb spelled two ways, and the じる spelling is the one taught. A pair marked later is a tile with no other change.
+
+**What a word group is.** The same shape as a particle group over two word entries: a `word` item with `group`, `oneCard`, `listsParts` and its two words as `components`. Its id is `words:` and the two entry ids (`words:word:はい-word:うん`), its name is `はい vs うん`, and its meaning line is the pair's own. The words stay entries and quiz units.
+
+**Every place that had to learn about it.**
+
+- `src/app/(sky)/word-groups.ts` (new): the groups, `wordGroup(id)` and `wordGroupOfPart(entry)`.
+- `src/app/(sky)/particle-groups.ts`: `tileOf` maps a grouped word to its group as well, and `ONE_CARD_GROUPS` and `oneCardParts(id)` answer for either kind of group, for the places that only need a group's parts.
+- `src/app/(sky)/observatory.ts`: `offerPick` builds a word group (`offerWordGroup`). The Words row offers the pair once, at whichever of its words the curriculum has first, for as long as either is left to learn, and never offers a grouped word alone. A pair with both words met is learned, and so is a word of it already met, so a pair with one word known costs 1. `beyondWords` puts each pair in the sky, met once either word is. `pickFacts` gives the pair's claim both words' facts.
+- `src/app/(sky)/learner.ts`: `skyItems` leaves a grouped word out of the firmament, since the pair is up there in its place.
+- `src/app/(sky)/teach.ts`: `wordGroupTeach` is the pair's card, headed by its name and meaning line, with three pages: one per word (its meanings when it has more than one, its reading when it is not all kana, its sentence with the word picked out, its forms), then "Which one to use" with the note. The pills read はい, うん, はい vs うん.
+- `src/app/(sky)/lesson.ts`: the walk reads a group's facts through `oneCardParts`, so a page the walk puts behind either word stands behind the pair.
+- `src/app/(sky)/atlas.ts`: the Words shelf already mapped its entries through `tileOf`, so it shows the pair once; search for はい or うん finds the pair. A streamed shelf's status cut maps through `tileOf` too, and cuts a pair by the standing it wears. `?entry=word:うん` still opens the word, with its "Often compared with" fold.
+- `src/app/(sky)/atlas-catalogue.ts`: a pair's tile stands where its two words stand, as a particle group's does.
+- `src/sky/components/lesson-card.tsx`: no hear button on a `oneCard` card. "はい vs うん" is not a word to say, and it is not in the voice cache.
+- `src/sky` otherwise needed nothing: the graph, the cart, the lesson steps and the weight all read `oneCard` already. The pair weighs 1 + 1 = 2.
+- `src/data/generated/sky-catalogue.json`, `sky-catalogue-base.json` and `atlas-catalogue.json`: rebuilt with `npm run build:catalogues`.
+
+**The notes.** Both were rewritten. The いいえ / いや note had いや meaning "I don't want to", which is いやだ, the adjective; the content review (`docs/content-review-2026-09.md`) flagged it. The bare interjection is a casual no or a hesitation. The はい / うん note is new. Each names both words with their meaning after them.
+
+**Tests.** `src/app/(sky)/word-groups.test.ts`: the two groups, named, glossed and made of their words, and no ずる/じる pair grouped; one word item drawn as one star; the Words row opens on the yes pair and the no pair and never offers a grouped word alone; weight 2; one claim claims both; standing from the words, learned only with both, cost 1 with one known; one lesson step with three pages, each word's page with its sentence; the quiz asks each word's own cards; one star in the home sky, in the firmament before and a root once either word is met; one tile on the Words shelf; search for はい and for うん; the Atlas entry with three pages, and the word still opening by its own id. `word-contrast-notes.test.ts` covers the `together` field and the new note. `observatory.test.ts`'s slipped-item checks take the first word offered on its own, since the row now opens on two pairs. In `e2e/sky.spec.ts`, the new test picks the yes pair on `/observatory?sample`, starts the lesson, and finds one step, the card headed はい vs うん with three pills, the note on the third page, and one star.
+
+**Screenshots.** `.logs/sak-493/words-row.png`, `observatory.png`, `lesson-card-hai.png`, `lesson-card-un.png`, `lesson-card-apart.png`, `lesson-card-iya.png`, `atlas-words.png` and `atlas-entry-yes.png`.
+
+**Not changed.** The faint Japanese behind a Planetarium tile, which reads "はい vs うん" now. An Atlas tile cuts a long name short, so the pair's tile reads "はい …" there, the way ちょっと reads "ちょ…". いや's example sentence (たとえいやでも) is いや the adjective, a different word, and stays.
