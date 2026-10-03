@@ -798,10 +798,10 @@ function groupTeach(group: ParticleGroup): LessonTeach {
  * ("はい vs うん") and its meaning line, with a page per word and then the page
  * that tells them apart, the three-page shape a shared particle note has.
  *
- * A word's page holds what that word's own card shows: its meanings, its
- * reading where the word is not written in kana alone, its sentence with the
- * word picked out, and its forms. There is no hear button on a page, and the
- * card's own is off for a pair (its name is not one word to say). The note is on the third page rather than on
+ * A word's page holds what that word's own card shows: the word's reading and
+ * hear button beside the page's title (`say`), its meanings, its sentence with
+ * the word picked out, and its forms. The card's own button is off for a pair,
+ * whose name is not one word to say. The note is on the third page rather than on
  * each word's page, where a word's own card has it.
  */
 function wordGroupTeach(group: WordGroup): LessonTeach {
@@ -814,11 +814,11 @@ function wordGroupTeach(group: WordGroup): LessonTeach {
     return {
       eyebrow: word,
       title: `${word} ${meanings[0] ?? ""}`.trim(),
+      say: { word, reading: own.reading ?? word, pitch: own.pitch ?? null },
       // the title says the first meaning, so a word with one meaning has no
       // line repeating it
       paragraphs: [
         ...(meanings.length > 1 ? [{ heading: "Meanings", text: meanings.join(" · ") }] : []),
-        ...(own.reading && own.reading !== word ? [{ heading: "Reading", text: own.reading }] : []),
         ...(ex ? [{ heading: "In a sentence", text: "", examples: [{ jp, en: ex.en }] }] : []),
       ],
       ...(own.tables?.length ? { tables: own.tables } : {}),

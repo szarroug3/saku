@@ -216,6 +216,24 @@ export function LessonCard({ item, teach, madeOf, partOf, onSelect, onRead, writ
     </ul>
   );
 
+  // a word page of a pair's card (はい vs うん, SAK-493) has the reading and
+  // the hear button a word card's head row has, as one group, saying that
+  // page's own word
+  const pageSay = (p: TeachPage | undefined): ReactNode => {
+    const say = p?.say;
+    if (!say || (!Hear && say.reading === say.word)) return undefined;
+    return (
+      <span className="inline-flex items-center gap-2">
+        {say.reading !== say.word && (
+          Pitch && typeof say.pitch === "number"
+            ? <Pitch reading={say.reading} downstep={say.pitch} className={`font-sky-display text-[16px] text-sky-muted ${japaneseFont(say.reading)}`} />
+            : <span className={`font-sky-display text-[16px] text-sky-muted ${japaneseFont(say.reading)}`}>{say.reading}</span>
+        )}
+        {Hear && <Hear glyph={say.reading} word={say.word} downstep={say.pitch ?? undefined} />}
+      </span>
+    );
+  };
+
   return (
     <DetailFrame toolbar={toolbar} footer={footer} scroll={scroll} className={className}>
       <div className="flex shrink-0 items-start justify-between gap-3">
@@ -282,7 +300,7 @@ export function LessonCard({ item, teach, madeOf, partOf, onSelect, onRead, writ
               own: the name is right above it, as the card's meaning or its
               glyph, and where there are several pages the pill above already
               says which one this is (SAK-464) */}
-          <TeachPageView page={namesItself(pages[at], item, pages.length) ? { ...pages[at], eyebrow: undefined } : pages[at]} onOpen={onRead} />
+          <TeachPageView page={namesItself(pages[at], item, pages.length) ? { ...pages[at], eyebrow: undefined } : pages[at]} onOpen={onRead} titleAside={pageSay(pages[at])} />
         </>
       )}
 
