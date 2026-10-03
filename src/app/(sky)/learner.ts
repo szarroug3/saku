@@ -40,6 +40,8 @@ import type { SkyItem, SkyKind } from "@/sky/lib/types";
 import type { FactId } from "@/types/facts";
 import type { HistoryFile } from "@/types/store";
 
+import { wordGroupOfPart } from "./word-groups";
+
 const GRADUATE_RUNS = 10;
 
 /** Worst first: the color a multi-fact entry's star wears. */
@@ -387,7 +389,9 @@ export function skyItems(history: HistoryFile, now = Date.now(), options: SkyOpt
       const inFirmament = options.everything && (kind === KANA_SUBJECT || kind === RADICAL_SUBJECT || kind === PRIMITIVE_SUBJECT || kind === KANJI_SUBJECT || kind === VOCAB_SUBJECT);
       if (standingFor(entry, history, now).met) add(entry);
       else if (inFirmament) add(entry);
-      if (inFirmament) firmament.push(entry.id);
+      // a word taught with another (はい and うん, SAK-493) is up there as
+      // the pair, which observatory.ts's `beyondWords` puts in its place
+      if (inFirmament && !wordGroupOfPart(entry.id)) firmament.push(entry.id);
     }
   }
   return { items, met, firmament, add };

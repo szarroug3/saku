@@ -25,6 +25,8 @@ import { CLUSTERS } from "@/data/grammar/clusters";
 import { PARTICLE_NOTES } from "@/data/grammar/particle-notes";
 import { RECIPES } from "@/data/grammar/recipes";
 
+import { WORD_GROUPS, wordGroup, wordGroupOfPart } from "./word-groups";
+
 export interface ParticleGroup {
   /** The group's own id: "particles:" and its recipe ids. */
   id: string;
@@ -72,8 +74,19 @@ export function groupOfPart(entryId: string): ParticleGroup | undefined {
   return BY_PART.get(entryId);
 }
 
-/** The id a thing is offered, shown and opened as: a grouped pattern's group,
- * anything else itself. */
+/** Every item taught on one card over two entries: the particle groups and
+ * the word groups (SAK-493, word-groups.ts), by id, with the entries they are
+ * made of. */
+export const ONE_CARD_GROUPS: readonly { id: string; parts: readonly string[] }[] = [...PARTICLE_GROUPS, ...WORD_GROUPS];
+
+/** The parts of a group taught on one card, of either kind, or nothing when
+ * the id is not one. */
+export function oneCardParts(id: string): readonly string[] | undefined {
+  return (BY_ID.get(id) ?? wordGroup(id))?.parts;
+}
+
+/** The id a thing is offered, shown and opened as: a grouped pattern's or a
+ * grouped word's group, anything else itself. */
 export function tileOf(id: string): string {
-  return BY_PART.get(id)?.id ?? id;
+  return BY_PART.get(id)?.id ?? wordGroupOfPart(id)?.id ?? id;
 }
