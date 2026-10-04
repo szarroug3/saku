@@ -7618,13 +7618,13 @@ Sam wanted a way to get a feel for where a kanji's sounds come from. The drill s
 
 **Which readings a kanji shows.**
 
-1. A voiced twin folds into its base of the same kind, and its words count toward the base. The table lists び beside ひ for 火 and ごころ beside こころ for 心. Both are the same reading with the first sound voiced by the word in front, so the drill shows ひ and こころ once each.
+1. A voiced kun'yomi folds into its unvoiced kun'yomi, and its words count toward the base. The table lists び beside ひ for 火 and ごころ beside こころ for 心. Both are the same native word with the first sound voiced by the word in front (rendaku), so the drill shows ひ and こころ once each. An on'yomi never folds. だい and たい are two on'yomi of 大, borrowed separately, and 大学 (university) is read だい; 土's ど and 上's じょう are on'yomi of their own too. Rendaku is a kun'yomi thing, so a voiced on'yomi is its own reading. The first cut folded both sides, and the review counted 96 kanji that lost a real on'yomi that way.
 2. A reading used in fewer than five everyday words is left out, unless it is the most used reading of its kind (on, kun, or filed under both). 日's か (二日, the second of the month) and 人's と go. 火's ひ stays because it is 火's main kun'yomi.
 
 A reading the dictionary files under both kinds takes either label, and the reveal says "kun'yomi and on'yomi".
 
-**The order.** By the most readings a kanji has of one kind: one of each first (水 みず and すい, 木, 心), then two of a kind (人 has じん and にん, 日 has にち and じつ), then three or more. Inside each group the kanji keep the app's teaching order. Sam's note said "then three or more readings"; 人 and 日 already have three, so the third group is three or more of one kind. The first ten, pinned in `src/app/(sky)/readings-drill.test.ts`: 大 山 手 口 中 刀 分 干 年 入.
+**The order.** By the most readings a kanji has of one kind: one of each first (水 みず and すい, 木, 心), then two of a kind (人 has じん and にん, 日 has にち and じつ), then three or more. Inside each group the kanji keep the app's teaching order. Sam's note said "then three or more readings"; 人 and 日 already have three, so the third group is three or more of one kind. The first ten, pinned in `src/app/(sky)/readings-drill.test.ts`: 山 手 口 中 刀 分 干 年 入 立. 大 moved to the second group once だい and たい both counted.
 
-**What it skips.** 1,011 of the 2,022 kanji with readings in the table, leaving 1,011 to ask. 845 have no kun'yomi row and 152 no on'yomi row, because the table only keeps a reading an everyday word proves (本 has ほん and nothing else). The other 14 have a single reading filed under both kinds (差, 死, 医), which is nothing to sort. The groups hold 978, 31 and 2 kanji.
+**What it skips.** 1,011 of the 2,022 kanji with readings in the table, leaving 1,011 to ask. 845 have no kun'yomi row and 152 no on'yomi row, because the table only keeps a reading an everyday word proves (本 has ほん and nothing else). The other 14 have a single reading filed under both kinds (差, 死, 医), which is nothing to sort. The groups hold 976, 33 and 2 kanji.
 
 **Gates.** `scripts/button-centering.mjs` measures the drill twice: with one reading labeled, and on the score screen.
