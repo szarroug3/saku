@@ -1429,3 +1429,46 @@ describe("the English under a marked sentence marks what the Japanese marks", ()
     assert.ok(yo && !yo.enRuns, "もう遅いよ marks English it has no words for");
   });
 });
+
+// SAK-509: in the narrow Atlas panel a build table's English columns drop to a
+// line under each row, and a Pattern cell may break where the pattern's ending
+// starts. These are the marks the table is drawn from.
+describe("a build table says which columns drop under the row in a narrow box", () => {
+  const tablesOf = (id: string) => (atlasEntryFromHistory(emptyHistory(), id, NOW)?.teach?.pages ?? []).flatMap((p) => p.tables ?? []);
+  const textOf = (cell: readonly { text: string }[]) => cell.map((r) => r.text).join("");
+
+  it("marks the Meaning column of every table on 〜てもいい", () => {
+    const tables = tablesOf("grammar:te-permission").filter((t) => t.heads.includes("Meaning"));
+    assert.ok(tables.length >= 4, "〜てもいい has its verb, two adjective and noun tables");
+    for (const t of tables) assert.deepEqual(t.under, [t.heads.indexOf("Meaning")], t.heads.join(" | "));
+  });
+
+  it("marks Meaning and Note on a rule table, and both are last", () => {
+    const t = tablesOf("grammar:ta-form").find((x) => x.heads.includes("Note"));
+    assert.ok(t, "the た-form has a table with a Note");
+    assert.deepEqual(t.under, [t.heads.length - 2, t.heads.length - 1]);
+    assert.deepEqual(t.under.map((i) => t.heads[i]), ["Meaning", "Note"]);
+  });
+
+  it("lets a Pattern cell break after the form, or where the form's last kana gives way", () => {
+    const na = tablesOf("grammar:te-permission").flatMap((t) => t.rows).find((r) => r.some((c) => textOf(c) === "しずかでもいい"));
+    const te = na!.find((c) => textOf(c) === "しずかでもいい")!;
+    assert.deepEqual(te.map((r) => [r.text, Boolean(r.wrap)]), [["しずかで", false], ["もいい", true]]);
+    const nai = tablesOf("grammar:nakute-mo-ii").flatMap((t) => t.rows).flat().find((c) => textOf(c) === "しずかではなくてもいい");
+    assert.ok(nai, "the な-adjective row of 〜なくてもいい");
+    assert.deepEqual(nai.map((r) => [r.text, Boolean(r.wrap), Boolean(r.accent)]), [["しずかではな", false, false], ["くてもいい", true, false]]);
+  });
+
+  it("holds each sign of a change to its kana", () => {
+    const nbsp = "\u00a0";
+    const change = tablesOf("grammar:causative-passive").flatMap((t) => t.rows).flat().find((c) => textOf(c) === `−${nbsp}る +${nbsp}させられる`);
+    assert.ok(change, "the ichidan row of the causative-passive");
+    assert.deepEqual(change.map((r) => r.text), [`−${nbsp}る`, ` +${nbsp}`, "させられる"]);
+  });
+
+  it("leaves a table that is not a build table alone", () => {
+    const particles = tablesOf("term:particle");
+    assert.ok(particles.length > 0);
+    for (const t of particles) assert.equal(t.under, undefined);
+  });
+});
