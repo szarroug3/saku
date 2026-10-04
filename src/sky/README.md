@@ -7516,3 +7516,17 @@ Seen 2026-10-03 on 〜てもいい in the Atlas: the な-adjective build table h
 **Measured** on the built server, with grammar:te-permission open: the な-adjective table's box is 288px wide with 288px of content at 1440, and 286 of 286 at 390. Before the change the same box held 382px of content at 1440 and 384px at 390 (measured on the dev server). A sweep of all 108 patterns that have a build table, every page of each, 388 tables, found none wider than its box at 1440 or at 390. The 〜てもいい lesson at 1440 draws the same four columns at the same widths as before.
 
 **Tests.** `teach.test.ts` checks that every 〜てもいい table marks its Meaning column, that the た-form's table marks Meaning and Note, that しずかでもいい breaks before もいい and しずかではなくてもいい before くてもいい with no accent added, that the change cell's signs are held by no-break spaces, and that the Particle page's table is left alone. The e2e test opens the Atlas on grammar:te-permission at 1440 and 390, checks the な-adjective table and its box have nothing to scroll, that "it's okay even if it's quiet" ends inside the panel and the Meaning heading is hidden, then opens the lesson at 1440 and finds the Meaning heading and four cells in the row.
+
+## A pair's word pages draw the pitch over the word (SAK-517)
+
+Sam, 2026-10-04, on the はい vs うん card in the Atlas: "i don't see the pitch lines on main." SAK-493 and SAK-503 were built side by side, and neither covered the other's case. SAK-503 drew a kana word's pitch over the word in the card's head. SAK-493's word pages put a reading and a hear button beside the page title, and drew the pitch only over a reading that differs from the word. はい is its own reading, so its page drew no line, though its `say` had pitch 1.
+
+**The fix.** `titleWordPitch(page)` in `src/sky/lib/lesson.ts` gives the word a page title opens with and its pitch when the page's `say` word is its own reading and has a pitch. `lesson-card.tsx` hands that word to `TeachPageView` as `titleWord`, drawn with the same `Pitch` component the head uses, and `teach-page.tsx` draws the rest of the title after it. The page reads はい with its line, then "yes", then the hear button. A word whose reading differs keeps its pitched reading beside the title. いいえ and いや have no pitch in the data and draw no line.
+
+**The eyebrow.** A pair's word page had a small はい above the title "はい yes". `namesItself` now drops an eyebrow that is the page's own `say` word. The pills still read はい, うん, はい vs うん, since the pager reads the pages, not what the card draws.
+
+**Measured** on the built server: the hear button's center is 0px off the title's center on both word pages, in the Atlas and the lesson, at 1440 and at 390. `button-centering.mjs` finds 0 over 1px.
+
+**Tests.** `word-groups.test.ts`: the はい and うん pages give their word with pitch 1, the "Which one to use" page and the いいえ and いや pages give nothing, and a word read differently (箸) gives nothing. In `e2e/sky.spec.ts`, the Atlas on the はい vs うん card at 1440 and 390 finds one pitch line on pages 1 and 2, inside the title, with the hear button centered within 1px and no eyebrow above the title; page 3 and the いいえ page have none. The SAK-493 test finds the title by a name that may carry the line's label.
+
+**Screenshots** in `.logs/sak-517/`: `atlas-1440-page1-はい.png`, `atlas-1440-page2-うん.png`, `atlas-1440-iie-none.png` and `atlas-390-page1-はい.png`.
