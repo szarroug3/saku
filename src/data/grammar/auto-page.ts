@@ -17,7 +17,7 @@ import { FORM_LABEL, HOST_ARTICLE } from "@/lib/grammar/formula";
 import { dropDoScaffold } from "@/lib/grammar/gloss";
 import { recipeAllows } from "@/lib/grammar/vehicles";
 import { examplesFor, type Example } from "@/data/grammar/corpus";
-import { patternLabel, type Host, type Recipe } from "@/data/grammar/recipes";
+import { attachmentMeaning, patternLabel, type Host, type Recipe } from "@/data/grammar/recipes";
 import { SENTENCE_ENGLISH_MARKS } from "@/data/grammar/sentence-english-marks";
 import type { BuildHeads, IntroBuildRule, IntroDeriveRow, PhaseIntro, SentenceExample } from "@/data/phase-intros";
 
@@ -216,9 +216,10 @@ function pageHost(r: Recipe): Host {
  * before " / too X" / " / looks X" (sugiru, sou-appearance) — and those get the
  * inverse treatment: the scaffold word is swapped for the copula ("is X", "was
  * X") or its verb-only half is dropped, so a non-verb row never reads as if it
- * were one ("do good" / "looks like it will good"). "may do X" (te-permission)
- * is rewritten whole as "it's okay even if it's X", because "may be X" reads as
- * a guess (SAK-497). A gloss with no X slot is left as it is. */
+ * were one ("do good" / "looks like it will good"). 〜てもいい on an adjective
+ * reads "it's okay even if it's X" through the attachment's own `meaning`, which
+ * the quiz reads too (SAK-497, SAK-499), so it never reaches this fill. A gloss
+ * with no X slot is left as it is. */
 function appliedGloss(gloss: string, ex: ExampleWord): string {
   if (!/\bX\b/.test(gloss)) return gloss;
   if (!ex.ing) {
@@ -233,11 +234,6 @@ function appliedGloss(gloss: string, ex: ExampleWord): string {
         // it so the X-only half stands alone — the inverse of the verb branch's
         // own adjective-only-alt strip below.
         .replace(/^.*? \/ (?=(?:too|looks?) X\b)/, "")
-        // "may do X" is permission on a verb ("may go"), but "may be expensive"
-        // reads as a guess about the price. On an adjective or noun, 〜てもいい
-        // means the thing is acceptable even so (SAK-497), and the English has
-        // to say that. The raw gloss stays "may do X" for the verb rows.
-        .replace(/^may do X\b/, `it's okay even if it's ${filled}`)
         // "do X" is verb scaffolding a non-verb predicate cannot carry. At the
         // start of a clause it reads as a finite verb ("is X, and then…"); after
         // a modal ("may do X") it needs the bare copula the modal already calls
@@ -309,6 +305,9 @@ function handMeaning(meaning: string, ex: ExampleWord): string {
 function deriveRows(r: Recipe, host: Host, limit = 3, labelClass = false): IntroDeriveRow[] {
   const attach = r.attach.find((a) => a.host === host) ?? r.attach[0];
   if (!attach) return [];
+  // The same lookup the quiz instruction makes, so a hand-written meaning reads
+  // the same in both places (SAK-499).
+  const meaning = attachmentMeaning(r, attach.host);
   const rows: IntroDeriveRow[] = [];
   for (const ex of EXAMPLES[host]) {
     if (!recipeAllows(r, ex.word)) continue;
@@ -329,7 +328,7 @@ function deriveRows(r: Recipe, host: Host, limit = 3, labelClass = false): Intro
       verb: ex.word,
       form,
       result: built.value,
-      gloss: attach.meaning ? handMeaning(attach.meaning, ex) : appliedGloss(r.gloss, ex),
+      gloss: meaning ? handMeaning(meaning, ex) : appliedGloss(r.gloss, ex),
       ...(classLabel ? { classLabel } : {}),
     });
     if (rows.length >= limit) break;

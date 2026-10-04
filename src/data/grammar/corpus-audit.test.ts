@@ -11,7 +11,11 @@ import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 
 import { corpus, CORPUS_META, examplesFor } from "./corpus.ts";
-import { AUDITED, confoundFor } from "./corpus-audit.ts";
+import type { Example } from "./corpus.ts";
+import { AUDITED, auditExample, confoundFor, japaneseErrorFor } from "./corpus-audit.ts";
+import droppedJson from "../generated/grammar-corpus-dropped.json" with { type: "json" };
+
+const DROPPED = droppedJson as readonly { readonly id: number; readonly orphaned: boolean; readonly removed: boolean }[];
 
 describe("no shipped example lacks its own pattern", () => {
   test("the audit finds nothing left to drop", () => {
@@ -37,10 +41,20 @@ describe("no shipped example lacks its own pattern", () => {
     assert.deepEqual([...CORPUS_META.audit.patterns].sort(), [...AUDITED].sort());
   });
 
-  test("every sentence still claims at least one pattern", () => {
-    // The audit removes claims, and a sentence that loses all of them must
-    // leave rather than sit in the file untagged.
-    for (const ex of corpus()) assert.ok(ex.p.length > 0, `${ex.id} has no patterns`);
+  test("a sentence with no pattern is one the audit took every tag off", () => {
+    // SAK-511: such a sentence stays for word examples and sentence readings.
+    // It must be one the audit chose to untag, and the meta must count it.
+    const struck = new Set(DROPPED.filter((d) => d.orphaned && !d.removed).map((d) => d.id));
+    const untagged = corpus().filter((ex) => ex.p.length === 0);
+    for (const ex of untagged) assert.ok(struck.has(ex.id), `${ex.id} has no patterns and the audit never untagged it`);
+    assert.equal(CORPUS_META.audit.untaggedSentences, untagged.length);
+    for (const ex of untagged) assert.deepEqual(ex.sp, {}, `${ex.id} kept a span with no pattern`);
+  });
+
+  test("no pattern's examples include a sentence with no pattern", () => {
+    for (const p of Object.keys(CORPUS_META.perPattern)) {
+      for (const ex of examplesFor(p)) assert.ok(ex.p.length > 0, `${ex.id} under ${p} has no patterns`);
+    }
   });
 
   test("meta.perPattern is the file's real content, not the cap", () => {
@@ -92,17 +106,31 @@ describe("coverage after the audit is recorded, not assumed", () => {
    * in grammar.py rather than only filtering after it.
    */
   const SURVIVED: Readonly<Record<string, number>> = {
-    ba: 257,
-    "kara-reason": 213,
+    // 257 -> 256 (SAK-501): 冷蔵庫に入れておけば肉は痛まない left for its 痛む.
+    ba: 256,
+    // 230 -> 140 (SAK-501): でしょ without the う, a rhetorical "right?".
+    deshou: 140,
+    // 213 -> 167 (SAK-501): a sentence-final からね / からな.
+    "kara-reason": 167,
     // +1 over the ingest's own count — authored.ts adds one hand-picked
     // reference example (see its "particles" section) alongside the corpus.
     "made-ni": 86,
+    // 324 -> 207 in the corpus (SAK-501), plus authored.ts's one row: までに
+    // ("by", "ever"), 今まで + ことがある, まで as "even".
+    made: 208,
+    // 334 -> 2 (SAK-501): almost every ないで in the corpus is a request.
+    "nai-de": 2,
     nikui: 63,
     node: 89,
     // 212 -> 164: 48 are purpose の+に ("convenient FOR doing X") or the
     // pronoun-の + choice-に of 〜にする, not concessive のに.
     noni: 164,
-    "ta-tokoro": 139,
+    // 33 -> 9 (SAK-501): らしく is the "befitting" らしい.
+    rashii: 9,
+    // 139 -> 137 (SAK-501): と言ったところ, "so to speak".
+    "ta-tokoro": 137,
+    // 425 -> 420 (SAK-501): ていろ / ていなさい, a command.
+    "te-iru": 420,
     // 243 -> 234: 9 are volitional + と思う ("I intend to X"), a different
     // recipe (you-to-omou) folded into this one at ingest time.
     "to-omou": 234,
@@ -118,8 +146,17 @@ describe("coverage after the audit is recorded, not assumed", () => {
     // The failure mode this guards is a rule that is too aggressive: an audit
     // that leaves a pattern with nothing is a pattern the app can no longer
     // teach, and that must be a decision, not a side effect.
+    //
+    // Two patterns are below 20 on purpose (SAK-501). In both, the tagger's
+    // signature matches a different word far more often than the pattern:
+    // ない + で is mostly the request "please don't", and grammar.py's rashii
+    // signature reads the suffix らしい ("like a real X"), not the auxiliary
+    // ("apparently"). Every sentence the rules took out was read. The fix that
+    // brings the numbers back is in grammar.py, not here.
+    const THIN: Readonly<Record<string, number>> = { "nai-de": 2, rashii: 9 };
     for (const p of AUDITED) {
-      assert.ok(examplesFor(p).length >= 20, `${p} fell to ${examplesFor(p).length}`);
+      if (p in THIN) assert.equal(examplesFor(p).length, THIN[p], `${p} moved; read its sentences before changing this`);
+      else assert.ok(examplesFor(p).length >= 20, `${p} fell to ${examplesFor(p).length}`);
     }
   });
 
@@ -132,5 +169,149 @@ describe("coverage after the audit is recorded, not assumed", () => {
       .map(([p]) => p)
       .sort();
     assert.deepEqual(empty, ["ta-ato-de"]);
+  });
+});
+
+/** An example built the way grammar.py writes one, with the span found by
+ * text. Only what confoundFor reads is filled in. */
+function example(jp: string, pattern: string, span: string, en = "", id = 1): Example {
+  const at = jp.indexOf(span);
+  assert.ok(at >= 0, `${span} is not in ${jp}`);
+  return { id, jp, en, n: 0, v: [], p: [pattern], sp: { [pattern]: [at, at + span.length, null] } };
+}
+
+describe("the SAK-501 rules drop the wrong sense and keep the right one", () => {
+  const cases: ReadonlyArray<{ pattern: string; drop: readonly Example[]; keep: readonly Example[] }> = [
+    {
+      pattern: "nai-de",
+      drop: [
+        example("私にかまわないで。", "nai-de", "かまわないで", "Leave me alone, please."),
+        example("窓を開けないでください。", "nai-de", "開けないで", "Please don't open the window."),
+        example("食べないでいいよ。", "nai-de", "食べないで", "It's OK not to eat it."),
+        example("心配しないで、楽しくいこう！", "nai-de", "しないで", "Don't worry, be happy!"),
+      ],
+      keep: [
+        example("隠さないで話してくれ。", "nai-de", "隠さないで", "Don't hold back anything."),
+        example("朝ご飯を食べないで、学校に行った。", "nai-de", "食べないで", "I went to school without eating breakfast."),
+      ],
+    },
+    {
+      pattern: "made",
+      drop: [
+        example("今までに本物の牛を見たことがない。", "made", "今まで", "I've never seen a real cow."),
+        example("明日までにレポートを提出しなさい。", "made", "明日まで", "Hand in your report by tomorrow."),
+        example("彼は今まで外国に行ったことがありません。", "made", "今まで", "He has never been abroad."),
+        example("もう・・・タバコの吸殻まで散らばってるし。", "made", "吸殻まで", "Sheesh, you've even got cigarette butts scattered around."),
+      ],
+      keep: [
+        example("翌朝まで待つしかなかった。", "made", "翌朝まで", "There was nothing to do but wait until the next morning."),
+        example("今まで何してたの？", "made", "今まで", "What have you been doing all this while?"),
+        example("雨でもそこまで行きます。", "made", "そこまで", "I will go there even if it rains."),
+      ],
+    },
+    {
+      pattern: "rashii",
+      drop: [example("若者らしくふるまいなさい。", "rashii", "らしく", "Behave yourself like a young man.")],
+      keep: [example("彼は来るらしい。", "rashii", "らしい", "Apparently he's coming.")],
+    },
+    {
+      pattern: "ta-tokoro",
+      drop: [
+        example("結果は可もなく不可もなしと言ったところです。", "ta-tokoro", "言ったところ", "The result is neither good nor bad."),
+        example("曲がったところに本屋がある。", "ta-tokoro", "曲がったところ", "There's a bookstore where you turn."),
+      ],
+      keep: [example("今帰ったところです。", "ta-tokoro", "帰ったところ", "I've just come home.")],
+    },
+    {
+      pattern: "kara-reason",
+      drop: [
+        example("明日遊びに行くからね。", "kara-reason", "行くから", "I'm coming to see you tomorrow."),
+        example("次壊したら、直さないからな。", "kara-reason", "ないから", "If you break it again, I'm not going to fix it."),
+        example("だから言ったでしょう。", "kara-reason", "だから", "I told you so."),
+      ],
+      keep: [
+        example("雨が降っているから、行かない。", "kara-reason", "いるから", "I'm not going because it's raining."),
+        example("あなたが女の子だからよ。", "kara-reason", "だから", "It's because you're a girl."),
+      ],
+    },
+    {
+      pattern: "deshou",
+      drop: [example("やめなさいって言ってるでしょ。", "deshou", "でしょ", "Stop, I say.")],
+      keep: [example("明日は雨でしょう。", "deshou", "でしょう", "It will probably rain tomorrow.")],
+    },
+    {
+      pattern: "te-iru",
+      drop: [
+        example("下がっていろ！", "te-iru", "下がっていろ", "Back off!"),
+        example("黙っていなさい。", "te-iru", "黙ってい", "Be quiet."),
+      ],
+      keep: [example("疲れているんだ。", "te-iru", "疲れている", "I'm tired.")],
+    },
+  ];
+
+  for (const { pattern, drop, keep } of cases) {
+    test(`${pattern}: drops the other sense`, () => {
+      for (const ex of drop) assert.ok(confoundFor(ex, pattern), `${ex.jp} was kept`);
+    });
+    test(`${pattern}: keeps the real sense`, () => {
+      for (const ex of keep) assert.equal(confoundFor(ex, pattern), null, `${ex.jp} was dropped`);
+    });
+  }
+
+  test("the sentence with 痛む (to hurt) for 傷む (to spoil) is gone", () => {
+    const bad = example("冷蔵庫に入れておけば肉は痛まない。", "te-oku", "入れておけ", "", 77642);
+    assert.ok(japaneseErrorFor(bad));
+    assert.equal(japaneseErrorFor({ ...bad, id: 2 }), null);
+    assert.ok(!corpus().some((ex) => ex.id === 77642), "77642 is still in the corpus");
+  });
+});
+
+describe("a wrong sense takes the tag off and keeps the sentence (SAK-511)", () => {
+  test("a sentence whose only pattern is confounded is kept with no tags", () => {
+    const request = example("ふざけないで。", "nai-de", "ふざけないで", "Be serious.");
+    const { kept, struck } = auditExample(request);
+    assert.ok(kept, "the sentence left the corpus");
+    assert.deepEqual(kept.p, []);
+    assert.deepEqual(kept.sp, {});
+    assert.deepEqual(
+      struck.map((s) => s.pattern),
+      ["nai-de"],
+    );
+  });
+
+  test("a confound takes off only its own tag", () => {
+    const ex: Example = {
+      id: 1,
+      jp: "窓を開けないでください。",
+      en: "Please don't open the window.",
+      n: 0,
+      v: [],
+      p: ["wo", "nai-de"],
+      sp: { wo: [1, 2, null], "nai-de": [2, 7, null] },
+    };
+    const { kept } = auditExample(ex);
+    assert.deepEqual(kept?.p, ["wo"]);
+    assert.deepEqual(Object.keys(kept?.sp ?? {}), ["wo"]);
+  });
+
+  test("a sentence with no confound comes back as it was", () => {
+    const ex = example("疲れているんだ。", "te-iru", "疲れている", "I'm tired.");
+    assert.equal(auditExample(ex).kept, ex);
+  });
+
+  test("wrong Japanese takes the whole sentence out", () => {
+    const bad = example("冷蔵庫に入れておけば肉は痛まない。", "te-oku", "入れておけ", "", 77642);
+    const { kept, struck } = auditExample(bad);
+    assert.equal(kept, null);
+    assert.deepEqual(
+      struck.map((s) => s.pattern),
+      ["te-oku"],
+    );
+  });
+
+  test("the ないで requests SAK-501 untagged are word examples again", () => {
+    const ex = corpus().find((e) => e.jp === "ふざけないで。");
+    assert.ok(ex, "ふざけないで。 left the corpus");
+    assert.deepEqual(ex.p, []);
   });
 });

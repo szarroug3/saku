@@ -601,10 +601,16 @@ test("every example sentence highlights the word it is an example of", () => {
   // twice: the wider pool matches a word on its dictionary form AND its
   // reading, at a token boundary, so a candidate the span pass then cannot
   // find in the sentence would be a disagreement between two tokenizations of
-  // the same text, and there are none.
+  // the same text, and there are none. SAK-501 took them to 5,765 / 4,704 /
+  // 1,061 / 4,242: the new corpus-audit.ts rules took out the only corpus
+  // sentence of 38 words, and 73 more words moved to another sentence.
+  // SAK-511 put those sentences back without their tag, giving 5,803 / 4,726 /
+  // 1,077 / 4,263. One more span covers the spelling exactly than before
+  // SAK-501, because the 19 sentences earlier audits had taken out came back
+  // too and 8 words now take one of them.
   assert.equal(spanned, 5803, "sentences that carry a highlight span");
-  assert.equal(literal, 4725, "spans that cover the word's dictionary spelling exactly");
-  assert.equal(spanned - literal, 1078, "spans that cover an inflected surface of the word");
+  assert.equal(literal, 4726, "spans that cover the word's dictionary spelling exactly");
+  assert.equal(spanned - literal, 1077, "spans that cover an inflected surface of the word");
   assert.equal(noForms, 4263, "spans on a word with no conjugation class, all of them its spelling");
 });
 

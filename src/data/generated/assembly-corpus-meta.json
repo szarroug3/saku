@@ -4,16 +4,17 @@
   "minPieces": 3,
   "maxPieces": 7,
   "counts": {
-    "input": 9653,
-    "kept": 605
+    "input": 9671,
+    "kept": 603
   },
   "dropped": {
-    "clause-with-scrambleable-modifiers": 3944,
-    "too-few-pieces": 2366,
-    "coordinate-or-continuative-join": 2343,
-    "does-not-end-on-a-predicate": 279,
+    "clause-with-scrambleable-modifiers": 3878,
+    "coordinate-or-continuative-join": 2312,
+    "too-few-pieces": 2201,
+    "no-pattern": 286,
+    "does-not-end-on-a-predicate": 277,
     "too-many-pieces": 94,
-    "ungroupable": 20,
+    "ungroupable": 18,
     "reassembly-mismatch": 2
   }
 }

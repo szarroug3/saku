@@ -7365,6 +7365,60 @@ Sam, 2026-10-03, on the はい vs うん card: "do these words not have pitch?" 
 
 **Screenshots.** In `.logs/sak-503/` of the lane worktree: `atlas-hai.png`, `atlas-ukkari.png`, `atlas-ee-none.png` and `atlas-hashi-control.png` (箸, where the line is over the reading beside the kanji, as before).
 
+## Corpus sentences filed under the wrong sense (SAK-501)
+
+SAK-497 read 68 Tatoeba sentences from `grammar-corpus.json`, one per pattern, and found 7 that are good Japanese filed under a pattern whose meaning they do not use. The tagger matches tokens, and the same tokens can mean something else. The rules that catch this live in `CONFOUNDS` in `src/data/grammar/corpus-audit.ts`. `scripts/audit-corpus.ts` runs them and only ever removes.
+
+**The rules.** Five are new and two are wider.
+
+- nai-de ("without doing X"): ないで at the end of a sentence, or before ください, くれ, ちょうだい or ほしい, is a request (私にかまわないで, "leave me alone"). So is ないで with a comma after it when the English starts with "Don't". ないでいい is "it's okay not to". 332 of 334 sentences were one of these. The ないでください ones are also tagged nai-request, so they stay in the app there.
+- made ("until"): までに is "by" (明日までに) or "ever" (今までに). 今まで with ことがある is "ever" too, and まで can mean "even" (吸殻まで, read off the English). 117 of 324 left.
+- rashii ("apparently"): the adverb らしく is the "like a real X" らしい (若者らしくふるまいなさい). 24 of 33 left. The other 9 are no better (らしさ, わざとらしい, 日本語らしい日本語). grammar.py's signature reads らしい as a suffix, which is the "like a real X" word. The "apparently" らしい is an auxiliary, and the fix is in the signature.
+- deshou ("probably"): でしょ without the う is a rhetorical "right?" (言ったでしょ). 90 of 230 left.
+- te-iru ("is doing"): ていろ and ていなさい are commands (下がっていろ, "stay back"). 5 of 425 left.
+- ta-tokoro, wider: と言ったところ ("so to speak") ends in です like the real pattern, so the old check for a particle after ところ let it through. The rule now also looks for the quoting と in front. 2 left.
+- kara-reason, wider: the old rule only looked for だから at the start of a sentence. A から with only ね or な after it is a promise or a warning (行くからね, "I'll come, okay?"). から。, からよ and からさ stay, since those usually answer "why?". 46 left.
+
+**痛む.** 冷蔵庫に入れておけば肉は痛まない uses 痛む (to hurt) where 傷む (to spoil) is meant. It is dropped by id in `BAD_JAPANESE`, because the audit only removes and a corrected sentence would be lost on the next run of grammar.py.
+
+**What moved.** 617 sentences changed: 268 left the corpus and 349 lost one pattern. `grammar-corpus-dropped.json` now keeps the rows of earlier runs as well as this one. The derived files were rebuilt with the tokenizer: `assembly-corpus.json` (605 to 603), `word-examples.json`, `sentence-readings.json`, `learn-index.json`, `curriculum-meta.json` and both catalogues. 38 words lost their only example sentence, since the wider pool in `word-example-candidates.json` was cut while the corpus still reached them. The made page's first sentence is now ちょっとそこまで散歩に出よう. The nai-de page's is 隠さないで話してくれ.
+
+**Tests.** `corpus-audit.test.ts` has a sentence each rule drops and one it keeps, the new pattern counts, and nai-de and rashii named as below 20 on purpose. The word example counts in `word-example.test.ts` and `source-pins.test.ts` were remeasured.
+
+## The quiz asks 〜てもいい on an adjective in the lesson's words (SAK-499)
+
+After SAK-497 the 〜てもいい lesson read たかくてもいい as "it's okay even if it's expensive", but the quiz card for the same row still asked for "may be たかい". That reads as a guess about the price.
+
+**One string for both.** An attachment's hand-written `meaning` in `src/data/grammar/recipes.ts` is now read by the quiz too. `attachmentMeaning(recipe, host)` in that file returns it, and both `deriveRows` in `src/data/grammar/auto-page.ts` and `quizInstruction` in `src/lib/quiz-instruction.ts` call it. The lesson fills X with the English word ("expensive", "a book"). The quiz fills X with the card's Japanese word, in kana if the learner has not met it.
+
+**〜てもいい's い-adjective row.** It had no `meaning` and got its words from a rewrite of "may do X" inside `appliedGloss`. That rewrite is gone. The い-adjective and な-adjective rows now both use one constant in `recipes.ts`, "it's okay even if it's X". The lesson reads the same as before.
+
+**What the quiz says now.**
+- 〜てもいい on an い-adjective: "it's okay even if it's たかい". On a な-adjective: "it's okay even if it's しずか".
+- 〜なくてもいい on an adjective: "it doesn't have to be たかい".
+- 〜てはいけない on an adjective: "it must not be しずか".
+- A verb card has no `meaning` and reads as before: "may いく".
+
+The noun rows of these patterns have no quiz card, so their meanings show only on the page. The older rule that puts "be" after a modal ("may be X") is still there for an adjective or noun row with no `meaning`. No row uses it today.
+
+**Tests.** `quiz-instruction.test.ts` checks たかい, いく, and the other adjective rows, and checks that every hand-written meaning on these three patterns is the quiz line with the word in place of X. In `e2e/sky.spec.ts`, "a 〜てもいい quiz card on an adjective asks in the lesson's words (SAK-499)" opens the い-adjective card and finds "it's okay even if it's" with no "may be". The SAK-496 lesson test now checks the verb and い-adjective meanings too.
+
+**Screenshots.** In `saku-tasks/screenshots/sak-499/`, all at 1440 with the pretend learner: `te-permission-adj-i-quiz-1440.png`, `te-permission-adj-na-quiz-1440.png`, `nakute-mo-ii-adj-i-quiz-1440.png` and `te-prohibition-adj-na-quiz-1440.png` (each card's instruction line), and `te-permission-lesson-adj-i-1440.png` (the lesson's verb, い-adjective and な-adjective rows).
+
+## A wrong sense takes the tag off, and the sentence stays (SAK-511)
+
+SAK-501 removed a sentence from `grammar-corpus.json` when every pattern it was filed under turned out to be the wrong sense. Word examples are drawn from the same file, so 38 words lost their only "In a sentence". Most were ないで requests like ふざけないで ("be serious"). As Japanese they are fine, and they show their words well. They were wrong only as examples of "without doing X".
+
+**The rule now.** The per-sentence step is `auditExample()` in `src/data/grammar/corpus-audit.ts`. A confound, or a construction no lesson teaches, takes that one pattern tag off. The sentence stays even with no tag left. Only `BAD_JAPANESE` takes a sentence out of the file. `grammar-corpus-meta.json` counts the sentences with no tag in `audit.untaggedSentences`, and each row of `grammar-corpus-dropped.json` has a `removed` field that is true only for wrong Japanese.
+
+**Who sees an untagged sentence.** `build-word-examples.ts` and the sentence readings read every row. Pattern pages, the selection drills and the grammar example route go through `examplesFor()`, which groups by tag, so a sentence with no tag never reaches them. Two readers walk the whole file and now skip it: `assembly.py` (an ordering card credits its patterns, and this one has none) and `readableRecognition()` in `src/lib/listen-sentence.ts` for the same reason.
+
+**Putting them back.** The sentences were already gone from the file, and grammar.py needs the Tatoeba dump to cut it again. So the rows came back from git: every sentence the dropped file marked as having lost all its patterns, except 77642, was restored from the last commit that still had it, in its old place. That is 286 sentences. 267 are from SAK-501, and 19 are from SAK-277 and SAK-283 (のに as "for", volitional と思う, and 自分らしくあれ). The audit then ran again and took their tags off. The file went from 9,385 sentences to 9,671, and no pattern's count changed.
+
+**What moved.** `word-examples.json` is back to 5,803 rows, 2,990 of them from the corpus. All 38 words have a sentence again. 8 words now use one of the 19 older sentences instead of what they had before SAK-501, for example 治る with 治るのにしばらくかかりますね. `assembly-corpus.json`, `sentence-readings.json`, the indexes and both catalogues came out the same.
+
+**Tests.** `corpus-audit.test.ts`: a sentence whose only pattern is confounded is kept with no tags, a confound takes off only its own tag, wrong Japanese takes the sentence out, every untagged sentence in the file is one the audit untagged, and no pattern's examples include one. The counts in `word-example.test.ts` and `source-pins.test.ts` are back to their values before SAK-501, with two that differ by one because of the 8 words above.
+
 ## The English under a marked sentence is marked too (SAK-498)
 
 Sam, 2026-10-03, on the を page's "In a sentence" block: "we show a sentence without showing what the highlighted word means in the sentence. let's highlight the word in the sentence, so here we would highlight whatever 昼寝 means in the natural English sentence."

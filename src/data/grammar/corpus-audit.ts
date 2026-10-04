@@ -114,16 +114,28 @@ const CONFOUNDS: Readonly<Record<string, Confound>> = {
 
   // 〜たところ ("just did") is predicative: ところだ / ところです / ところ。
   // ところ followed by a case particle is the NOUN — 曲がったところに本屋がある.
+  //
+  // SAK-501: と言ったところ / といったところ ("so to speak", "about") ends the
+  // same way as the real pattern (ところです, ところだ), so the case-particle
+  // check above never saw it. What gives it away is the quoting と in front of
+  // 言った.
   "ta-tokoro": {
-    why: "ところ as a place noun (a case particle follows), not 〜たところ",
-    holds: (_ex, _span, after) => /^[にがはへをのと]/.test(after),
+    why: "ところ as a place noun (a case particle follows) or と言ったところ ('so to speak'), not 〜たところ",
+    holds: (_ex, span, after, before) =>
+      /^[にがはへをのと]/.test(after) || (/と$/.test(before) && /^(言|い)った/.test(span)),
   },
 
   // だから at the head of a sentence is a connective — "so, ...". The pattern
   // is X-から-Y, with the reason INSIDE the sentence.
+  //
+  // SAK-501: a から that ends the sentence with ね or な after it (行くからね,
+  // 許さないからな) is a promise or a warning: "I'll come, okay?". There is no
+  // Y for a reason to explain. The rule above only read the head of the
+  // sentence, so it never saw these. から。 and からよ / からさ stay: those are
+  // usually an answer to "why?" (女の子だからよ, "because you're a girl").
   "kara-reason": {
-    why: "sentence-initial だから — a connective, not X から Y",
-    holds: (ex) => ex.jp.startsWith("だから"),
+    why: "sentence-initial だから (a connective) or a sentence-final からね / からな (a promise or warning), not X から Y",
+    holds: (ex, _span, after) => ex.jp.startsWith("だから") || /^[ねな]+[。！？!?…」]*$/.test(after),
   },
 
   // 〜について ("about X") vs physical につく. The signature's not_after already
@@ -173,6 +185,68 @@ const CONFOUNDS: Readonly<Record<string, Confound>> = {
       /(役立|役に立|便利|使わ|使う|使われ|必要|十分|かか|掛か|忙し|苦労|四苦八苦|慣れ|成功|飽き)/.test(after) ||
       /^(します|する)/.test(after),
   },
+
+  // SAK-501: ない + で at the end of a sentence, or before ください, くれ,
+  // ちょうだい or ほしい, is a request: 私にかまわないで, "leave me alone".
+  // The pattern is "without doing X", which needs a second verb after the
+  // ないで (歯を磨かないで寝た, "went to bed without brushing"). The tokens are
+  // the same in both. The ないでください sentences are also tagged
+  // nai-request, so they stay in the app under the pattern they do show.
+  //
+  // Two more shapes that are not "without": a request with a comma after it
+  // (心配しないで、楽しくいこう, "don't worry, be happy"), which only the
+  // English can tell from 食べないで、出かけた, and ないでいい ("it's okay not
+  // to"), which is the meaning of なくてもいい.
+  "nai-de": {
+    why: "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    holds: (ex, _span, after) =>
+      /^(ください|下さい|くれ|ちょうだい|ほしい|欲しい|[よねなー]*[。！？!?」…]|$)/.test(after) ||
+      /^も?(いい|良い|よい|よろしい|構わない|かまわない)/.test(after) ||
+      (/^、/.test(after) && /^(please )?(don't|do not)\b/i.test(ex.en)),
+  },
+
+  // SAK-501: N + までに is "by" (明日までに, a deadline, which is made-ni) and
+  // 今までに / これまでに is "ever". Neither is "until". 今まで with a
+  // ことがある experience is "ever" too (今まで外国に行ったことがありません).
+  // A bare 今まで stays: 今まで何してたの is "until now".
+  //
+  // まで can also mean "even" (吸殻まで散らばってる, "even cigarette butts are
+  // lying around"). The tokens match "until" exactly, so like ni-tsuite this
+  // reads the English: "even" with no until, till, to or there in it.
+  made: {
+    why: "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    holds: (ex, span, after) =>
+      /^に/.test(after) ||
+      (/^(今|これ)まで$/.test(span) && /こと(が|は|って|なんて|も)?(ある|あり|ない|なかっ|なく)/.test(after)) ||
+      (/\beven\b/i.test(ex.en) && !/\b(until|till|to|as far as|there)\b/i.test(ex.en)),
+  },
+
+  // SAK-501: grammar.py's rashii signature reads らしい as a suffix
+  // (接尾辞), which is the "befitting, typical of" らしい: 男らしい, 春らしく.
+  // The "apparently" らしい is an auxiliary. The adverb form らしく is almost
+  // always the befitting one (若者らしくふるまいなさい, "behave like a young man";
+  // 彼らしくない, "not like him"). The kept forms are no better, see SAK-501's
+  // closing comment; the fix for those is the signature.
+  rashii: {
+    why: "らしく is the 'befitting, like a real X' らしい, not 'apparently X'",
+    holds: (_ex, span) => span.startsWith("らしく"),
+  },
+
+  // SAK-501: でしょ without the う is the rhetorical "right?" or "I told you":
+  // 言ったでしょ, 冗談でしょ. The pattern teaches でしょう as "probably". でしょう
+  // stays, even though some of those are questions too.
+  deshou: {
+    why: "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    holds: (_ex, span) => span === "でしょ",
+  },
+
+  // SAK-501: ていろ / てろ / ていなさい is a command, "stay back!" (下がっていろ).
+  // The pattern is "is doing X". The command form of いる ends in ろ, and
+  // ていなさい puts なさい right after the span.
+  "te-iru": {
+    why: "ていろ / ていなさい, a command ('stay ...!'), not 'is doing X'",
+    holds: (_ex, span, after) => /ろ$/.test(span) || /^なさい/.test(after),
+  },
 };
 
 /** Recipes this audit has an opinion about. Everything else passes untouched. */
@@ -215,6 +289,23 @@ export function prerequisiteGapFor(ex: Example, pattern: string): string | null 
 }
 
 /**
+ * Tatoeba sentences whose Japanese is wrong. They leave the corpus under every
+ * pattern they claim. The audit only ever removes, so a fix to the Japanese
+ * would be lost on the next run of grammar.py; dropping by id is not.
+ *
+ * SAK-501: 77642 冷蔵庫に入れておけば肉は痛まない uses 痛む (to hurt) where
+ * 傷む (to spoil) is meant.
+ */
+const BAD_JAPANESE: Readonly<Record<number, string>> = {
+  77642: "痛む (to hurt) where 傷む (to spoil) is meant",
+};
+
+/** Why `ex`'s Japanese is wrong, or null. See BAD_JAPANESE. */
+export function japaneseErrorFor(ex: Example): string | null {
+  return BAD_JAPANESE[ex.id] ?? null;
+}
+
+/**
  * Why this example does NOT demonstrate `pattern`, or null if it does.
  *
  * The evidence is the example's own blank SPAN — the slice grammar.py recorded
@@ -230,4 +321,38 @@ export function confoundFor(ex: Example, pattern: string): string | null {
   const after = ex.jp.slice(sp[1]);
   const before = ex.jp.slice(0, sp[0]);
   return c.holds(ex, span, after, before) ? c.why : null;
+}
+
+/** One pattern tag the audit takes off a sentence, and why. */
+export interface StruckTag {
+  readonly pattern: string;
+  readonly why: string;
+}
+
+/**
+ * What the audit does to one sentence.
+ *
+ * A confound or an untaught prerequisite takes that pattern's tag off. The
+ * sentence stays even when no tag is left (SAK-511): being the wrong sense of
+ * one grammar point says nothing about whether it shows its words well, and
+ * word-examples.json and the sentence readings are drawn from this same file.
+ * examplesFor() groups by tag, so a sentence with no tag never reaches a
+ * pattern page or a grammar drill.
+ *
+ * Wrong Japanese is the one thing that takes the sentence out. Then `kept` is
+ * null and every tag it had is struck.
+ */
+export function auditExample(ex: Example): { readonly kept: Example | null; readonly struck: readonly StruckTag[] } {
+  const wrong = japaneseErrorFor(ex);
+  const struck: StruckTag[] = [];
+  for (const pattern of ex.p) {
+    const why = wrong ?? confoundFor(ex, pattern) ?? prerequisiteGapFor(ex, pattern);
+    if (why !== null) struck.push({ pattern, why });
+  }
+  if (wrong !== null) return { kept: null, struck };
+  if (struck.length === 0) return { kept: ex, struck };
+  const p = ex.p.filter((x) => !struck.some((s) => s.pattern === x));
+  const sp: Record<string, readonly [number, number, string | null]> = {};
+  for (const x of p) sp[x] = ex.sp[x]!;
+  return { kept: { ...ex, p, sp }, struck };
 }

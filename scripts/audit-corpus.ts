@@ -1,5 +1,5 @@
-// Drop every corpus example that does not demonstrate the pattern it is filed
-// under, and record what was dropped.
+// Take a pattern tag off every corpus sentence that does not demonstrate that
+// pattern, drop the sentences whose Japanese is wrong, and record both.
 //
 //     node scripts/audit-corpus.ts            rewrite the shipped JSON
 //     node scripts/audit-corpus.ts --check    report only; exit 1 if unclean
@@ -17,7 +17,8 @@
 // a number that is not true. So the file itself changes.
 //
 // Rewrites three files:
-//   grammar-corpus.json          the survivors
+//   grammar-corpus.json          every sentence but the wrong Japanese,
+//                                with the confounded tags taken off
 //   grammar-corpus-meta.json     TRUE per-pattern counts, plus an `audit` block
 //   grammar-corpus-dropped.json  every dropped sentence, with its reason
 //
@@ -28,14 +29,8 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
-import { confoundFor, prerequisiteGapFor, AUDITED } from "../src/data/grammar/corpus-audit.ts";
+import { auditExample, japaneseErrorFor, AUDITED } from "../src/data/grammar/corpus-audit.ts";
 import type { Example } from "../src/data/grammar/corpus.ts";
-
-/** A confound and an untaught-prerequisite gap both drop a pattern claim from
- * a sentence for the same practical reason (see corpus-audit.ts's
- * UNTAUGHT_PREREQUISITE doc for why they are still two separate tables). */
-const guiltReasonFor = (ex: Example, p: string): string | null =>
-  confoundFor(ex, p) ?? prerequisiteGapFor(ex, p);
 
 const GEN = fileURLToPath(new URL("../src/data/generated/", import.meta.url));
 
@@ -52,8 +47,11 @@ interface Dropped {
   readonly pattern: string;
   readonly span: string;
   readonly why: string;
-  /** True when the pattern was this sentence's only claim, so it left entirely. */
+  /** True when this sentence has no pattern left. It stays for word examples
+   * unless `removed` is also true. */
   readonly orphaned: boolean;
+  /** True when the sentence left the corpus: its Japanese is wrong. */
+  readonly removed: boolean;
 }
 
 function main() {
@@ -68,30 +66,17 @@ function main() {
   const dropped: Dropped[] = [];
   const kept: Example[] = [];
 
+  // What happens to one sentence, and why, is auditExample() in
+  // corpus-audit.ts. This loop records it.
   for (const ex of corpus) {
-    const guilty = ex.p.filter((p) => guiltReasonFor(ex, p) !== null);
-    if (guilty.length === 0) {
-      kept.push(ex);
-      continue;
+    const { kept: row, struck } = auditExample(ex);
+    const removed = row === null;
+    const orphaned = removed || row.p.length === 0;
+    for (const { pattern, why } of struck) {
+      const sp = ex.sp[pattern]!;
+      dropped.push({ id: ex.id, jp: ex.jp, en: ex.en, pattern, span: ex.jp.slice(sp[0], sp[1]), why, orphaned, removed });
     }
-    const survivors = ex.p.filter((p) => !guilty.includes(p));
-    for (const p of guilty) {
-      const sp = ex.sp[p]!;
-      dropped.push({
-        id: ex.id,
-        jp: ex.jp,
-        en: ex.en,
-        pattern: p,
-        span: ex.jp.slice(sp[0], sp[1]),
-        why: guiltReasonFor(ex, p)!,
-        orphaned: survivors.length === 0,
-      });
-    }
-    // A sentence whose every claim was a confound has nothing left to teach.
-    if (survivors.length === 0) continue;
-    const sp: Record<string, readonly [number, number, string | null]> = {};
-    for (const p of survivors) sp[p] = ex.sp[p]!;
-    kept.push({ ...ex, p: survivors, sp });
+    if (row) kept.push(row);
   }
 
   // Seeded with every pattern the tagger has a signature for, so a pattern that
@@ -99,13 +84,28 @@ function main() {
   // would turn "no examples" into "no such pattern", which is the silent
   // failure this whole pass exists to stop.
   const after = { ...zeros(meta.perPattern), ...countByPattern(kept) };
-  report(before, after, corpus.length, kept.length, dropped.length);
+  const untagged = kept.filter((ex) => ex.p.length === 0).length;
+  report(before, after, corpus.length, kept.length, dropped.length, untagged);
 
   if (check) {
-    if (dropped.length === 0) return;
-    console.error(`\nFAIL: ${dropped.length} confounded example(s) are still shipped.`);
+    if (dropped.length === 0 && kept.length === corpus.length) return;
+    console.error(`\nFAIL: ${dropped.length} confounded tag(s) or ${corpus.length - kept.length} wrong sentence(s) are still shipped.`);
     process.exit(1);
   }
+
+  // The shipped corpus has already lost what earlier runs dropped, so this run
+  // only finds what a new rule catches. Keep the earlier rows in the record
+  // so the file still lists every sentence the audit ever took out.
+  const earlier = read("grammar-corpus-dropped.json") as Dropped[];
+  const fresh = new Set(dropped.map((d) => `${d.id} ${d.pattern}`));
+  // Rows written before SAK-511 have no `removed`. Then only wrong Japanese
+  // removes a sentence, so that is what it means for them too.
+  const record = [
+    ...earlier
+      .filter((d) => !fresh.has(`${d.id} ${d.pattern}`))
+      .map((d) => ({ ...d, removed: d.removed ?? japaneseErrorFor({ id: d.id } as Example) !== null })),
+    ...dropped,
+  ];
 
   write("grammar-corpus.json", kept);
   write(
@@ -124,16 +124,17 @@ function main() {
         by: "scripts/audit-corpus.ts",
         rules: "src/data/grammar/corpus-audit.ts",
         patterns: AUDITED,
-        droppedExamples: dropped.length,
-        droppedSentences: dropped.filter((d) => d.orphaned).length,
+        droppedExamples: record.length,
+        droppedSentences: new Set(record.filter((d) => d.removed).map((d) => d.id)).size,
+        untaggedSentences: untagged,
       },
     },
     2,
   );
-  write("grammar-corpus-dropped.json", dropped, 2);
+  write("grammar-corpus-dropped.json", record, 2);
   console.log(`\nwrote grammar-corpus.json (${kept.length} sentences)`);
   console.log(`wrote grammar-corpus-meta.json`);
-  console.log(`wrote grammar-corpus-dropped.json (${dropped.length} rows)`);
+  console.log(`wrote grammar-corpus-dropped.json (${record.length} rows, ${dropped.length} new)`);
   // word-examples.json is derived FROM the corpus, so it is now stale. Its own
   // test catches this, but saying so here is cheaper than reading that failure.
   console.log(
@@ -158,6 +159,7 @@ function report(
   rowsBefore: number,
   rowsAfter: number,
   drops: number,
+  untagged: number,
 ) {
   console.log(`${"pattern".padEnd(16)} ${"before".padStart(7)} ${"after".padStart(7)} ${"dropped".padStart(8)}`);
   console.log("-".repeat(42));
@@ -168,6 +170,7 @@ function report(
     console.log(`${p.padEnd(16)} ${String(b).padStart(7)} ${String(a).padStart(7)} ${String(b - a).padStart(6)} ${String(pct).padStart(3)}%`);
   }
   console.log(`\nsentences ${rowsBefore} -> ${rowsAfter}; ${drops} pattern claims dropped`);
+  console.log(`${untagged} sentences carry no pattern and are kept for word examples only`);
   const thin = Object.entries(after).filter(([, n]) => n < 20);
   if (thin.length > 0) console.log(`SCARCE (<20) after the audit: ${thin.map(([p, n]) => `${p}=${n}`).join(", ")}`);
 }
