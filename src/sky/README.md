@@ -7638,3 +7638,26 @@ Over the 648 quiz sentences and the pattern pages' sentences, this changed な�
 **The per-sentence table.** One row came out of `src/data/grammar/sentence-word-meanings.ts`: なる "to become" on the おかげで sentence (5138), which the rule now gets on its own. The other rows still say something the rules would not.
 
 **Tests.** `src/app/(sky)/word-meaning.test.ts`: 猫になりたい and 雨になると思う gloss なる "to become", 相手になろう is still "to play", いる is "to be" in 彼らならここにいるよ and "to want" with a pencil, やむ is 止む, せい is "blame", and いくつ's いく gets nothing. The SAK-516 test that used なる on 5138 uses ため on 4787 now. `src/app/(sky)/quiz.test.ts`: the obligation card for 4814 has no meaning under なりません, and the card for 12057976 says なると "to become". `sentence-word-meanings.test.ts` checks that each pattern page's sentence carries its id and that the lookup by it returns the row.
+
+## A drill that sorts a kanji's readings into kun'yomi and on'yomi (SAK-495)
+
+Sam wanted a way to get a feel for where a kanji's sounds come from. The drill shows one kanji and its readings in a random order, with no meaning, no furigana and no labels. Each reading has a kun'yomi button and an on'yomi button. A press is graded on the spot with a check or an X, and a miss shows the right label and nothing more. End quiz is beside the heading the whole time, and the last screen is the score with Start over and Back to practice.
+
+**Where it is.** `/practice/readings`, reached from the Sort kanji readings button beside the Practice heading. The kanji track does not run it (Sam, 2026-10-04: offer it, don't run it). The readings intro (`intro-onyomi` in `src/data/phase-intros.ts`) ends on two paragraphs instead: why telling the two kinds apart helps, with 火 (fire) read ひ alone and か in 火曜日 (Tuesday), and that the drill is in Practice, optional, and counts toward nothing. The link under them comes from `INTRO_LINKS` in `src/app/(sky)/teach.ts`, because the cards are data and every Sky URL is built in `hrefs.ts`. `TeachPageView` opens a link to one of the app's own pages in place and still opens anywhere else in a new tab.
+
+**Nothing is stored.** The run is the screen's own React state. The route reads no learner and calls no server action, and the screen writes no browser key. So there are no history writes, no claims and no change to any standing. The browser test checks it: the browser's storage is the same after a run as before it, and no request other than a GET leaves the page.
+
+**The model and the view.** `src/sky/lib/readings-drill.ts` holds the rule for which readings show, the order, the shuffle, the grading and the score, with tests beside it. `src/sky/components/sky-readings-drill.tsx` draws it. `src/app/(sky)/readings-drill.ts` turns the kanji table's rows (`READINGS`, the same rows the kanji card's Readings fold lists) into plain rows in the app's teaching order and builds the pool once. The readings are shuffled in the browser only, after it mounts, so the server and the browser never draw two orders.
+
+**Which readings a kanji shows.**
+
+1. A voiced kun'yomi folds into its unvoiced kun'yomi, and its words count toward the base. The table lists び beside ひ for 火 and ごころ beside こころ for 心. Both are the same native word with the first sound voiced by the word in front (rendaku), so the drill shows ひ and こころ once each. An on'yomi never folds. だい and たい are two on'yomi of 大, borrowed separately, and 大学 (university) is read だい; 土's ど and 上's じょう are on'yomi of their own too. Rendaku is a kun'yomi thing, so a voiced on'yomi is its own reading. The first cut folded both sides, and the review counted 96 kanji that lost a real on'yomi that way.
+2. A reading used in fewer than five everyday words is left out, unless it is the most used reading of its kind (on, kun, or filed under both). 日's か (二日, the second of the month) and 人's と go. 火's ひ stays because it is 火's main kun'yomi.
+
+A reading the dictionary files under both kinds takes either label, and the reveal says "kun'yomi and on'yomi".
+
+**The order.** By the most readings a kanji has of one kind: one of each first (水 みず and すい, 木, 心), then two of a kind (人 has じん and にん, 日 has にち and じつ), then three or more. Inside each group the kanji keep the app's teaching order. Sam's note said "then three or more readings"; 人 and 日 already have three, so the third group is three or more of one kind. The first ten, pinned in `src/app/(sky)/readings-drill.test.ts`: 山 手 口 中 刀 分 干 年 入 立. 大 moved to the second group once だい and たい both counted.
+
+**What it skips.** 1,011 of the 2,022 kanji with readings in the table, leaving 1,011 to ask. 845 have no kun'yomi row and 152 no on'yomi row, because the table only keeps a reading an everyday word proves (本 has ほん and nothing else). The other 14 have a single reading filed under both kinds (差, 死, 医), which is nothing to sort. The groups hold 976, 33 and 2 kanji.
+
+**Gates.** `scripts/button-centering.mjs` measures the drill twice: with one reading labeled, and on the score screen.
