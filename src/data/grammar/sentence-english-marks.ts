@@ -24,7 +24,8 @@
 // where "study" is 勉強 and する at once), the phrase is the rest: "should".
 //
 // The phrase must appear exactly once in the sentence's English, as written,
-// capitals and all. sentence-english-marks.test.ts checks that, and checks
+// capitals and all, and start and end on a word boundary, so a mark never
+// stops partway through a word. sentence-english-marks.test.ts checks that, and checks
 // that every pattern page with a sentence has a row. A re-ingest that shows a
 // different sentence then fails the test, and the new sentence gets read.
 //
