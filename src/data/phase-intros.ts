@@ -638,6 +638,12 @@ export interface PhaseIntro {
  * and the `[start, end)` span of the piece this pattern built, to accent.
  */
 export interface SentenceExample {
+  /** The sentence's id in the grammar corpus (below zero for one written by
+   * hand in authored.ts). The words line looks its words up by it, so a
+   * meaning written for a word in this sentence
+   * (src/data/grammar/sentence-word-meanings.ts) is the one shown, the same
+   * one the sentence quiz shows (SAK-519). */
+  readonly id?: number;
   /** The whole sentence: "最初着る前に洗濯してください。" */
   readonly jp: string;
   /** Its English gloss: "Wash before first wearing." */
@@ -657,18 +663,14 @@ export interface SentenceExample {
    * are left out, since the page above teaches them. Absent on a sentence
    * written by hand rather than drawn from the corpus. */
   readonly words?: readonly string[];
-  /** Meanings written for this sentence's words, by lemma, where the
-   * vocabulary has no word for one or gives it a sense the sentence does not
-   * use (SAK-508): 事 read こと, "thing". Read off the hand-written table in
-   * src/data/grammar/sentence-word-meanings.ts. */
-  readonly wordMeanings?: Readonly<Record<string, SentenceWordMeaning>>;
   /** The pattern's gloss ("thanks to X"), which picks a word's sense when the
    * English names none of them (SAK-508). */
   readonly gloss?: string;
 }
 
 /** A meaning written for one word of one sentence (SAK-508): the word's
- * reading when it has kanji, and the meaning it has there. */
+ * reading when it has kanji, and the meaning it has there. The table of them
+ * is src/data/grammar/sentence-word-meanings.ts. */
 export interface SentenceWordMeaning {
   readonly reading?: string;
   readonly meaning: string;
