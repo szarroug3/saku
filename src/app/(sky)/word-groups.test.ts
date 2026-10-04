@@ -13,7 +13,7 @@ import { emptyHistory } from "@/lib/history-ops";
 import { knownFactsOf, libEntry, type LibEntry } from "@/lib/library/entries";
 import { cartSummary } from "@/sky/lib/cart";
 import { buildGraph } from "@/sky/lib/graph";
-import { lessonSteps } from "@/sky/lib/lesson";
+import { lessonSteps, titleWordPitch } from "@/sky/lib/lesson";
 import type { EntryId } from "@/types/facts";
 import type { HistoryFile } from "@/types/store";
 
@@ -142,6 +142,22 @@ describe("a word group's lesson", () => {
       assert.deepEqual(pages[i].say, { word, reading: own.reading, pitch: own.pitch });
     }
     assert.equal(pages[2].say, undefined, "the page telling them apart says nothing");
+  });
+
+  it("draws each kana word's pitch over the word in its page title, and no line where the word has no pitch (SAK-517)", () => {
+    const yes = lessonFromPicks(emptyHistory(), [YES]).teach[YES]?.pages ?? [];
+    assert.deepEqual(titleWordPitch(yes[0]), { word: "はい", rest: " yes", pitch: 1 });
+    assert.deepEqual(titleWordPitch(yes[1]), { word: "うん", rest: " yes", pitch: 1 });
+    assert.equal(titleWordPitch(yes[2]), undefined, "the page telling them apart has no word to draw");
+    const no = lessonFromPicks(emptyHistory(), [NO]).teach[NO]?.pages ?? [];
+    assert.equal(no[0].say?.word, "いいえ");
+    assert.equal(titleWordPitch(no[0]), undefined, "いいえ has no pitch, so no line");
+    assert.equal(titleWordPitch(no[1]), undefined, "いや has no pitch, so no line");
+  });
+
+  it("keeps a reading that differs from the word beside the title, with no line over the title (SAK-517)", () => {
+    const page = { title: "箸 chopsticks", paragraphs: [], say: { word: "箸", reading: "はし", pitch: 1 } };
+    assert.equal(titleWordPitch(page), undefined);
   });
 
   it("is quizzed on each word's own cards", () => {

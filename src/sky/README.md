@@ -7554,3 +7554,17 @@ A recipe's gloss is written for a verb ("in order to X", "I heard that X"). Fill
 **Tests.** `src/data/grammar/auto-page.test.ts` pins each changed cell and checks the verb rows of the same patterns kept their gloss. `src/lib/quiz-instruction.test.ts` pins the eight changed adjective quiz lines, keeps "because 静か" and "if/when 高い" as they were, and the drift test now walks every recipe: each attachment `meaning` with a quiz card must be that card's line, and a `meaning` with no card must be on a noun (today the six adjective meanings have cards and every noun meaning, the three new ones included, has none).
 
 **Not changed.** The page title and the rail row still show the recipe's gloss unfilled ("in order to X"); SAK-512 owns those. The terse rows ("if expensive", "because quiet", "apparently a book", "probably a book") stay as the SAK-191 tests pin them. The 〜って verb row reads "I heard that you eat / they say eat", and the た-form quiz line puts quotes inside quotes (How do you say "plain past, "was 高い""?) on every word class; both are verb or shared problems outside this card.
+
+## A pair's word pages draw the pitch over the word (SAK-517)
+
+Sam, 2026-10-04, on the はい vs うん card in the Atlas: "i don't see the pitch lines on main." SAK-493 and SAK-503 were built side by side, and neither covered the other's case. SAK-503 drew a kana word's pitch over the word in the card's head. SAK-493's word pages put a reading and a hear button beside the page title, and drew the pitch only over a reading that differs from the word. はい is its own reading, so its page drew no line, though its `say` had pitch 1.
+
+**The fix.** `titleWordPitch(page)` in `src/sky/lib/lesson.ts` gives the word a page title opens with and its pitch when the page's `say` word is its own reading and has a pitch. `lesson-card.tsx` hands that word to `TeachPageView` as `titleWord`, drawn with the same `Pitch` component the head uses, and `teach-page.tsx` draws the rest of the title after it. The page reads はい with its line, then "yes", then the hear button. A word whose reading differs keeps its pitched reading beside the title. いいえ and いや have no pitch in the data and draw no line.
+
+**The eyebrow.** A pair's word page had a small はい above the title "はい yes". `namesItself` now drops an eyebrow that is the page's own `say` word. The pills still read はい, うん, はい vs うん, since the pager reads the pages, not what the card draws.
+
+**Measured** on the built server: the hear button's center is 0px off the title's center on both word pages, in the Atlas and the lesson, at 1440 and at 390. `button-centering.mjs` finds 0 over 1px.
+
+**Tests.** `word-groups.test.ts`: the はい and うん pages give their word with pitch 1, the "Which one to use" page and the いいえ and いや pages give nothing, and a word read differently (箸) gives nothing. In `e2e/sky.spec.ts`, the Atlas on the はい vs うん card at 1440 and 390 finds one pitch line on pages 1 and 2, inside the title, with the hear button centered within 1px and no eyebrow above the title; page 3 and the いいえ page have none. The SAK-493 test finds the title by a name that may carry the line's label.
+
+**Screenshots** in `.logs/sak-517/`: `atlas-1440-page1-はい.png`, `atlas-1440-page2-うん.png`, `atlas-1440-iie-none.png` and `atlas-390-page1-はい.png`.

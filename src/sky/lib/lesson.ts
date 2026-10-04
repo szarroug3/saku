@@ -158,6 +158,19 @@ export interface TeachPage {
   say?: { word: string; reading: string; pitch?: number | null };
 }
 
+/** The word a page's title opens with and its pitch, when the line goes over
+ * the word itself (SAK-517). A word page of a pair's card (はい vs うん) is
+ * titled "はい yes", and a word written only in kana is its own reading, so
+ * its pitch is drawn over the word in the title, the way the card's head draws
+ * it over a kana word (SAK-503). A word with a different reading keeps the
+ * pitched reading beside the title, and a word with no pitch gets no line. */
+export function titleWordPitch(page: TeachPage): { word: string; rest: string; pitch: number } | undefined {
+  const say = page.say;
+  if (!say || say.reading !== say.word || typeof say.pitch !== "number") return undefined;
+  if (!page.title.startsWith(say.word)) return undefined;
+  return { word: say.word, rest: page.title.slice(say.word.length), pitch: say.pitch };
+}
+
 /** `runs` replaces `text` for a line with several parts to color (a hook
  * whose letters are the point).
  *
