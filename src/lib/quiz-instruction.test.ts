@@ -31,12 +31,17 @@ import { radicalMeaningFactId } from "@/data/radicals";
 import { VERB_PAIRS } from "@/data/transitivity";
 import { sideFactId, transitivitySide } from "@/data/transitivity-facts";
 import { wordMeaningFactId, wordReadingFactId } from "@/data/vocab";
-import { classProductionFactId, patternProductionFactId, specialVerbProductionFactId } from "@/data/grammar";
+import {
+  classProductionFactId,
+  grammarProduction,
+  patternProductionFactId,
+  specialVerbProductionFactId,
+} from "@/data/grammar";
 import { buildMcOptions } from "@/lib/engine";
 import { en2jpTypeable, fixedDirOf } from "@/lib/engine/question";
 import { isConstructionFact } from "@/data/counter-categories";
 import { ALL_FACTS } from "@/lib/facts";
-import { attachmentMeaning, recipe } from "@/data/grammar/recipes";
+import { RECIPES, attachmentMeaning } from "@/data/grammar/recipes";
 import { quizInstruction } from "@/lib/quiz-instruction";
 
 describe("no card can be unanswerable", () => {
@@ -273,7 +278,7 @@ describe("a production card names the class of an unknown class word", () => {
       quizInstruction(adjI, "en2jp", "typed", {
         surface: "高い", kana: "たかい", cls: "adj-i", known: false,
       }),
-      'How do you say "たかい too much / too たかい" for this い-adjective?',
+      'How do you say "too たかい" for this い-adjective?',
     );
     assert.equal(
       quizInstruction(adjNa, "en2jp", "typed", {
@@ -362,23 +367,73 @@ describe("a host with its own meaning asks in that meaning (SAK-499)", () => {
   });
 
   test("every hand-written meaning is the quiz line with the word in place of X", () => {
-    // The drift guard: for each production host that has a meaning, the quiz
-    // line is that meaning with X filled. A new meaning cannot be added without
-    // the quiz reading it.
-    for (const [id, host, v] of [
-      ["te-permission", "adj-i", TAKAI],
-      ["te-permission", "adj-na", SHIZUKA],
-      ["nakute-mo-ii", "adj-i", TAKAI],
-      ["nakute-mo-ii", "adj-na", SHIZUKA],
-      ["te-prohibition", "adj-i", TAKAI],
-      ["te-prohibition", "adj-na", SHIZUKA],
-    ] as const) {
-      const meaning = attachmentMeaning(recipe(id)!, host);
-      assert.ok(meaning, `${id} ${host} has a meaning`);
-      assert.equal(
-        quizInstruction(patternProductionFactId(id, host), "en2jp", "typed", { ...v, known: true }),
-        `How do you say "${meaning.replace(/\bX\b/g, v.surface)}"?`,
-      );
+    // The drift guard: for each host that has a meaning, the quiz line is that
+    // meaning with X filled. It walks every recipe, so a new meaning cannot be
+    // added without the quiz reading it (SAK-499, SAK-500).
+    const VEHICLE = { "adj-i": TAKAI, "adj-na": SHIZUKA } as const;
+    const checked: string[] = [];
+    const noCard: string[] = [];
+    for (const r of RECIPES) {
+      for (const a of r.attach) {
+        const meaning = attachmentMeaning(r, a.host);
+        if (!meaning) continue;
+        const fact = patternProductionFactId(r.id, a.host);
+        if (!grammarProduction(fact)) {
+          noCard.push(`${r.id} ${a.host}`);
+          continue;
+        }
+        assert.ok(a.host === "adj-i" || a.host === "adj-na", `${r.id} ${a.host} needs a vehicle here`);
+        const v = { ...VEHICLE[a.host], known: true };
+        assert.equal(
+          quizInstruction(fact, "en2jp", "typed", v),
+          `How do you say "${meaning.replace(/\bX\b/g, v.surface)}"?`,
+          `${r.id} ${a.host}`,
+        );
+        checked.push(`${r.id} ${a.host}`);
+      }
     }
+    assert.equal(checked.length, 6, checked.join(", "));
+    // A noun is never a production card today, so the noun meanings (SAK-496,
+    // SAK-505, and SAK-500's なら, のようだ and のために) only show in the
+    // lesson. If one ever gets a card, it moves to the list above.
+    assert.ok(noCard.every((row) => row.endsWith(" noun")), noCard.join(", "));
+    for (const row of ["nara noun", "you-da noun", "tame-ni noun"]) {
+      assert.ok(noCard.includes(row), row);
+    }
+  });
+});
+
+// SAK-500: an adjective with no meaning of its own fills the recipe's gloss
+// through nonVerbGloss, the same function the lesson's Meaning column uses, so
+// the quiz line says what the lesson says with the Japanese word in X.
+describe("an adjective card reads the lesson's non-verb rule (SAK-500)", () => {
+  const TAKAI = { surface: "高い", kana: "たかい", cls: "adj-i", known: true } as const;
+  const SHIZUKA = { surface: "静か", kana: "しずか", cls: "adj-na", known: true } as const;
+  const line = (id: string, host: "adj-i" | "adj-na") =>
+    quizInstruction(patternProductionFactId(id, host), "en2jp", "typed", host === "adj-i" ? TAKAI : SHIZUKA);
+
+  test("te-sequence: \"do X\" at the start reads \"is\"", () => {
+    assert.equal(line("te-sequence", "adj-i"), 'How do you say "is 高い, and then / because 高い"?');
+    assert.equal(line("te-sequence", "adj-na"), 'How do you say "is 静か, and then / because 静か"?');
+  });
+
+  test("ta-form: \"did X\" reads \"was\"", () => {
+    assert.equal(line("ta-form", "adj-i"), 'How do you say "plain past, "was 高い""?');
+    assert.equal(line("ta-form", "adj-na"), 'How do you say "plain past, "was 静か""?');
+  });
+
+  test("sugiru: the verb half is dropped", () => {
+    assert.equal(line("sugiru", "adj-i"), 'How do you say "too 高い"?');
+    assert.equal(line("sugiru", "adj-na"), 'How do you say "too 静か"?');
+  });
+
+  test("sou-appearance: the verb half is dropped", () => {
+    assert.equal(line("sou-appearance", "adj-i"), 'How do you say "looks 高い"?');
+    assert.equal(line("sou-appearance", "adj-na"), 'How do you say "looks 静か"?');
+  });
+
+  test("the terse conditionals stay as they were", () => {
+    assert.equal(line("node", "adj-na"), 'How do you say "because 静か"?');
+    assert.equal(line("tara", "adj-i"), 'How do you say "if/when 高い"?');
   });
 });
