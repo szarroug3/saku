@@ -475,7 +475,7 @@
         "tatoeba-jpn-eng-links"
       ],
       "script": "scripts/ingest/grammar.py",
-      "why": "Cut from a Tatoeba snapshot of 248,802 Japanese sentences; the export has grown since and Tatoeba publishes no archive of past days, so that snapshot cannot be recovered. A re-cut re-selects every one of the 50-odd patterns from different sentences and moves the pinned post-audit counts, so it is a deliberate act and now takes --accept-source. The three current exports are pinned in archives above, so the next re-cut is recorded. One pattern has been re-cut since, on purpose: scripts/ingest/grammar_retag_rashii.py tagged rashii again from the pinned exports with the corrected signature (SAK-510), and builtFrom records that pass. Every other pattern's rows are still the unrecoverable snapshot's."
+      "why": "Cut from a Tatoeba snapshot of 248,802 Japanese sentences; the export has grown since and Tatoeba publishes no archive of past days, so that snapshot cannot be recovered. A re-cut re-selects every one of the 50-odd patterns from different sentences and moves the pinned post-audit counts, so it is a deliberate act and now takes --accept-source. The three current exports are pinned in archives above, so the next re-cut is recorded. One pattern has been re-cut since, on purpose: scripts/ingest/grammar_retag_rashii.py tagged rashii again from the pinned exports with the corrected signature (SAK-510), and builtFrom records that pass. Every other pattern's rows are still the unrecoverable snapshot's. Every span's end was moved once since, by scripts/ingest/grammar_respan.py (SAK-507), which re-tokenizes the committed sentences, reads no archive and selects no sentence."
     },
     "kanji-etymology-manual.json": {
       "archives": [],
