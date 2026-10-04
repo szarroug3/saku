@@ -34,6 +34,14 @@
 
 import { shuffled } from "./random";
 
+/** The drill as Practice's Drills panel lists it (SAK-520). The name is the
+ * title the drill's own page shows, so the two always match. */
+export const READINGS_DRILL = {
+  name: "Kun'yomi or on'yomi?",
+  about: "Sort each reading of a kanji as kun'yomi or on'yomi.",
+  note: "Nothing from it is saved.",
+} as const;
+
 /** What the kanji table says a reading is. "both" is a reading the dictionary
  * files under both kinds, for different senses. */
 type ReadingKind = "on" | "kun" | "both";
