@@ -2779,6 +2779,33 @@ test("the を lesson's In a sentence block marks nap in the English (SAK-498)", 
   expect(bare).toBe("昼寝を");
 });
 
+test("the 〜てはいけない lesson's In a sentence block marks してはいけない in full (SAK-507)", async ({ page }) => {
+  // Sam, 2026-10-03: the block marked してはいけ and left ない plain, and the
+  // Pattern chip under it read the same cut text. The span stopped on the
+  // tagger's いけ token. Signed out, as the suite runs.
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto(`/lesson?picks=${encodeURIComponent("grammar:te-prohibition")}`);
+  await expect(page.getByText(/^Step \d+ of \d+$/)).toBeVisible();
+  const block = page.locator("div").filter({ has: page.getByText("In a sentence", { exact: true }) }).filter({ hasText: "In the font business you must never trust anybody!" }).last();
+  await expect(block).toBeVisible();
+  const bare = (el: Element) => {
+    const copy = el.cloneNode(true) as Element;
+    copy.querySelectorAll("rt").forEach((rt) => rt.remove());
+    return copy.textContent;
+  };
+  const japanese = block.locator("p.font-sky-display");
+  await expect(japanese).toHaveCount(1);
+  const marked = japanese.locator(".text-sky-accent");
+  await expect(marked).toHaveCount(1);
+  expect(await marked.evaluate(bare)).toBe("してはいけない");
+  // what is left after the mark is only よ。
+  expect(await japanese.evaluate(bare)).toBe("フォント・ビジネスでは決して誰も信用してはいけないよ。");
+  // the Pattern chip reads the same whole text
+  const chip = block.locator("div.rounded-md").filter({ hasText: "Pattern" });
+  await expect(chip).toHaveCount(1);
+  await expect(chip.locator("span").nth(1)).toHaveText("してはいけない");
+});
+
 test("a word written only in kana carries its pitch, drawn over the word itself (SAK-503)", async ({ page }) => {
   // Sam, on the はい vs うん card: "do these words not have pitch?" Kanjium has
   // them with a blank reading, and the ingest never matched that row. A kana
