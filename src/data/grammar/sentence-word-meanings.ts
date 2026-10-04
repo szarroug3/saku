@@ -151,12 +151,11 @@ export const SENTENCE_WORD_MEANINGS: Readonly<Record<string, Readonly<Record<str
     揃える: { reading: "そろえる", meaning: "to get ready" },
   },
   // 〜おかげで: コンピューターのおかげで人間は馬鹿になる。
-  // コンピューター is filed as コンピュータ, and 馬鹿 as ばか. The
-  // vocabulary's kana なる is "to bear fruit" first.
+  // コンピューター is filed as コンピュータ, and 馬鹿 as ばか. なる is "to
+  // become" by the rule in word-meaning.ts (SAK-519).
   "5138": {
     コンピューター: { meaning: "computer" },
     馬鹿: { reading: "ばか", meaning: "stupid" },
-    なる: { meaning: "to become" },
   },
   // 〜について: 泳者の呼吸機能の特性について。
   "74576": {

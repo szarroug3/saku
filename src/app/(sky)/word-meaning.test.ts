@@ -68,18 +68,49 @@ describe("the sense a sentence uses (SAK-508)", () => {
 describe("a meaning written for the word in its sentence (SAK-516)", () => {
   const okageDe = { jp: "コンピューターのおかげで人間は馬鹿になる。", en: "Computers make people stupid." };
 
-  it("a quiz item on the おかげで sentence glosses なる as to become", () => {
-    const w = wordInSentence("なる", { id: 5138, ...okageDe });
-    assert.equal(w?.meaning, "to become");
-    assert.ok(w?.entry, "なる is a vocabulary word, so the quiz can tell whether it was met");
+  const tameNi = { jp: "それをするためには危険を冒さなければならない。", en: "In order to do that, you have to take risks." };
+
+  it("the row's meaning comes first: ため is in order to", () => {
+    const w = wordInSentence("ため", { id: 4787, ...tameNi });
+    assert.equal(w?.meaning, "in order to");
+    assert.ok(w?.entry, "ため is a vocabulary word, so the quiz can tell whether it was met");
   });
 
   it("without the sentence's id the rules pick as before", () => {
-    assert.equal(wordInSentence("なる", okageDe)?.meaning, "to bear fruit");
+    assert.equal(wordInSentence("ため", tameNi)?.meaning, "good");
   });
 
   it("a word the vocabulary does not have gets the row, with its reading", () => {
     const w = wordInSentence("馬鹿", { id: 5138, ...okageDe });
     assert.deepEqual({ ...w }, { word: "馬鹿", reading: "ばか", meaning: "stupid" });
+  });
+});
+
+describe("a kana word read as several words (SAK-519)", () => {
+  it("なる is to become, where the vocabulary's own なる is to bear fruit", () => {
+    assert.equal(said("なる", "生まれ変わったら猫になりたい", "If I'm reincarnated, I want to come back as a cat."), "なる to become");
+    assert.equal(said("なる", "雨になると思う", "Do you think that it'll rain?"), "なる to become");
+  });
+
+  it("the English still names another sense: 相手になろう is to play", () => {
+    assert.equal(said("なる", "そのゲームなら相手になろう", "Two can play at that game."), "なる to play");
+  });
+
+  it("いる is to be, and still to want where the English says so", () => {
+    assert.equal(said("いる", "彼らならここにいるよ", "They're here."), "いる to be");
+    assert.equal(said("いる", "鉛筆がいるなら貸してあげるよ", "If you want a pencil, I'll lend you one."), "いる to want");
+  });
+
+  it("a kana word the vocabulary only writes in kanji is the one the English names", () => {
+    assert.equal(said("やむ", "雨がやんだら野球をしよう", "Let's play baseball when the rain stops."), "止む to stop");
+  });
+
+  it("the English picks among them: せい is blame, and 性 nature is not", () => {
+    assert.equal(said("せい", "私のせいだと思う", "Do you think I'm to blame?"), "せい blame");
+    assert.equal(said("つく", "木造建築物は火がつきやすい。", "Wooden buildings catch fire easily."), "つく to catch fire");
+  });
+
+  it("nothing for a kana word with no kana spelling the English does not name", () => {
+    assert.equal(said("いく", "彼女いくつだと思う", "Can you guess her age?"), undefined);
   });
 });

@@ -64,16 +64,18 @@ const spans = (line: SoundLine) => line.map((s) => ({ text: s.text, ...(s.accent
 /** The words line under a grammar page's sentence (SAK-506): each content
  * word in its dictionary form, with its furigana, and the meaning it has in
  * the sentence. Every word is listed, met or not, since the page is read again
- * from the Atlas long after the words are learned. A word with a meaning
- * written for this sentence (SAK-508) prints that. Any other goes through
- * `wordInSentence`, which folds 泳げる back to 泳ぐ (SAK-514) and picks the
- * sense the English uses; a word the vocabulary does not have is left off. */
+ * from the Atlas long after the words are learned. The meaning comes from
+ * `wordInSentence`, given the sentence's id, the one lookup the sentence quiz
+ * uses too (SAK-519): a meaning written for the word in this sentence first
+ * (SAK-508), with its reading for the furigana, then the rules, which fold
+ * 泳げる back to 泳ぐ (SAK-514) and pick the sense the English uses. A word
+ * the vocabulary does not have and no row names is left off. */
 function sentenceWords(ex: SentenceExample): ExampleWord[] {
   return (ex.words ?? []).flatMap((lemma) => {
-    const own = ex.wordMeanings?.[lemma];
-    if (own) return [{ word: own.reading ? (rubyFromReading(lemma, own.reading) ?? [{ text: lemma, ruby: own.reading }]) : wordSound(lemma), meaning: own.meaning }];
-    const word = wordInSentence(lemma, { jp: ex.jp, en: ex.en, ...(ex.gloss ? { gloss: ex.gloss } : {}) });
-    return word ? [{ word: wordSound(word.word), meaning: word.meaning }] : [];
+    const word = wordInSentence(lemma, { ...(ex.id !== undefined ? { id: ex.id } : {}), jp: ex.jp, en: ex.en, ...(ex.gloss ? { gloss: ex.gloss } : {}) });
+    if (!word) return [];
+    const sound = word.reading ? (rubyFromReading(word.word, word.reading) ?? [{ text: word.word, ruby: word.reading }]) : wordSound(word.word);
+    return [{ word: sound, meaning: word.meaning }];
   });
 }
 

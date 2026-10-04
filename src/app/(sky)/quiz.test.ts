@@ -164,6 +164,21 @@ describe("a sentence type's orderings (2026-09-28)", () => {
     assert.equal(gloss("淋しい"), "lonely");
   });
 
+  it("leaves the ならない of なければならない without a meaning (SAK-519)", () => {
+    const [card] = cardsFor(emptyHistory(), [`${sentenceTierMarkerFact("obligation")}#4814`], NOW);
+    assert.equal(card.meta?.assembly, "4814");
+    const gloss = (piece: string) => card.order!.glosses?.[card.order!.pieces.indexOf(piece)];
+    assert.equal(gloss("なりません"), undefined, "the pattern's ending, which its lesson teaches");
+    assert.equal(gloss("寝なければ"), "to go to bed");
+  });
+
+  it("says なる is to become (SAK-519)", () => {
+    // the vocabulary's own なる is 生る, "to bear fruit"
+    const [card] = cardsFor(emptyHistory(), [`${sentenceTierMarkerFact("reported")}#12057976`], NOW);
+    assert.equal(card.meta?.assembly, "12057976");
+    assert.equal(card.order!.glosses?.[card.order!.pieces.indexOf("なると")], "to become");
+  });
+
   it("deals the た-form sentences once the た-form is known", () => {
     const later = knowsPatterns("wa", "ga", "wo", "ni", "de", "ta-form");
     const pool = sentencesToBuild("simple", later, [], Infinity).map((it) => it.id);
