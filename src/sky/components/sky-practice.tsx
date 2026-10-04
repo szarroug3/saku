@@ -44,6 +44,10 @@ interface SkyPracticeProps {
   onSaved: (saved: readonly SavedRecipe[]) => void;
   /** Starts the run. */
   onStart: (recipe: Recipe) => void;
+  /** Where the readings drill is (SAK-495): sorting each reading of a kanji
+   * as kun'yomi or on'yomi. It is not a recipe and records nothing, so it
+   * sits beside the heading rather than in the recipe. */
+  readingsHref?: string;
   /** A recipe handed back from a run to save. */
   height?: string;
 }
@@ -55,7 +59,7 @@ const LOOKUP_DELAY = 150;
 // lib/practice.ts, with the reason written out there.
 const same = sameRecipe;
 
-export function SkyPractice({ collections, lookup, initial, saved, onSaved, onStart, height }: SkyPracticeProps) {
+export function SkyPractice({ collections, lookup, initial, saved, onSaved, onStart, readingsHref, height }: SkyPracticeProps) {
   const [recipe, setRecipe] = useState<Recipe>(initial.recipe);
   // the preview is looked up for the recipe without what is left out by
   // hand: leaving an item out is then a filter on what is already here, with
@@ -147,7 +151,12 @@ export function SkyPractice({ collections, lookup, initial, saved, onSaved, onSt
   const load = (d: SavedRecipe) => { set(d.recipe); setLoaded(d.name); };
 
   return (
-    <SkyPageShell eyebrow="Practice" title="What would you like to practice?" height={height}>
+    <SkyPageShell eyebrow="Practice" title="What would you like to practice?" height={height} aside={readingsHref && (
+      <span className="flex items-center gap-2">
+        <SkyButton variant="outline" href={readingsHref}>Sort kanji readings</SkyButton>
+        <SkyInfo label="What the readings drill is">Sort each reading of a kanji as kun&apos;yomi or on&apos;yomi. Nothing in it counts toward your progress.</SkyInfo>
+      </span>
+    )}>
       <div className="grid min-h-0 flex-1 gap-4 font-sky-ui lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <SkyPanel title="The recipe" className="flex min-h-0 flex-col overflow-y-auto">
           {saved.length > 0 && (
