@@ -16,7 +16,7 @@ describe("readingsDrill", () => {
   const said = (kanji: string) => of(kanji)?.readings.map((r) => `${r.reading} ${r.kind}`);
 
   it("asks these ten kanji first", () => {
-    assert.deepEqual(pool.slice(0, 10).map((k) => k.kanji), ["大", "山", "手", "口", "中", "刀", "分", "干", "年", "入"]);
+    assert.deepEqual(pool.slice(0, 10).map((k) => k.kanji), ["山", "手", "口", "中", "刀", "分", "干", "年", "入", "立"]);
   });
 
   it("puts the clean splits in the first group and 人 and 日 in the second", () => {
@@ -26,7 +26,13 @@ describe("readingsDrill", () => {
     assert.ok(pool.indexOf(of("水")!) < firstTwo);
   });
 
-  it("folds a voiced twin into its base", () => {
+  it("keeps every on'yomi on its own", () => {
+    assert.deepEqual(said("大"), ["おお kun", "たい on", "だい on"]);
+    assert.deepEqual(said("土"), ["つち kun", "ど on"]);
+    assert.ok(said("上")?.includes("じょう on"));
+  });
+
+  it("folds a voiced kun'yomi into its base", () => {
     // the table has び beside ひ for 火, ごころ beside こころ for 心
     assert.deepEqual(said("火"), ["か on", "ひ kun"]);
     assert.deepEqual(said("心"), ["こころ kun", "しん on"]);
