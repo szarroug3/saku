@@ -111,7 +111,6 @@ export const SENTENCE_WORD_MEANINGS: Readonly<Record<string, Readonly<Record<str
   },
   // 〜ます: 毎日、日本語を勉強します。
   "-27": {
-    日本語: { reading: "にほんご", meaning: "Japanese" },
     勉強する: { reading: "べんきょうする", meaning: "to study" },
   },
   // 〜ましょう: 何かしてみましょう。
@@ -123,6 +122,7 @@ export const SENTENCE_WORD_MEANINGS: Readonly<Record<string, Readonly<Record<str
     つけあがる: { meaning: "to take advantage" },
   },
   // と: 私と彼はクラスメートだ。
+  // The vocabulary spells it クラスメイト (SAK-515).
   "-24": {
     クラスメート: { meaning: "classmate" },
   },
@@ -151,12 +151,11 @@ export const SENTENCE_WORD_MEANINGS: Readonly<Record<string, Readonly<Record<str
     揃える: { reading: "そろえる", meaning: "to get ready" },
   },
   // 〜おかげで: コンピューターのおかげで人間は馬鹿になる。
-  // コンピューター is filed as コンピュータ, and 馬鹿 as ばか. The
-  // vocabulary's kana なる is "to bear fruit" first.
+  // コンピューター is filed as コンピュータ, and 馬鹿 as ばか. なる is "to
+  // become" by the rule in word-meaning.ts (SAK-519).
   "5138": {
     コンピューター: { meaning: "computer" },
     馬鹿: { reading: "ばか", meaning: "stupid" },
-    なる: { meaning: "to become" },
   },
   // 〜について: 泳者の呼吸機能の特性について。
   "74576": {

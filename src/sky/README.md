@@ -7606,6 +7606,39 @@ The quiz deals 648 sentences: 604 from the corpus and 44 curated. Four of them a
 
 **Tests.** `src/app/(sky)/word-meaning.test.ts`: with the おかげで sentence's id, なる is "to become" and has its vocabulary entry; without the id the rules give "to bear fruit"; 馬鹿 gets the row with its reading ばか. `src/app/(sky)/quiz.test.ts`: the ordering card for sentence 5098 glosses 鞍が "saddle" and 淋しい "lonely".
 
+## 日本語 is a vocabulary word (SAK-515)
+
+SAK-508 found two everyday words on pattern page sentences that the vocabulary did not have, 日本語 and クラスメート, and wrote their meanings per sentence. Sam asked for both to be taught.
+
+**日本語.** It is now in `SUPPLEMENT` in `src/data/vocab-build.ts`, read にほんご, with the meaning "Japanese (language)". The JMdict cut has 日本 but not 日本語. The conversation frequency table only covers words Saku already had, so it has no rank for 日本語, and the word goes at the end of the Words track like the other supplement words: 12,430th of 12,430. The vocabulary, the curriculum, the indexes and the catalogues were rebuilt. Its row came out of `src/data/grammar/sentence-word-meanings.ts`, and the 〜ます page's words line now reads "日本語 Japanese" from the vocabulary, with にほんご over it.
+
+**クラスメート.** The vocabulary already has this word under the spelling クラスメイト, 11,470th in the Words track. Adding クラスメート as well would put the same word in the Words track twice, and a learner asked for "classmate" would have two right answers. So no entry was added, and its row in the per-sentence table stays, with a note that the vocabulary spells it クラスメイト. The と page's words line still reads "クラスメート classmate".
+
+**Voice clips.** 日本語 needs one clip per roster voice, にほんご, which the words and word-readings sets share. `scripts/seed-voice-audio.mjs` makes clips on the local VOICEVOX but uploads them to the voice bucket in the hosted Supabase project, so they were not seeded on this card. `scripts/audit-voice-clips.mjs` lists にほんご as missing for every voice until they are.
+
+**Where the two sentences show.** Neither showed in a lesson on the built server. 〜ます has its own written Library pages, so its lesson uses those and never reaches the generated page with 毎日、日本語を勉強します。 A lesson for the と of "and" (grammar:to-and) says there is nothing to teach, and the 〜と lesson (grammar:to-conditional) does not have the sentence. So the words lines are checked on the generated pages in unit tests, and there is no browser test.
+
+**Tests.** `teach.test.ts`: the per-sentence table has no 日本語 row, 日本語 is in the Words track, the generated 〜ます page lists 日本語 with にほんご and "Japanese", and the generated と page lists クラスメート "classmate". The pinned counts went up by one: the supplement words in `source-pins.test.ts`, the word total in `curriculum-lesson.test.ts` (12,541) and in `word-lesson.test.ts` (12,430).
+
+## A kana word read as several words, and the ending of なければならない (SAK-519)
+
+The sentence quiz said なる meant "to bear fruit" on 31 of the corpus sentences it can deal: every なければならない one, 猫になりたい, 雨になると思う and a few more. The vocabulary's word なる is written in kana, and its own meaning is 生る "to bear fruit". The same row holds the senses of 成る "to become" further down, and none of these sentences' English names one, so the rules fell back on the row's own meaning. いる had the same fault: its own meaning is 要る "to be needed", and 居る "to be" sits under it.
+
+CEJC counts how often each vocabulary word is heard, but it has no count for the dictionary words inside one row. So `wordInSentence` in `src/app/(sky)/word-meaning.ts` has two new rules.
+
+- **Which word a kana lemma is.** When more than one vocabulary word reads as the lemma, the words are tried in order of how often CEJC hears each one read that way, and the first whose sense the English names is the word. With none named, it is the word written in kana, as before. A lemma with no kana word and nothing named still gets nothing: いく in いくつ is not 行く.
+- **Which sense a kana verb means first.** A verb in kana whose own meaning is a one-sense word, where another dictionary word under the same kana is a verb of its own and a helper verb too, means that other word first. That is 成る for なる and 居る for いる, and no other word in the vocabulary. The English can still pick the old meaning: 鉛筆がいるなら, "If you want a pencil", is いる "to want".
+
+Over the 648 quiz sentences and the pattern pages' sentences, this changed なる "to bear fruit" to "to become" on 31 quiz sentences. いる went from "to be needed" or "to need" to "to be", "to exist" or "to stay" on 10. やむ is 止む "to stop" on 2, and よい is 良い "good" on 2 whose English says good; those 4 had no meaning before. Nothing on a pattern page changed. A rule that took the most heard word even when the English named none was tried and dropped: it made すみません 済む "to finish" and いくつ 行く "to go". So was the plan of ranking by `beginnerRank`. That number puts 鳴る "to sound" ahead of なる and 射る "to shoot" ahead of いる, since the helper verbs rank in the grammar tail.
+
+**The ending of なければならない.** On the quiz, the ならない, なりません or ならなかった piece after a なければ, なきゃ, ねば, なくては, なくちゃ or ないと piece has no meaning under it now (`mustEnding` in `quiz.ts`). It is the pattern's own ending, which the lesson teaches, as the words line under a pattern's sentence leaves it off. That is 23 corpus sentences. The いけない of なければいけない never had a meaning, since the vocabulary has no いける.
+
+**One lookup for the page and the quiz.** `SentenceExample` carries the corpus sentence's `id` now, in place of `wordMeanings`. `sentenceWords` in `teach.ts` passes it to `wordInSentence`, which reads the per-sentence table and returns the row's reading for the furigana. The page's own path to the table is gone.
+
+**The per-sentence table.** One row came out of `src/data/grammar/sentence-word-meanings.ts`: なる "to become" on the おかげで sentence (5138), which the rule now gets on its own. The other rows still say something the rules would not.
+
+**Tests.** `src/app/(sky)/word-meaning.test.ts`: 猫になりたい and 雨になると思う gloss なる "to become", 相手になろう is still "to play", いる is "to be" in 彼らならここにいるよ and "to want" with a pencil, やむ is 止む, せい is "blame", and いくつ's いく gets nothing. The SAK-516 test that used なる on 5138 uses ため on 4787 now. `src/app/(sky)/quiz.test.ts`: the obligation card for 4814 has no meaning under なりません, and the card for 12057976 says なると "to become". `sentence-word-meanings.test.ts` checks that each pattern page's sentence carries its id and that the lookup by it returns the row.
+
 ## A drill that sorts a kanji's readings into kun'yomi and on'yomi (SAK-495)
 
 Sam wanted a way to get a feel for where a kanji's sounds come from. The drill shows one kanji and its readings in a random order, with no meaning, no furigana and no labels. Each reading has a kun'yomi button and an on'yomi button. A press is graded on the spot with a check or an X, and a miss shows the right label and nothing more. End quiz is beside the heading the whole time, and the last screen is the score with Start over and Back to practice.

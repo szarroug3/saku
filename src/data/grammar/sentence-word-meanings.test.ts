@@ -13,6 +13,7 @@ import { sentenceExampleFor } from "./auto-page";
 import { examplesFor } from "./corpus";
 import { RECIPES } from "./recipes";
 import { SENTENCE_WORD_MEANINGS } from "./sentence-word-meanings";
+import { wordInSentence } from "@/app/(sky)/word-meaning";
 
 /** Each pattern page's sentence, by its corpus id. */
 const shown = new Map(
@@ -36,8 +37,13 @@ describe("the meanings written for the pattern pages' sentences' words", () => {
     assert.deepEqual(stray.map((r) => `${r.id} ${r.lemma}`), []);
   });
 
-  test("the page gets the row", () => {
-    for (const r of rows) assert.deepEqual(shown.get(r.id)?.wordMeanings?.[r.lemma], { ...(r.reading ? { reading: r.reading } : {}), meaning: r.meaning }, `${r.id} ${r.lemma}`);
+  test("the page's sentence carries its id, and the lookup by it gets the row (SAK-519)", () => {
+    for (const r of rows) {
+      const ex = shown.get(r.id)!;
+      assert.equal(ex.id, Number(r.id), r.id);
+      const w = wordInSentence(r.lemma, { ...(ex.id !== undefined ? { id: ex.id } : {}), jp: ex.jp, en: ex.en });
+      assert.deepEqual({ reading: w?.reading, meaning: w?.meaning }, { reading: r.reading, meaning: r.meaning }, `${r.id} ${r.lemma}`);
+    }
   });
 
   test("a meaning is a few plain words", () => {

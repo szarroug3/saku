@@ -223,10 +223,11 @@ const RAW_VOCAB = vocabJson as readonly RawWord[];
 test("vocab.json pins the written forms the app teaches", () => {
   const source = new Set(RAW_VOCAB.map((w) => w.keb));
   const extra = VOCAB.filter((w) => !source.has(w.keb)).map((w) => w.keb);
-  // vocab-build.ts adds two rows by hand, for words the JMdict cut left out and
-  // the curriculum needs (see its SUPPLEMENT). The SET is pinned, so a third
-  // hand-typed word cannot arrive without this failing.
-  assert.deepEqual(extra, ["えっ", "いらっしゃる"], "Words the app serves that JMdict's cut does not contain.");
+  // vocab-build.ts adds three rows by hand, for words the JMdict cut left out and
+  // the curriculum needs (see its SUPPLEMENT). 日本語 came with SAK-515. The
+  // SET is pinned, so another hand-typed word cannot arrive without this
+  // failing.
+  assert.deepEqual(extra, ["えっ", "いらっしゃる", "日本語"], "Words the app serves that JMdict's cut does not contain.");
 });
 
 test("word-senses.json pins each word's readings, glosses and part-of-speech tags", () => {

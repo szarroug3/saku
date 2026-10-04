@@ -22,6 +22,7 @@ import { cluster } from "@/data/grammar/clusters";
 import { CURRICULUM_LESSONS } from "@/data/grammar/lessons";
 import { kanjiRuns, PARTICLE_NOTES, type ParticleNote } from "@/data/grammar/particle-notes";
 import { PARTICLE_ROWS } from "@/data/grammar/particles";
+import { SENTENCE_WORD_MEANINGS } from "@/data/grammar/sentence-word-meanings";
 import { autoPatternPage, sentenceExampleFor } from "@/data/grammar/auto-page";
 import { kanaEntry } from "@/data/characters";
 import { primaryPatternRecipe, RECIPES, recipe as recipeById } from "@/data/grammar/recipes";
@@ -1122,6 +1123,18 @@ describe("the In a sentence block's words line has every word, in the sense the 
 
   it("lists 行く under 日本へ行けたらいいのに, a potential of another verb class (SAK-514)", () => {
     for (const id of ["e", "noni"]) assert.equal(meaningOf(id, "行く"), "to go", id);
+  });
+
+  // SAK-515: 日本語 is a vocabulary word now, so its row came out of the
+  // per-sentence table and the line reads it from the vocabulary.
+  it("says 日本語 is Japanese under 毎日、日本語を勉強します from the vocabulary", () => {
+    assert.ok(!SENTENCE_WORD_MEANINGS["-27"]?.["日本語"]);
+    assert.ok(CURRICULUM_KEBS_ORDERED.includes("日本語"));
+    assert.deepEqual(wordsOf("masu-form").find((w) => w.word === "日本語"), { word: "日本語", ruby: "にほんご", meaning: "Japanese" });
+  });
+
+  it("says クラスメート is a classmate under 私と彼はクラスメートだ", () => {
+    assert.equal(meaningOf("to-and", "クラスメート"), "classmate");
   });
 
   it("leaves no word of a shown sentence without a meaning, but a particle", () => {
