@@ -635,6 +635,15 @@ function orderCards(history: HistoryFile, id: FactId, now: number, picks: readon
   return items.map((item) => orderCard(history, marker, item, pick, now));
 }
 
+/** Whether a sentence's piece is the "must" ending after a negative
+ * condition (SAK-519): the ならない of 行かなければならない, the なりません of
+ * 行かねばなりません, the いけない of 行かなきゃいけない. The pattern's own
+ * words, not a content word. */
+function mustEnding(item: AssemblyItem, at: number): boolean {
+  const before = item.pieces[at - 1]?.t;
+  return !!before && /(なければ|なきゃ|ねば|なくては|なくちゃ|ないと)$/.test(before) && /^(なら|なり|いけ)/.test(item.pieces[at].t);
+}
+
 /** One sentence as an ordering card. */
 function orderCard(history: HistoryFile, marker: FactId, item: AssemblyItem, pick: SkyItem, now: number): QuizCard {
   // The sentence's end mark comes off its last piece and goes after the
@@ -667,11 +676,15 @@ function orderCard(history: HistoryFile, marker: FactId, item: AssemblyItem, pic
   // (SAK-516). The curated sentences' ids are below zero and are assembly.ts's
   // own, not the corpus's, so only a corpus sentence is named by its id. A
   // word the vocabulary does not have cannot have been met.
-  const glossOf = (head: string | null): string | undefined => {
+  // The ならない of なければならない is the pattern's own ending, and the
+  // lesson teaches it, so it has no meaning under it (SAK-519), as the words
+  // line under a pattern's sentence leaves it off.
+  const glossOf = (at: number): string | undefined => {
+    const head = mustEnding(item, at) ? null : item.pieces[at].h;
     const w = head ? wordInSentence(head, { ...(item.id > 0 ? { id: item.id } : {}), jp: item.jp, en: item.en }) : undefined;
     return w && !(w.entry && standingFor(w.entry, history, now).met) ? w.meaning : undefined;
   };
-  const glosses = deal.map((d) => glossOf(item.pieces[d].h));
+  const glosses = deal.map(glossOf);
   const agg = history.facts?.[marker];
   return {
     id: `${marker}#${item.id}`,
