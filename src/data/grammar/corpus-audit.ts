@@ -243,11 +243,12 @@ const CONFOUNDS: Readonly<Record<string, Confound>> = {
   },
 
   // SAK-501: ていろ / てろ / ていなさい is a command, "stay back!" (下がっていろ).
-  // The pattern is "is doing X". The command form of いる ends in ろ, and
-  // ていなさい puts なさい right after the span.
+  // The pattern is "is doing X". The command form of いる ends in ろ. Since
+  // SAK-507 a span runs on to the end of its word, so ていなさい ends the span in
+  // なさい; a span cut before SAK-507 has なさい right after it.
   "te-iru": {
     why: "ていろ / ていなさい, a command ('stay ...!'), not 'is doing X'",
-    holds: (_ex, span, after) => /ろ$/.test(span) || /^なさい/.test(after),
+    holds: (_ex, span, after) => /(ろ|なさい)$/.test(span) || /^なさい/.test(after),
   },
 };
 

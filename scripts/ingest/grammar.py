@@ -666,6 +666,79 @@ def check_rashii(tagger):
 # Patterns needing two hits in one sentence to count.
 MIN_HITS = {"tari-tari": 2}
 
+# WHERE A SPAN ENDS (SAK-507).
+#
+# A signature names the tokens that make a pattern what it is, and its last
+# token is often a word the sentence goes on to conjugate. 〜てはいけない is
+# て + は + 行く, and in 信用してはいけないよ the 行く token is いけ with ない after
+# it, so a span that stopped on the signature's last token marked してはいけ
+# and left ない plain. 〜てしまう stopped on しまっ before た the same way, and
+# 2,309 of the corpus's 12,505 spans were cut like that.
+#
+# So a span runs on to the end of its last word: while that word is a verb,
+# adjective or auxiliary in a form that cannot end a word (未然形, 連用形,
+# 仮定形), the next token joins the span when it is what finishes it. That is
+# an auxiliary (ない, ます, ませ + ん, た, たい), the adjective ない after たく,
+# the particle て or ば, or なさい after a stem. A form that can end a word
+# (終止形, 連体形, 命令形, 意志推量形) stops it, so らしい or だろう after a
+# finished verb is never taken in.
+WORD_END_FORMS = ("終止形", "連体形", "命令形", "意志推量形")
+
+
+def finishes(last, nxt):
+    """Does token `nxt` finish the unfinished word `last` ends on?"""
+    if nxt["pos1"] == "助動詞":
+        return True
+    if nxt["pos1"] == "形容詞" and nxt["lemma"] == "無い":
+        return True
+    if nxt["pos1"] == "助詞" and nxt["lemma"] in ("て", "ば"):
+        return True
+    return nxt["lemma"] == "為さる" and last["cForm"].startswith("連用形")
+
+
+def word_end(toks, end):
+    """The token index where the word ending at toks[end - 1] really ends."""
+    while end < len(toks):
+        last = toks[end - 1]
+        conjugates = last["pos1"] in ("動詞", "形容詞", "助動詞") or last["pos1"] == "接尾辞"
+        if not conjugates or last["cForm"] in ("", "*") or last["cForm"].startswith(WORD_END_FORMS):
+            break
+        if not finishes(last, toks[end]):
+            break
+        end += 1
+    return end
+
+
+# Sentences whose span must come out exactly so. Run by grammar.py and
+# grammar_respan.py before either writes, so a UniDic update that moves these
+# tokens stops the run. Each is (sentence, recipe id, the span's text).
+WORD_END_CASES = (
+    ("信用してはいけないよ。", "te-prohibition", "してはいけない"),
+    ("食べてはいけません。", "te-prohibition", "食べてはいけません"),
+    ("寝なければなりません。", "nakereba-naranai", "寝なければなりません"),
+    ("番号を忘れてしまった。", "te-shimau", "忘れてしまった"),
+    ("ルールを決めておきなさい。", "te-oku", "決めておきなさい"),
+    ("学校へ行きたくない。", "tai", "行きたくない"),
+    ("彼は来るらしい。", "rashii", "来るらしい"),
+    ("電話してから行く。", "te-kara", "してから"),
+)
+
+
+def check_word_end(tagger):
+    """Exit when a span in WORD_END_CASES does not come out as written there."""
+    wrong = []
+    for text, rid, want in WORD_END_CASES:
+        toks = [tok_fields(w) for w in tagger(text)]
+        offs = [0]
+        for t in toks:
+            offs.append(offs[-1] + t["_len"])
+        spans = match_all(toks, SIGNATURES[rid])
+        got = text[offs[spans[0][0]] : offs[spans[0][1]]] if spans else None
+        if got != want:
+            wrong.append(f"{text} {rid}: {got} (want {want})")
+    if wrong:
+        sys.exit(f"FATAL: these spans do not end where their word does: {wrong}")
+
 
 def match_all(toks, sig):
     """Every match of `sig` in `toks`, as (start, end) token indices.
@@ -675,6 +748,9 @@ def match_all(toks, sig):
     blank that starts after 亡くなっ has already given away that the answer
     takes the て-form. The verb's dictionary form is carried separately as the
     prompt, so the question is "which pattern", not "which suffix".
+
+    The span ENDS where its last word does, which can be past the signature's
+    last token. See word_end (SAK-507).
     """
     seq = sig["seq"]
     host = sig.get("host")
@@ -700,7 +776,7 @@ def match_all(toks, sig):
             end = i + n
             if not_after is not None and end < len(toks) and pred(toks[end], not_after):
                 continue
-            out.append((start, end))
+            out.append((start, word_end(toks, end)))
     return out
 
 
@@ -820,6 +896,7 @@ def main():
 
     tagger = fugashi.Tagger()
     check_rashii(tagger)
+    check_word_end(tagger)
 
     jpn, owners = load_sentences_detailed(open_archive_text("tatoeba-jpn-sentences"))
     eng = load_eng(open_archive_text("tatoeba-eng-sentences"))
