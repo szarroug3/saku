@@ -22,7 +22,7 @@ import { answerIsJapanese, fixedDirOf, grammarVehicleFor, interchangeableReading
 import { isKatakana } from "@/lib/romaji";
 import { entryOf, factInfo, factsOf } from "@/lib/facts";
 import { KANA_SUBJECT } from "@/data/characters";
-import { GRAMMAR_SUBJECT } from "@/data/grammar";
+import { GRAMMAR_SUBJECT, grammarProduction } from "@/data/grammar";
 import { kanjiRow, KANJI_SUBJECT } from "@/data/kanji";
 import { KEIGO_SUBJECT } from "@/data/keigo";
 import { TRANSITIVITY_SUBJECT } from "@/data/transitivity-facts";
@@ -513,7 +513,9 @@ export function quizCards(history: HistoryFile, facts: readonly FactId[], now = 
       // (SAK-453).
       ...hintFields(hint, readingHint),
       ...(hint?.kind === "derivation" ? { built: builtLines(hint.derivation, kanaCtx && hintFor(fact, dir, undefined, false, kanaCtx.grammarVehicle)) } : {}),
-      answerIs: construction ? "reading" : answerIsMeaning(fact, dir) ? "meaning" : isSound(fact, dir) ? "reading" : "other",
+      // a grammar production card wants the word built into the pattern,
+      // which is a form and not a reading (SAK-513)
+      answerIs: construction ? "reading" : grammarProduction(fact) ? "form" : answerIsMeaning(fact, dir) ? "meaning" : isSound(fact, dir) ? "reading" : "other",
       typed: typedCard,
       ...(inKana ? { answerInKana: isKatakana(answer) ? "katakana" as const : "hiragana" as const } : {}),
       options: construction ? [{ id: fact, label: construction.reading, jp: true }] : options,

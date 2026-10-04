@@ -38,7 +38,7 @@ import { SkySurface } from "@/sky/components/sky-panel";
 import { Eyebrow } from "@/sky/components/sky-card";
 import { SkyStepper } from "@/sky/components/sky-stepper";
 import { SkyPageBody } from "@/sky/components/sky-page-body";
-import { DEFAULT_RETRIES, FRESH, gradeFor, maxTriesFor, triesNote, type Grade, type Open, type QuizAnswer, type QuizCard } from "@/sky/lib/quiz";
+import { answerPlaceholder, DEFAULT_RETRIES, FRESH, gradeFor, maxTriesFor, triesNote, type Grade, type Open, type QuizAnswer, type QuizCard } from "@/sky/lib/quiz";
 import { allAnswered, answeredCount, finishPass, nextOpen, openPass, passAnswers, stepTo, withAnswer, type QuizPass } from "@/sky/lib/quiz-pass";
 
 interface SkyQuizProps {
@@ -376,7 +376,7 @@ export function SkyQuiz({ cards, grade, toKana, hear, pitch, results, settings, 
                         ref={input}
                         value={given}
                         onChange={(e) => setGiven(card.answerInKana && toKana ? toKana(e.target.value, card.answerInKana === "katakana") : e.target.value)}
-                        placeholder={card.answerIs === "reading" ? (card.answerInKana ? "The reading" : "In romaji, or how it sounds") : card.answerIs === "meaning" ? "The meaning, in English" : "Your answer"}
+                        placeholder={answerPlaceholder(card)}
                         className="min-w-0 flex-1"
                       />
                       <SkyButton onClick={() => submit()} disabled={!given.trim() && !state.chosen}>Check</SkyButton>
