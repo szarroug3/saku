@@ -152,3 +152,39 @@ describe("〜なくてもいい and 〜てはいけない on all four kinds of w
     assert.equal(sectionGloss("te-prohibition", "Nouns"), "it must not be a book");
   });
 });
+
+// SAK-500: a gloss written for a verb left some adjective and noun rows with no
+// subject or verb ("I heard that expensive", "in order to a book"). One rule
+// covers what someone heard or says. A pattern that means something else on a
+// noun has its own `meaning` on the recipe.
+describe("adjective and noun rows read as sentences (SAK-500)", () => {
+  test("tte: what someone heard or says gets \"it's\"", () => {
+    assert.equal(
+      sectionGloss("tte", "い-adjectives"),
+      "I heard it's expensive / they say it's expensive",
+    );
+    assert.equal(sectionGloss("tte", "な-adjectives"), "I heard it's quiet / they say it's quiet");
+    assert.equal(sectionGloss("tte", "Nouns"), "I heard it's a book / they say it's a book");
+  });
+
+  test("sou-hearsay: the same rule, \"I hear it's expensive\"", () => {
+    assert.equal(sectionGloss("sou-hearsay", "い-adjectives"), "I hear it's expensive");
+  });
+
+  test("nara on a noun: \"if it's a book\"", () => {
+    assert.equal(sectionGloss("nara", "Nouns"), "if it's a book");
+  });
+
+  test("you-da on a noun: \"it seems to be a book\"", () => {
+    assert.equal(sectionGloss("you-da", "Nouns"), "it seems to be a book");
+  });
+
+  test("tame-ni on a noun: \"for the sake of a book\"", () => {
+    assert.equal(sectionGloss("tame-ni", "Nouns"), "for the sake of a book");
+  });
+
+  test("the verb rows of the same patterns keep the recipe's gloss", () => {
+    assert.equal(sectionGloss("sou-hearsay", "Verbs"), "I hear that you eat");
+    assert.equal(sectionGloss("tame-ni", "Verbs"), "in order to eat");
+  });
+});
