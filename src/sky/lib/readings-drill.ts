@@ -12,11 +12,13 @@
 // The table's rows for the kanji (the same rows the kanji card's Readings
 // fold lists), with two changes:
 //
-// 1. A voiced twin folds into its base. The table lists び beside ひ for 火
-//    and ごころ beside こころ for 心. A voiced twin is the same reading with
-//    its first sound voiced by the word in front of it (rendaku), so sorting
-//    both would be sorting one reading twice. It folds only into a base of
-//    the same kind, and its words count toward the base.
+// 1. A voiced kun'yomi folds into its base. The table lists び beside ひ for
+//    火 and ごころ beside こころ for 心. That is the same native word with its
+//    first sound voiced by the word in front of it (rendaku), so sorting both
+//    would be sorting one reading twice. Its words count toward the base.
+//    An on'yomi never folds: だい and たい are two on'yomi of 大, borrowed
+//    separately, and 大学 (university) is read だい. Only kun'yomi take
+//    rendaku, so a voiced on'yomi is a reading of its own.
 // 2. A reading heard in fewer than five everyday words is left out, unless it
 //    is the most heard reading of its kind (on, kun, or filed under both). 日's か (only in words like 二日,
 //    the second of the month) and 人's と are left out; 火's ひ stays because
@@ -86,14 +88,15 @@ function unvoiced(reading: string): string | undefined {
   return base ? base + reading.slice(1) : undefined;
 }
 
-/** The rows with each voiced twin folded into its base of the same kind. The
- * base keeps its place and takes the twin's words. A twin with no base of its
- * own kind stays as it is: then it is the reading. */
+/** The rows with each voiced kun'yomi folded into its unvoiced kun'yomi. The
+ * base keeps its place and takes the twin's words. A twin with no kun'yomi
+ * base stays as it is, and an on'yomi is never folded (see the top of the
+ * file). */
 function foldVoiced(rows: readonly TableReading[]): TableReading[] {
   const twins = new Map<number, number>();
   rows.forEach((row, i) => {
-    const base = unvoiced(row.reading);
-    const at = base === undefined ? -1 : rows.findIndex((r) => r.reading === base && r.kind === row.kind);
+    const base = row.kind === "kun" ? unvoiced(row.reading) : undefined;
+    const at = base === undefined ? -1 : rows.findIndex((r) => r.reading === base && r.kind === "kun");
     if (at >= 0) twins.set(i, at);
   });
   const extra = new Map<number, number>();

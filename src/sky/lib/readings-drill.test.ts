@@ -14,7 +14,7 @@ const drilled = (readings: readonly Row[]) => drillPool([{ kanji: "x", readings 
 const shown = (readings: readonly Row[]) => drilled(readings)?.readings.map((r) => r.reading);
 
 describe("voiced twins", () => {
-  it("fold into their base of the same kind", () => {
+  it("fold into their base when both are kun'yomi", () => {
     // 心 as the table has it: こころ, ごころ and しん
     assert.deepEqual(shown([kun("こころ", 11), kun("ごころ", 3), on("しん", 41)]), ["こころ", "しん"]);
     // 火: び folds into ひ, か is the on'yomi
@@ -28,6 +28,12 @@ describe("voiced twins", () => {
 
   it("stay when the base is the other kind", () => {
     assert.deepEqual(shown([on("がく", 9), kun("かく", 9)]), ["がく", "かく"]);
+  });
+
+  it("never fold on'yomi: だい and たい are two readings of 大", () => {
+    assert.deepEqual(shown([kun("おお", 34), on("たい", 24), on("だい", 55)]), ["おお", "たい", "だい"]);
+    // 土's と is one word and goes; ど stays on its own
+    assert.deepEqual(shown([kun("つち", 1), on("と", 1), on("ど", 14)]), ["つち", "ど"]);
   });
 });
 
