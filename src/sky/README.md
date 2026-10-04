@@ -7516,3 +7516,13 @@ Seen 2026-10-03 on 〜てもいい in the Atlas: the な-adjective build table h
 **Measured** on the built server, with grammar:te-permission open: the な-adjective table's box is 288px wide with 288px of content at 1440, and 286 of 286 at 390. Before the change the same box held 382px of content at 1440 and 384px at 390 (measured on the dev server). A sweep of all 108 patterns that have a build table, every page of each, 388 tables, found none wider than its box at 1440 or at 390. The 〜てもいい lesson at 1440 draws the same four columns at the same widths as before.
 
 **Tests.** `teach.test.ts` checks that every 〜てもいい table marks its Meaning column, that the た-form's table marks Meaning and Note, that しずかでもいい breaks before もいい and しずかではなくてもいい before くてもいい with no accent added, that the change cell's signs are held by no-break spaces, and that the Particle page's table is left alone. The e2e test opens the Atlas on grammar:te-permission at 1440 and 390, checks the な-adjective table and its box have nothing to scroll, that "it's okay even if it's quiet" ends inside the panel and the Meaning heading is hidden, then opens the lesson at 1440 and finds the Meaning heading and four cells in the row.
+
+## A tile name wraps after a slash (SAK-504)
+
+On the Atlas Terms shelf, the tile for "Keiyōshi/keiyōdōshi" read "Keiyōshi/keiyōdōsh". The name has no space in it, the tile is 130px wide, and the line had nowhere to break, so the last letter ran past the tile's edge.
+
+`wrappable` in `atlas-grid.tsx` puts a `<wbr>` after each "/" in a name drawn on a tile, so the line can break there the way it breaks at a space. It is used only on a tile whose glyph is its name (a term, a concept, a rule with no mark), which is the tile drawn in the name style. The text style is the one every name tile has (SAK-476): 12.5px, semibold, two lines at most. Nothing changes for a name without a slash, and a glyph tile (kana, kanji, words) is drawn as before. The `<wbr>` adds no text, so the tile's accessible name and its title are unchanged.
+
+"Keiyōshi/keiyōdōshi" now reads "Keiyōshi/" on the first line and "keiyōdōshi" on the second. "Godan/ichidan" fits on one line and is unchanged. "Kun’yomi and on’yomi" wraps at its spaces as before.
+
+**Tests.** `e2e/sky.spec.ts`, "a term's name with a slash wraps on its Atlas tile instead of running off the edge (SAK-504)": at 1440px and at 390px, on the Terms shelf, the label on the Keiyōshi/keiyōdōshi, Godan/ichidan and Kun’yomi and on’yomi tiles reads the whole name, is no wider than its tile, and is no taller than its two lines.

@@ -946,6 +946,31 @@ test("a search the open collection has none of draws the other collections' matc
   await expect(names).toHaveCount(0);
 });
 
+test("a term's name with a slash wraps on its Atlas tile instead of running off the edge (SAK-504)", async ({ page }) => {
+  // "Keiyōshi/keiyōdōshi" has no space to wrap at, so its tile read
+  // "Keiyōshi/keiyōdōsh" with the last letter cut off. The tile now breaks
+  // after the slash. Checked at the desktop width and a phone width.
+  for (const size of [{ width: 1440, height: 900 }, { width: 390, height: 844 }]) {
+    await page.setViewportSize(size);
+    await page.goto("/atlas?sample");
+    await expect(page.getByRole("heading", { name: "What would you like to know?" })).toBeVisible();
+    // on a phone the shelves are behind the rail's button
+    const rail = page.getByRole("button", { name: "Show the rail" });
+    if (await rail.isVisible()) await rail.click();
+    await page.getByRole("button", { name: /^Terms/ }).first().click();
+    for (const name of ["Keiyōshi/keiyōdōshi", "Godan/ichidan", "Kun’yomi and on’yomi"]) {
+      const tile = page.getByRole("button", { name: new RegExp(`^${name}`) }).first();
+      await tile.scrollIntoViewIfNeeded();
+      await expect(tile).toBeVisible();
+      const label = tile.locator("span").first();
+      await expect(label).toHaveText(name);
+      const fit = await label.evaluate((el) => ({ scroll: el.scrollWidth, client: el.clientWidth, sh: el.scrollHeight, ch: el.clientHeight }));
+      expect(fit.scroll, `${name} at ${size.width}px is wider than its tile`).toBeLessThanOrEqual(fit.client);
+      expect(fit.sh, `${name} at ${size.width}px runs past two lines`).toBeLessThanOrEqual(fit.ch);
+    }
+  }
+});
+
 test("the atlas opens on the shelf that holds what you asked for", async ({ page }) => {
   // SAK-354. /atlas?entry=kanji:日 opened 日 in the panel with the middle
   // still showing Kana, so closing the panel left you on the wrong shelf.
