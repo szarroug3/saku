@@ -2459,7 +2459,8 @@ test("はい and うん are one tile, one pick and one card headed はい vs う
     await pager.nth(i).click();
     await expect(hear(word)).toHaveCount(1);
     await expect(hear(other)).toHaveCount(0);
-    const title = card.getByRole("heading", { name: `${word} yes`, exact: true });
+    // the title's name carries its pitch line's label (SAK-517)
+    const title = card.getByRole("heading", { name: new RegExp(`^${word}(, pitch accent: [^)]*\\))? yes$`) });
     const [a, b] = [await title.boundingBox(), await hear(word).boundingBox()];
     if (!a || !b) throw new Error("no title or no button");
     expect(Math.abs(a.y + a.height / 2 - (b.y + b.height / 2))).toBeLessThanOrEqual(1);
@@ -2684,6 +2685,46 @@ test("the 〜てもいい lesson builds it on a verb, both adjectives and a noun
     await expect(row).toContainText(word);
     if (meaning) await expect(row).toContainText(meaning);
   }
+});
+
+test("a pair's word pages draw each word's pitch over the word in the title, with no eyebrow repeating it (SAK-517)", async ({ page }) => {
+  // Sam, 2026-10-04, on the はい vs うん card in the Atlas: "i don't see the
+  // pitch lines on main." The pitch was there; the page title only drew it
+  // over a reading that differed from the word. Signed out.
+  const atamadaka = "pitch accent: atamadaka (drops after the first mora)";
+  for (const width of [1440, 390]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto(`/atlas?sample&entry=${encodeURIComponent("words:word:はい-word:うん")}`);
+    const panel = page.locator("[data-atlas-panel]");
+    const pager = panel.getByRole("navigation", { name: "Pages" });
+    const pills = pager.getByRole("button");
+    await expect(pills).toHaveText(["はい", "うん", "はい vs うん"]);
+    for (const [i, word] of [[0, "はい"], [1, "うん"]] as const) {
+      await pills.nth(i).click();
+      const title = panel.getByRole("heading", { level: 3 }).filter({ hasText: "yes" });
+      // one line, on the word in the title
+      await expect(panel.getByLabel(`${word}, ${atamadaka}`), `${width}: ${word}`).toHaveCount(1);
+      await expect(title.getByLabel(`${word}, ${atamadaka}`)).toBeVisible();
+      // the hear button stays centered on the title's row
+      const hear = panel.getByRole("button", { name: new RegExp(`^Hear ${word}( |$)`) });
+      const [a, b] = [await title.boundingBox(), await hear.boundingBox()];
+      if (!a || !b) throw new Error("no title or no button");
+      expect(Math.abs(a.y + a.height / 2 - (b.y + b.height / 2)), `${width}: ${word} centered`).toBeLessThanOrEqual(1);
+      // the page opens on its title row: no eyebrow above it repeats the word
+      // the pill and the title already say
+      const first = panel.locator('nav[aria-label="Pages"] + div > :first-child');
+      await expect(first.getByRole("heading", { level: 3 })).toHaveCount(1);
+    }
+    await pills.nth(2).click();
+    await expect(panel.getByLabel(/pitch accent/)).toHaveCount(0);
+  }
+  // いいえ has no pitch in the data, so its page draws no line
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto(`/atlas?sample&entry=${encodeURIComponent("words:word:いいえ-word:いや")}`);
+  const panel = page.locator("[data-atlas-panel]");
+  await expect(panel.getByRole("button", { name: /^Hear いいえ( |$)/ })).toHaveCount(1);
+  await expect(panel.getByRole("heading", { level: 3 }).filter({ hasText: "no" })).toBeVisible();
+  await expect(panel.getByLabel(/pitch accent/)).toHaveCount(0);
 });
 
 test("a build table fits the Atlas panel, its meaning on a line under each row, and the lesson keeps its columns (SAK-509)", async ({ page }) => {
