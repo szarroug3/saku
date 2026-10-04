@@ -1320,3 +1320,101 @@ describe("furigana where the readings had to be written", () => {
     });
   });
 });
+
+// SAK-498, Sam, 2026-10-03: "we show a sentence without showing what the
+// highlighted word means in the sentence. let's highlight the word in the
+// sentence, so here we would highlight whatever 昼寝 means in the natural
+// English sentence." The English answering to the marked Japanese is in the
+// accent wherever a grammar or particle sentence is shown.
+describe("the English under a marked sentence marks what the Japanese marks", () => {
+  const text = (line: ReadonlyArray<{ text: string }>) => line.map((r) => r.text).join("");
+  const examples = PARTICLE_NOTES.flatMap((note) => note.body.flatMap((para) => para.examples ?? []));
+  const phrasesOf = (m: string | readonly string[] | null) => (m === null ? [] : typeof m === "string" ? [m] : [...m]);
+
+  it("marks nap, and nothing else, in the を page's natural English, with no box under it", () => {
+    const r = recipeById("wo");
+    assert.ok(r);
+    const ex = pageFromIntro(autoPatternPage(r)).examples?.[0];
+    assert.ok(ex);
+    assert.equal(text(ex.natural), "I may give up soon and just nap instead.");
+    assert.deepEqual(ex.natural.filter((run) => run.active).map((run) => run.text), ["nap"]);
+    assert.ok(ex.natural.every((run) => !run.label), "a run of the English carries a label, which draws a box");
+    // the Japanese keeps its own mark
+    assert.deepEqual(ex.japanese.filter((run) => run.active).map((run) => run.text), ["昼寝を"]);
+  });
+
+  it("prints a pattern's English plain where the table says nothing is to be marked", () => {
+    const r = recipeById("node");
+    assert.ok(r);
+    const ex = pageFromIntro(autoPatternPage(r)).examples?.[0];
+    assert.ok(ex);
+    assert.ok(ex.natural.every((run) => !run.active), text(ex.natural));
+  });
+
+  it("marks every pattern page's English where its sentence has a phrase", () => {
+    let marked = 0;
+    for (const r of RECIPES) {
+      const shown = sentenceExampleFor(r);
+      const ex = pageFromIntro(autoPatternPage(r)).examples?.[0];
+      if (!shown || !ex) continue;
+      assert.equal(text(ex.natural), shown.en, r.id);
+      const active = ex.natural.filter((run) => run.active).map((run) => run.text);
+      if (shown.enSpan) {
+        assert.deepEqual(active, [shown.en.slice(...shown.enSpan)], r.id);
+        marked++;
+      } else assert.deepEqual(active, [], r.id);
+    }
+    assert.equal(marked, 86);
+  });
+
+  it("marks nap in the を row's English on the Particle page", () => {
+    const entry = atlasEntryFromHistory(emptyHistory(), termEntry("particle"), NOW);
+    const t = (entry?.teach?.pages ?? []).flatMap((p) => p.tables ?? [])[0];
+    assert.ok(t);
+    const en = t.rows[PARTICLE_ROWS.findIndex((p) => p.recipeId === "wo")][3];
+    assert.equal(text(en), "I may give up soon and just nap instead.");
+    assert.deepEqual(en.filter((run) => run.accent).map((run) => run.text), ["nap"]);
+    // every row's English is its sentence's, marked where its page marks it
+    PARTICLE_ROWS.forEach((p, i) => {
+      const cell = t.rows[i][3];
+      assert.equal(text(cell), p.example?.en ?? "", p.particle);
+      const want = p.example?.enSpan ? [p.example.en.slice(...p.example.enSpan)] : [];
+      assert.deepEqual(cell.filter((run) => run.accent).map((run) => run.text), want, p.particle);
+    });
+  });
+
+  it("gives every particle page example an English mark that is in its English once", () => {
+    assert.equal(examples.length, 86);
+    for (const ex of examples) {
+      assert.ok(ex.enMark !== undefined, `${ex.jp} has no enMark`);
+      const phrases = phrasesOf(ex.enMark);
+      const spans = phrases.map((p) => {
+        assert.ok(p && p.trim() === p, `${ex.jp}: "${p}" is empty or has spaces at its ends`);
+        assert.equal(ex.en.split(p).length - 1, 1, `${ex.jp}: "${p}" is not in "${ex.en}" exactly once`);
+        return [ex.en.indexOf(p), ex.en.indexOf(p) + p.length] as const;
+      });
+      spans.sort((a, b) => a[0] - b[0]);
+      for (let i = 1; i < spans.length; i++) assert.ok(spans[i][0] >= spans[i - 1][1], `${ex.jp}: the phrases overlap`);
+    }
+    assert.equal(examples.filter((ex) => ex.enMark === null).length, 6);
+  });
+
+  it("draws a particle page example's English with its mark in the accent", () => {
+    const pages = atlasEntryFromHistory(emptyHistory(), patternEntry("ga"), NOW)?.teach?.pages ?? [];
+    const shown = pages.flatMap((p) => [...p.paragraphs, ...(p.after ?? [])]).flatMap((p) => p.examples ?? []);
+    const rain = shown.find((ex) => ex.en === "It is raining.");
+    assert.ok(rain?.enRuns, "雨が降っています has no marked English");
+    assert.equal(text(rain.enRuns), "It is raining.");
+    assert.deepEqual(rain.enRuns.filter((r) => r.accent).map((r) => r.text), ["rain"]);
+    // two phrases where the English splits it: 田中さんも, "Tanaka" and "too"
+    const mo = (atlasEntryFromHistory(emptyHistory(), patternEntry("mo"), NOW)?.teach?.pages ?? [])
+      .flatMap((p) => [...p.paragraphs, ...(p.after ?? [])]).flatMap((p) => p.examples ?? [])
+      .find((ex) => ex.en === "Tanaka is a teacher too.");
+    assert.deepEqual(mo?.enRuns?.filter((r) => r.accent).map((r) => r.text), ["Tanaka", "too"]);
+    // and none where the English has no words for it
+    const yo = (atlasEntryFromHistory(emptyHistory(), patternEntry("yo"), NOW)?.teach?.pages ?? [])
+      .flatMap((p) => [...p.paragraphs, ...(p.after ?? [])]).flatMap((p) => p.examples ?? [])
+      .find((ex) => ex.en === "It is late already.");
+    assert.ok(yo && !yo.enRuns, "もう遅いよ marks English it has no words for");
+  });
+});
