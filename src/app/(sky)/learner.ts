@@ -19,11 +19,13 @@
 
 import { KANA_SUBJECT } from "@/data/characters";
 import { PRIMITIVE_SUBJECT } from "@/data/components";
+import { GRAMMAR_SUBJECT } from "@/data/grammar";
 import { KANJI_SUBJECT, kanjiRow } from "@/data/kanji";
 import { RADICAL_SUBJECT } from "@/data/radicals";
 import { VOCAB_SUBJECT } from "@/data/vocab";
 import { activeWeaknessPairs } from "@/lib/confusions";
 import { entryOf } from "@/lib/facts";
+import { dropDoScaffold } from "@/lib/grammar/gloss";
 import { entryForGlyph, knownFactsOf, libEntry, LIB_ENTRIES, LIB_ENTRIES_BY_KIND, type LibEntry } from "@/lib/library/entries";
 import { KIND_LABEL } from "@/lib/library/kinds";
 import type { StatsData, StatsSubject } from "@/lib/library/stats-rows";
@@ -203,7 +205,10 @@ function partsOf(entry: LibEntry): LibEntry[] {
 
 function toItem(entry: LibEntry, standing: Standing, parts: readonly LibEntry[]): SkyItem {
   const kind = KIND[entry.kind] ?? "word";
-  const english = entry.meanings[0] ?? entry.readings[0] ?? entry.glyph;
+  const meaning = entry.meanings[0];
+  // a pattern's meaning is its recipe's gloss, written "may do X" for the
+  // teach table's sake; shown unfilled, the "do" is noise (SAK-512)
+  const english = meaning !== undefined && entry.kind === GRAMMAR_SUBJECT ? dropDoScaffold(meaning) : meaning ?? entry.readings[0] ?? entry.glyph;
   return {
     id: entry.id,
     kind,

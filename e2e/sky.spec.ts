@@ -2503,9 +2503,10 @@ test("a grammar pattern is a comet in the lesson sky, tail and all", async ({ pa
   // so it draws as a comet rather than as a moon or as a planet. It was
   // 〜てから from the Sentences row; the sample learner knows all of
   // Sequential's patterns now (SAK-490), so this one comes from Grammar.
+  // Its tile reads "must not X" since SAK-512 dropped the "do".
   await page.goto("/observatory?sample");
   const cards = page.locator("section", { has: page.getByRole("heading", { name: "Grammar", exact: true }) }).getByRole("button");
-  await cards.filter({ hasText: "must not do X" }).first().click();
+  await cards.filter({ hasText: "must not X" }).first().click();
   await page.getByRole("link", { name: "Start lesson" }).click();
   await expect(page).toHaveURL(/\/lesson\?/);
 
@@ -2886,4 +2887,22 @@ test("a word written only in kana carries its pitch, drawn over the word itself 
   await page.goto(`/atlas?sample&entry=${encodeURIComponent("word:ええ")}`);
   await expect(page.getByRole("heading", { name: "What would you like to know?" })).toBeVisible();
   await expect(page.getByLabel(/^ええ, pitch accent/)).toHaveCount(0);
+});
+
+test("the 〜てもいい lesson and its Atlas tile say may X, with no do (SAK-512)", async ({ page }) => {
+  // The rail row and the line under the title read "may do X", the recipe's
+  // gloss with the "do" kept for the teach table, right above a header that
+  // already read "〜てもいい: May X." Signed out, as the suite runs.
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto(`/lesson?picks=${encodeURIComponent("grammar:te-permission")}`);
+  await expect(page.getByText(/^Step \d+ of \d+$/)).toBeVisible();
+  const body = page.locator("body");
+  await expect(body).not.toContainText("may do X");
+  await expect(page.locator("[data-lesson-cell=order]")).toContainText("may X");
+  await expect(page.locator("[data-lesson-cell=card]")).toContainText("may X");
+
+  await page.goto(`/atlas?sample&entry=${encodeURIComponent("grammar:te-permission")}`);
+  await expect(page.locator("[data-atlas-panel]")).toContainText("may X");
+  await expect(page.getByRole("button").filter({ hasText: "〜てもいい" }).filter({ hasText: "may X" }).first()).toBeVisible();
+  await expect(body).not.toContainText("may do X");
 });

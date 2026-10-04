@@ -174,8 +174,11 @@ function filesUnder(rel: string): string[] {
 function copyIn(file: string): ReadonlyArray<{ readonly line: number; readonly text: string }> {
   const source = ts.createSourceFile(file, readFileSync(path.join(REPO_ROOT, file), "utf8"), ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
   const found: Array<{ line: number; text: string }> = [];
+  // an import's path is a file name, read by the bundler and nobody else
+  // (SAK-512: importing @/lib/grammar/gloss tripped the "gloss" rule)
+  const isPath = (node: ts.Node) => !!node.parent && (ts.isImportDeclaration(node.parent) || ts.isExportDeclaration(node.parent)) && node.parent.moduleSpecifier === node;
   const visit = (node: ts.Node) => {
-    const text = ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node) || ts.isTemplateHead(node) || ts.isTemplateMiddle(node) || ts.isTemplateTail(node) || ts.isJsxText(node)
+    const text = isPath(node) ? null : ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node) || ts.isTemplateHead(node) || ts.isTemplateMiddle(node) || ts.isTemplateTail(node) || ts.isJsxText(node)
       ? node.text
       : null;
     if (text !== null) found.push({ line: source.getLineAndCharacterOfPosition(node.getStart(source)).line + 1, text });

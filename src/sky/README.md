@@ -7516,3 +7516,18 @@ Seen 2026-10-03 on 〜てもいい in the Atlas: the な-adjective build table h
 **Measured** on the built server, with grammar:te-permission open: the な-adjective table's box is 288px wide with 288px of content at 1440, and 286 of 286 at 390. Before the change the same box held 382px of content at 1440 and 384px at 390 (measured on the dev server). A sweep of all 108 patterns that have a build table, every page of each, 388 tables, found none wider than its box at 1440 or at 390. The 〜てもいい lesson at 1440 draws the same four columns at the same widths as before.
 
 **Tests.** `teach.test.ts` checks that every 〜てもいい table marks its Meaning column, that the た-form's table marks Meaning and Note, that しずかでもいい breaks before もいい and しずかではなくてもいい before くてもいい with no accent added, that the change cell's signs are held by no-break spaces, and that the Particle page's table is left alone. The e2e test opens the Atlas on grammar:te-permission at 1440 and 390, checks the な-adjective table and its box have nothing to scroll, that "it's okay even if it's quiet" ends inside the panel and the Meaning heading is hidden, then opens the lesson at 1440 and finds the Meaning heading and four cells in the row.
+
+## A pattern's meaning drops the "do" everywhere it is shown (SAK-512)
+
+A recipe's gloss writes its X slot the way a dictionary would, "may do X", because the teach table needs the "do" to pick the English form when X is a real verb. SAK-193 made the pattern header and the quiz instruction run the gloss through `dropDoScaffold` (`src/lib/grammar/gloss.ts`), so they read "May X." The rail and the line under the card's title still read "may do X", right above that header. Now every place a learner sees the gloss unfilled goes through `dropDoScaffold`:
+
+- `toItem` in `src/app/(sky)/learner.ts`, for a grammar entry. The item's `english` is what the rail row, the line under the card's title, the Atlas tile, the Observatory tile, a star's hover name and a References row print, so all of them read "may X". The catalogues were rebuilt.
+- `teachFor` in `src/app/(sky)/teach.ts`: the card's meaning line, and the meaning `withoutRepeatedTitle` compares the page heading with. The heading "〜てもいい: May X." now matches "may X", so it drops the same way 〜は's did under SAK-464 and the card says the meaning once.
+- The Family table's meaning column and the page titles of a shared particle card, also in `teach.ts`.
+- `meaningOf` in `src/app/(sky)/particle-groups.ts`, for a group with no line of its own that joins its patterns' glosses.
+
+The raw gloss and `appliedGloss` are as they were. The library entry's `meanings` keep the raw string too, since search reads them. `dropDoScaffold` drops every "do", "does" and "doing" in front of X, so some lines read short: "is X / is in the state of X" (〜ている), "someone X for me" (〜てくれる), "things like X and Y" (〜たり〜たり). These are the same words the pattern header and the quiz instruction already used.
+
+The jargon test read an import path as learner copy, and `@/lib/grammar/gloss` tripped its "gloss" rule. It now skips the path of an import or export.
+
+**Tests.** `lesson.test.ts`: "Tonight, in order" lists 〜てもいい may X, 〜なくてもいい don't have to X and 〜てはいけない must not X. `teach.test.ts`: the 〜てもいい card's meaning and item read "may X", and nothing on the card says "do X". In `e2e/sky.spec.ts`, "the 〜てもいい lesson and its Atlas tile say may X, with no do (SAK-512)", signed out at 1440. The comet test finds its 〜てはいけない tile by "must not X" now.

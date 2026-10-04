@@ -29,6 +29,7 @@ import { PARTICLE_ROWS } from "@/data/grammar/particles";
 import { primaryPatternRecipe, RECIPES, type Recipe } from "@/data/grammar/recipes";
 import { PARTICLE_RULE, type BuildHeads, type SentenceExample, type CountBuildPiece, type IntroBuildRule, type IntroCountGroup, type IntroDeriveRow, type IntroPara, type PhaseIntro } from "@/data/phase-intros";
 import { buildRow } from "@/lib/grammar/build";
+import { dropDoScaffold } from "@/lib/grammar/gloss";
 import { CHUNK_ROLE_LABELS, SENTENCE_ORDERING_GUIDES, type SentenceOrderingTierId } from "@/data/sentence-ordering-guides";
 import { contextPronunciation } from "@/data/kana-context";
 import { keigoSetForEntry } from "@/data/keigo";
@@ -445,7 +446,7 @@ export function teachFor(item: SkyItem, scope: TeachScope = {}): LessonTeach {
     const group = particleGroup(item.id);
     if (group) return groupTeach(group);
     const recipe = RECIPES.find((r) => patternEntry(r.id) === item.id);
-    if (recipe) { t.reading = recipe.pattern; t.meanings = [recipe.gloss]; if (recipe.sense) t.notes = [recipe.sense]; t.pages = withoutRepeatedTitle(grammarPages(recipe), recipe.pattern, recipe.gloss); return t; }
+    if (recipe) { const meaning = dropDoScaffold(recipe.gloss); t.reading = recipe.pattern; t.meanings = [meaning]; if (recipe.sense) t.notes = [recipe.sense]; t.pages = withoutRepeatedTitle(grammarPages(recipe), recipe.pattern, meaning); return t; }
     return t;
   }
   if (item.kind === "sentence") {
@@ -816,7 +817,7 @@ function particleNotePages(recipe: Recipe, build: readonly TeachPage[]): TeachPa
     // the page's title is the other particle's meaning line, since the card's
     // head says only this card's; the build page's own title reads "〜が:
     // Marks the subject." and is hidden on the card it belongs to (SAK-464)
-    return [withOwn({ ...pageFromIntro(autoPatternPage(other), undefined, proseReader), title: `${other.pattern} ${other.gloss}` }, id)];
+    return [withOwn({ ...pageFromIntro(autoPatternPage(other), undefined, proseReader), title: `${other.pattern} ${dropDoScaffold(other.gloss)}` }, id)];
   });
   return [...mine, ...others, apart];
 }
@@ -835,7 +836,7 @@ function particleNotePages(recipe: Recipe, build: readonly TeachPage[]): TeachPa
 function groupTeach(group: ParticleGroup): LessonTeach {
   const first = RECIPES.find((r) => r.id === group.recipes[0]);
   if (!first) return { meanings: [group.english] };
-  const pages = grammarPages(first).map((page, i) => (i === 0 ? { ...page, title: `${first.pattern} ${first.gloss}` } : page));
+  const pages = grammarPages(first).map((page, i) => (i === 0 ? { ...page, title: `${first.pattern} ${dropDoScaffold(first.gloss)}` } : page));
   return { meanings: [group.english], pages };
 }
 
@@ -931,7 +932,7 @@ function grammarPages(recipe: Recipe): TeachPage[] {
       // other but they're both being taught"), so both rows are picked out
       const me = m.id === recipe.id || (shared?.recipes.includes(m.id) ?? false);
       const pattern = familyPattern(m);
-      return [proseSound(pattern, proseReader).map((r) => (me ? { ...r, accent: true } : r)), [{ text: m.gloss }], proseSound(built, proseReader)];
+      return [proseSound(pattern, proseReader).map((r) => (me ? { ...r, accent: true } : r)), [{ text: dropDoScaffold(m.gloss) }], proseSound(built, proseReader)];
     });
     pages.push({
       eyebrow: "Family",

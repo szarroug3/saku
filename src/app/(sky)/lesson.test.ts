@@ -150,3 +150,24 @@ describe("a grammar lesson lists the pages it leans on (SAK-494)", () => {
     assert.deepEqual(pages("grammar:nai-form"), []);
   });
 });
+
+// SAK-512. The rail listed "〜てもいい  may do X": the recipe's gloss with the
+// "do" it keeps for the teach table, the one the card's own header drops.
+describe("Tonight, in order says a pattern's meaning without the do", () => {
+  const fresh = emptyHistory();
+  const row = (pick: string) => {
+    const data = lessonFromPicks(fresh, [pick], NOW);
+    const item = data.items.find((i) => i.id === pick);
+    assert.ok(steps(data).includes(pick), `${pick} is not a step`);
+    return `${item?.glyph} ${item?.english}`;
+  };
+
+  it("reads 〜てもいい may X", () => {
+    assert.equal(row("grammar:te-permission"), "〜てもいい may X");
+  });
+
+  it("reads the same for its two neighbors", () => {
+    assert.equal(row("grammar:nakute-mo-ii"), "〜なくてもいい don't have to X");
+    assert.equal(row("grammar:te-prohibition"), "〜てはいけない must not X");
+  });
+});
