@@ -27,12 +27,13 @@ WHAT IT DOES
    src/data/grammar/corpus-audit.ts, and records each one in
    grammar-corpus-dropped.json. A row left with no pattern stays in the file
    for word examples, the way the audit keeps any other.
-2. Tags rashii on every sentence in the export that passes grammar.py's
-   filters (14 real tokens or fewer, a prolific named owner, kana and kanji
-   only), is not vulgar or violent by word_example_candidates.py's list, and
-   matches the new signature. A sentence the corpus already has
-   gains the tag and keeps everything else. A new sentence is added as a new
-   row, at most grammar.PER_PATTERN_CAP of them, shortest first, ties on id.
+2. Finds every sentence in the export that passes grammar.py's filters (14
+   real tokens or fewer, a prolific named owner, kana and kanji only), is not
+   vulgar or violent by word_example_candidates.py's list, and matches the new
+   signature. Each is added as a new row tagged rashii, at most
+   grammar.PER_PATTERN_CAP of them, shortest first, ties on id.
+3. Skips a sentence the corpus already has, the way grammar_augment.py does.
+   It keeps exactly the tags it shipped with, so no other pattern's rows move.
 
 After this, run the audit and the derived files. The order is in the SAK-510
 section at the end of src/sky/README.md.
@@ -42,7 +43,6 @@ import argparse
 import json
 import os
 import sys
-from collections import Counter
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -82,9 +82,8 @@ def main():
     corpus_path = os.path.join(GEN, "grammar-corpus.json")
     with open(corpus_path, encoding="utf-8") as fh:
         corpus = json.load(fh)
-
     before = sum(1 for row in corpus if RID in row["p"])
-    by_id = {row["id"]: row for row in corpus}
+    shipped = {row["id"] for row in corpus}
 
     jpn, owners = G.load_sentences_detailed(S.open_archive_text("tatoeba-jpn-sentences"))
     eng = G.load_eng(S.open_archive_text("tatoeba-eng-sentences"))
@@ -119,48 +118,29 @@ def main():
         for t in toks:
             offs.append(offs[-1] + t["_len"])
         a, b = spans[0]
-        span = [offs[a], offs[b], toks[a]["orth"] or toks[a]["lemma"]]
-        found.append((int(sid), text, eng[targets[0]], len(real), toks, span))
-
-    # Rows already shipped gain the tag; their text and English are the
-    # committed ones, so nothing else about them moves.
-    tagged_existing = 0
-    fresh = []
-    for sid, text, en, n, toks, span in found:
-        row = by_id.get(sid)
-        if row is None:
-            fresh.append((sid, text, en, n, toks, span))
-            continue
-        if row["jp"] != text:
-            continue  # edited upstream since it was cut; its offsets would be wrong
-        row["p"] = sorted(set(row["p"]) | {RID})
-        row["sp"] = dict(sorted({**row["sp"], RID: span}.items()))
-        tagged_existing += 1
-
-    fresh.sort(key=lambda r: (r[3], r[0]))
-    room = max(0, G.PER_PATTERN_CAP - tagged_existing)
-    added = []
-    for sid, text, en, n, toks, span in fresh[:room]:
-        added.append(
+        found.append(
             {
-                "id": sid,
+                "id": int(sid),
                 "jp": text,
-                "en": en,
-                "n": n,
+                "en": eng[targets[0]],
+                "n": len(real),
                 "v": sorted(set(G.content_lemmas(toks))),
                 "p": [RID],
-                "sp": {RID: span},
+                "sp": {RID: [offs[a], offs[b], toks[a]["orth"] or toks[a]["lemma"]]},
             }
         )
+
+    frozen = [r["id"] for r in found if r["id"] in shipped]
+    fresh = sorted((r for r in found if r["id"] not in shipped), key=lambda r: (r["n"], r["id"]))
+    added = fresh[: G.PER_PATTERN_CAP]
     merged = corpus + added
     after = sum(1 for row in merged if RID in row["p"])
-    new_sense = tagged_existing + len(added)
 
     print(f"rashii before {before}: every one the suffix sense, left for the audit")
     print(f"export matches {raw}, {len(found)} pass the filters ({harsh} vulgar or violent)")
-    print(f"  {tagged_existing} already in the corpus, tagged in place")
+    print(f"  {len(frozen)} already in the corpus, left as they are: {frozen}")
     print(f"  {len(added)} added as new rows (of {len(fresh)})")
-    print(f"rashii after {after}, {new_sense} of them the new sense; corpus {len(corpus):,} -> {len(merged):,} sentences")
+    print(f"rashii after {after}, {len(added)} of them the new sense; corpus {len(corpus):,} -> {len(merged):,} sentences")
 
     with open(corpus_path, "w", encoding="utf-8") as fh:
         json.dump(merged, fh, ensure_ascii=False, separators=(",", ":"))
