@@ -23,7 +23,7 @@ import { Eyebrow } from "@/sky/components/sky-card";
 import { StandingChip } from "@/sky/components/standing-legend";
 import { Pager, Parted, Sound, Table, TeachPageView } from "@/sky/components/teach-page";
 import { chipReading, japaneseFont } from "@/sky/lib/japanese";
-import type { LessonTeach, SoundLine, TeachPage } from "@/sky/lib/lesson";
+import { titleWordPitch, type LessonTeach, type SoundLine, type TeachPage } from "@/sky/lib/lesson";
 import { cutLine } from "@/sky/lib/sound-line";
 import { typeLabel } from "@/sky/lib/tokens";
 import type { SkyItem } from "@/sky/lib/types";
@@ -137,11 +137,13 @@ function Fold({ title, open: from = false, children }: { title: string; open?: b
 
 /** A page whose eyebrow only says what the card already says at the top: a
  * lone page named after the thing's meaning, or any page named after its
- * glyph, which the card leads with in the biggest type it has. */
+ * glyph, which the card leads with in the biggest type it has. A pair's word
+ * page (はい on the はい vs うん card) is named after its word, which its
+ * title opens with right under it, and the pill above says it too (SAK-517). */
 function namesItself(page: TeachPage, item: SkyItem, count: number): boolean {
   const eyebrow = page.eyebrow?.toLowerCase();
   if (!eyebrow) return false;
-  return eyebrow === item.glyph.toLowerCase() || (count === 1 && eyebrow === item.english.toLowerCase());
+  return eyebrow === item.glyph.toLowerCase() || (count === 1 && eyebrow === item.english.toLowerCase()) || eyebrow === page.say?.word.toLowerCase();
 }
 
 export function LessonCard({ item, teach, madeOf, partOf, onSelect, onRead, written, hear: Hear, pitch: Pitch, page = 0, onPage, standing = false, related = [], footer, toolbar, scroll = false, className = "" }: LessonCardProps) {
@@ -234,6 +236,14 @@ export function LessonCard({ item, teach, madeOf, partOf, onSelect, onRead, writ
     );
   };
 
+  // a kana word's page draws its pitch over the word in the title, since the
+  // word is its own reading and pageSay puts no reading beside it (SAK-517)
+  const pageWord = (p: TeachPage | undefined): { node: ReactNode; rest: string } | undefined => {
+    const pitched = p && Pitch ? titleWordPitch(p) : undefined;
+    if (!pitched || !Pitch) return undefined;
+    return { node: <Pitch reading={pitched.word} downstep={pitched.pitch} className={japaneseFont(pitched.word)} />, rest: pitched.rest };
+  };
+
   return (
     <DetailFrame toolbar={toolbar} footer={footer} scroll={scroll} className={className}>
       <div className="flex shrink-0 items-start justify-between gap-3">
@@ -304,7 +314,7 @@ export function LessonCard({ item, teach, madeOf, partOf, onSelect, onRead, writ
               own: the name is right above it, as the card's meaning or its
               glyph, and where there are several pages the pill above already
               says which one this is (SAK-464) */}
-          <TeachPageView page={namesItself(pages[at], item, pages.length) ? { ...pages[at], eyebrow: undefined } : pages[at]} onOpen={onRead} titleAside={pageSay(pages[at])} />
+          <TeachPageView page={namesItself(pages[at], item, pages.length) ? { ...pages[at], eyebrow: undefined } : pages[at]} onOpen={onRead} titleAside={pageSay(pages[at])} titleWord={pageWord(pages[at])} />
         </>
       )}
 
