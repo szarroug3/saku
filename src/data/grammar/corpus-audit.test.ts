@@ -125,10 +125,10 @@ describe("coverage after the audit is recorded, not assumed", () => {
     // 212 -> 164: 48 are purpose の+に ("convenient FOR doing X") or the
     // pronoun-の + choice-に of 〜にする, not concessive のに.
     noni: 164,
-    // 33 -> 9 (SAK-501). Then 74 (SAK-510): the signature now matches the
+    // 33 -> 9 (SAK-501). Then 73 (SAK-510): the signature now matches the
     // "apparently" らしい after a plain-form predicate, and the rule takes the
     // 9 old suffix tags off.
-    rashii: 74,
+    rashii: 73,
     // 139 -> 137 (SAK-501): と言ったところ, "so to speak".
     "ta-tokoro": 137,
     // 425 -> 420 (SAK-501): ていろ / ていなさい, a command.
