@@ -170,6 +170,13 @@ SENTENCE_READING_OVERRIDES = {
     # 描き方 is かきかた in everyday speech; えがく is the written, literary
     # reading unidic-lite gives.
     ("鳥の描き方がわからない", "描", 0): ["描", "か", "か"],
+    # SAK-510, an ordering card from the rashii retag. 実も結ぶ is "bears
+    # fruit", vocab.json's 実 み; unidic-lite read じつ. 挿し木 is さしき
+    # ("a cutting"), which vocab.json does not have, so the aligner left both
+    # kanji bare: 挿す さす and 木 き.
+    ("実も結ぶが挿し木でも根付くらしい", "実", 0): ["実", "み", "み"],
+    ("実も結ぶが挿し木でも根付くらしい", "挿", 0): ["挿", "さ", "さ"],
+    ("実も結ぶが挿し木でも根付くらしい", "木", 0): ["木", "き", "き"],
     # 洗濯物 is せんたくもの; unidic-lite splits 洗濯 + 物 and reads 物 ぶつ.
     ("洗濯物乾いたら取り込んで", "物", 0): ["物", "もの", "もの"],
     # 今日中 is きょうじゅう, "by the end of today"; unidic-lite reads 中 ちゅう.

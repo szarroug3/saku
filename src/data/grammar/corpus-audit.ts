@@ -221,15 +221,17 @@ const CONFOUNDS: Readonly<Record<string, Confound>> = {
       (/\beven\b/i.test(ex.en) && !/\b(until|till|to|as far as|there)\b/i.test(ex.en)),
   },
 
-  // SAK-501: grammar.py's rashii signature reads らしい as a suffix
-  // (接尾辞), which is the "befitting, typical of" らしい: 男らしい, 春らしく.
-  // The "apparently" らしい is an auxiliary. The adverb form らしく is almost
-  // always the befitting one (若者らしくふるまいなさい, "behave like a young man";
-  // 彼らしくない, "not like him"). The kept forms are no better, see SAK-501's
-  // closing comment; the fix for those is the signature.
+  // SAK-501 found that grammar.py's rashii signature matched the suffix
+  // らしい, "like a real X" (男らしい, 若者らしく, わざとらしい). The pattern
+  // teaches the auxiliary, "apparently X". SAK-510 changed the signature: the
+  // span now starts with the plain-form predicate the auxiliary follows
+  // (来るらしい, 来たらしい, 寒いらしい). A span that starts with らし has no
+  // predicate in it, so it is the suffix. The retag pass
+  // (scripts/ingest/grammar_retag_rashii.py) leaves the old tags for this rule
+  // to take off, so each one is recorded in grammar-corpus-dropped.json.
   rashii: {
-    why: "らしく is the 'befitting, like a real X' らしい, not 'apparently X'",
-    holds: (_ex, span) => span.startsWith("らしく"),
+    why: "らしい straight after a noun or adverb is the 'like a real X' suffix, not 'apparently X'",
+    holds: (_ex, span) => span.startsWith("らし"),
   },
 
   // SAK-501: でしょ without the う is the rhetorical "right?" or "I told you":

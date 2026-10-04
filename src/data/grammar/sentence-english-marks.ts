@@ -120,7 +120,7 @@ export const SENTENCE_ENGLISH_MARKS: Readonly<Record<string, string | null>> = {
   "4812:noni": "I wish",
   "76794:sou-hearsay": "I hear",
   "74772:you-da": "looks like",
-  "118196:rashii": "affected",
+  "109754:rashii": "seems unable",
   "74941:kamoshirenai": "mightn't",
   "4729:deshou": "won't",
   "-1:wake-da": "No wonder his English is so good",

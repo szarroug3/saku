@@ -607,11 +607,13 @@ test("every example sentence highlights the word it is an example of", () => {
   // SAK-511 put those sentences back without their tag, giving 5,803 / 4,726 /
   // 1,077 / 4,263. One more span covers the spelling exactly than before
   // SAK-501, because the 19 sentences earlier audits had taken out came back
-  // too and 8 words now take one of them.
-  assert.equal(spanned, 5803, "sentences that carry a highlight span");
-  assert.equal(literal, 4726, "spans that cover the word's dictionary spelling exactly");
+  // too and 8 words now take one of them. SAK-510 gave 5,808 / 4,731 / 1,077 /
+  // 4,268: the rashii retag added 73 sentences, 5 words gained one, and the
+  // wider pool was cut again from the newer export.
+  assert.equal(spanned, 5808, "sentences that carry a highlight span");
+  assert.equal(literal, 4731, "spans that cover the word's dictionary spelling exactly");
   assert.equal(spanned - literal, 1077, "spans that cover an inflected surface of the word");
-  assert.equal(noForms, 4263, "spans on a word with no conjugation class, all of them its spelling");
+  assert.equal(noForms, 4268, "spans on a word with no conjugation class, all of them its spelling");
 });
 
 /** Words that are never what a Japanese word MEANS, only how a meaning is
@@ -717,5 +719,5 @@ test("every sentence from the wider pool says in English what the word means", (
     }
   }
   assert.deepEqual(missing.slice(0, 20), []);
-  assert.equal(checked, 2813, "rows the wider Tatoeba pool supplied");
+  assert.equal(checked, 2806, "rows the wider Tatoeba pool supplied");
 });

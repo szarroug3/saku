@@ -175,36 +175,36 @@
       "versionFrom": "the corpus year in the upstream path; committed in this repo, so git pins it"
     },
     "tatoeba-eng-sentences": {
-      "bytes": 24873473,
+      "bytes": 24894467,
       "license": "CC BY 2.0 FR, Tatoeba contributors",
       "name": "Tatoeba eng_sentences",
       "path": "scripts/ingest/raw/tatoeba/eng_sentences.tsv.bz2",
-      "recordedAt": "2026-09-13",
-      "sha256": "7c46287a9146d8090ea26b6b2eaadc759b92a550e865e32388077806f584ee62",
+      "recordedAt": "2026-10-03",
+      "sha256": "5f7ebf552bd3925dfd33236ccb6a210c5ba02b365e4a39964fb658e1209e87d9",
       "url": "https://downloads.tatoeba.org/exports/per_language/eng/eng_sentences.tsv.bz2",
-      "version": "2026-09-12",
+      "version": "2026-10-03",
       "versionFrom": "the export's Last-Modified; the dump declares no version"
     },
     "tatoeba-jpn-eng-links": {
-      "bytes": 1454878,
+      "bytes": 1454991,
       "license": "CC BY 2.0 FR, Tatoeba contributors",
       "name": "Tatoeba jpn-eng_links",
       "path": "scripts/ingest/raw/tatoeba/jpn-eng_links.tsv.bz2",
-      "recordedAt": "2026-09-13",
-      "sha256": "256b14b7cbf8a49b91af18fe8f35f4f7a8ab142d70c5b310c9d5a21535fe1649",
+      "recordedAt": "2026-10-03",
+      "sha256": "b078aebb6b6b1e568fe0cb4683a4ae02e17d23b3a08f8a2b0bbb88e83ec697fa",
       "url": "https://downloads.tatoeba.org/exports/per_language/jpn/jpn-eng_links.tsv.bz2",
-      "version": "2026-09-12",
+      "version": "2026-10-03",
       "versionFrom": "the export's Last-Modified; the dump declares no version"
     },
     "tatoeba-jpn-sentences": {
-      "bytes": 4460889,
+      "bytes": 4462288,
       "license": "CC BY 2.0 FR, Tatoeba contributors",
       "name": "Tatoeba jpn_sentences_detailed",
       "path": "scripts/ingest/raw/tatoeba/jpn_sentences_detailed.tsv.bz2",
-      "recordedAt": "2026-09-13",
-      "sha256": "22507d7f514fc6e600958c5e97403364af0ae755d53ed01397bce3d83ece1510",
+      "recordedAt": "2026-10-03",
+      "sha256": "591b040bce75503a3a41d51281cdc45ab5390505088b67b52020b7ecc59d24dd",
       "url": "https://downloads.tatoeba.org/exports/per_language/jpn/jpn_sentences_detailed.tsv.bz2",
-      "version": "2026-09-12",
+      "version": "2026-10-03",
       "versionFrom": "the export's Last-Modified; the dump declares no version"
     },
     "unicode-data": {
@@ -255,6 +255,18 @@
         "cejc-reading-frequency.json"
       ],
       "recordedAt": "2026-09-13"
+    },
+    "scripts/ingest/grammar_retag_rashii.py": {
+      "archives": {
+        "tatoeba-eng-sentences": "5f7ebf552bd3925dfd33236ccb6a210c5ba02b365e4a39964fb658e1209e87d9",
+        "tatoeba-jpn-eng-links": "b078aebb6b6b1e568fe0cb4683a4ae02e17d23b3a08f8a2b0bbb88e83ec697fa",
+        "tatoeba-jpn-sentences": "591b040bce75503a3a41d51281cdc45ab5390505088b67b52020b7ecc59d24dd"
+      },
+      "outputs": [
+        "grammar-corpus-meta.json",
+        "grammar-corpus.json"
+      ],
+      "recordedAt": "2026-10-03"
     },
     "scripts/ingest/jmdict_word_definitions.py": {
       "archives": {
@@ -385,14 +397,14 @@
     },
     "scripts/ingest/word_example_candidates.py": {
       "archives": {
-        "tatoeba-eng-sentences": "7c46287a9146d8090ea26b6b2eaadc759b92a550e865e32388077806f584ee62",
-        "tatoeba-jpn-eng-links": "256b14b7cbf8a49b91af18fe8f35f4f7a8ab142d70c5b310c9d5a21535fe1649",
-        "tatoeba-jpn-sentences": "22507d7f514fc6e600958c5e97403364af0ae755d53ed01397bce3d83ece1510"
+        "tatoeba-eng-sentences": "5f7ebf552bd3925dfd33236ccb6a210c5ba02b365e4a39964fb658e1209e87d9",
+        "tatoeba-jpn-eng-links": "b078aebb6b6b1e568fe0cb4683a4ae02e17d23b3a08f8a2b0bbb88e83ec697fa",
+        "tatoeba-jpn-sentences": "591b040bce75503a3a41d51281cdc45ab5390505088b67b52020b7ecc59d24dd"
       },
       "outputs": [
         "word-example-candidates.json"
       ],
-      "recordedAt": "2026-09-17"
+      "recordedAt": "2026-10-03"
     }
   },
   "noUpstreamArchive": {},
@@ -454,7 +466,7 @@
         "tatoeba-jpn-eng-links"
       ],
       "script": "scripts/ingest/grammar.py",
-      "why": "Cut from a Tatoeba snapshot of 248,802 Japanese sentences; the export has grown since and Tatoeba publishes no archive of past days, so that snapshot cannot be recovered. A re-cut re-selects every one of the 50-odd patterns from different sentences and moves the pinned post-audit counts, so it is a deliberate act and now takes --accept-source. The three current exports are pinned in archives above, so the next re-cut is recorded."
+      "why": "Cut from a Tatoeba snapshot of 248,802 Japanese sentences; the export has grown since and Tatoeba publishes no archive of past days, so that snapshot cannot be recovered. A re-cut re-selects every one of the 50-odd patterns from different sentences and moves the pinned post-audit counts, so it is a deliberate act and now takes --accept-source. The three current exports are pinned in archives above, so the next re-cut is recorded. One pattern has been re-cut since, on purpose: scripts/ingest/grammar_retag_rashii.py tagged rashii again from the pinned exports with the corrected signature (SAK-510), and builtFrom records that pass. Every other pattern's rows are still the unrecoverable snapshot's."
     },
     "grammar-corpus.json": {
       "archives": [
@@ -463,7 +475,7 @@
         "tatoeba-jpn-eng-links"
       ],
       "script": "scripts/ingest/grammar.py",
-      "why": "Cut from a Tatoeba snapshot of 248,802 Japanese sentences; the export has grown since and Tatoeba publishes no archive of past days, so that snapshot cannot be recovered. A re-cut re-selects every one of the 50-odd patterns from different sentences and moves the pinned post-audit counts, so it is a deliberate act and now takes --accept-source. The three current exports are pinned in archives above, so the next re-cut is recorded."
+      "why": "Cut from a Tatoeba snapshot of 248,802 Japanese sentences; the export has grown since and Tatoeba publishes no archive of past days, so that snapshot cannot be recovered. A re-cut re-selects every one of the 50-odd patterns from different sentences and moves the pinned post-audit counts, so it is a deliberate act and now takes --accept-source. The three current exports are pinned in archives above, so the next re-cut is recorded. One pattern has been re-cut since, on purpose: scripts/ingest/grammar_retag_rashii.py tagged rashii again from the pinned exports with the corrected signature (SAK-510), and builtFrom records that pass. Every other pattern's rows are still the unrecoverable snapshot's."
     },
     "kanji-etymology-manual.json": {
       "archives": [],
