@@ -520,5 +520,5567 @@
     "span": "らしく",
     "why": "らしく + あれ, the classical imperative of ある ('be that way') — no lesson teaches this construction",
     "orphaned": true
+  },
+  {
+    "id": 4759,
+    "jp": "冗談でしょ！？",
+    "en": "Are you freaking kidding me?!",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": true
+  },
+  {
+    "id": 4932,
+    "jp": "お願いだから泣かないで。",
+    "en": "Please don't cry.",
+    "pattern": "nai-de",
+    "span": "泣かないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 4982,
+    "jp": "「あばたもえくぼ」って言うからね。",
+    "en": "They say love is blind.",
+    "pattern": "kara-reason",
+    "span": "言うから",
+    "why": "sentence-initial だから (a connective) or a sentence-final からね / からな (a promise or warning), not X から Y",
+    "orphaned": true
+  },
+  {
+    "id": 5097,
+    "jp": "心配しないで、楽しくいこう！",
+    "en": "Don't worry, be happy!",
+    "pattern": "nai-de",
+    "span": "しないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 5326,
+    "jp": "土曜日までに本を返さなければなりません。",
+    "en": "I have to give back the book before Saturday.",
+    "pattern": "made",
+    "span": "日まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 6004,
+    "jp": "ここで写真を撮らないでください。",
+    "en": "Please do not take photos here.",
+    "pattern": "nai-de",
+    "span": "撮らないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 74163,
+    "jp": "窓を開ける時は、カーテンは閉めないで下さい。",
+    "en": "Please don't draw the curtains when the window is open.",
+    "pattern": "nai-de",
+    "span": "閉めないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 74210,
+    "jp": "面白半分なら来ないで欲しい。",
+    "en": "If you're doing it in fun, I'd rather you didn't come.",
+    "pattern": "nai-de",
+    "span": "来ないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 74226,
+    "jp": "細かい意訳誤訳は気にしないでください。",
+    "en": "Please don't worry about the finer details of free vs mis-translation.",
+    "pattern": "nai-de",
+    "span": "しないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 74561,
+    "jp": "外用のみに使用し、内服しないで下さい。",
+    "en": "For external use only, do not ingest.",
+    "pattern": "nai-de",
+    "span": "しないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 75254,
+    "jp": "ふふふ、ごめんあそばせ。気になさらないで下さいな！",
+    "en": "Ha-ha-ha, pray forgive me. Please don't worry yourself about that!",
+    "pattern": "nai-de",
+    "span": "なさらないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 75305,
+    "jp": "すっぴんは恥ずかしいのであまり見ないで下さい。",
+    "en": "It's embarrassing to be seen without make-up so please don't stare.",
+    "pattern": "nai-de",
+    "span": "見ないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 75380,
+    "jp": "もう・・・タバコの吸殻まで散らばってるし。",
+    "en": "Sheesh, you've even got cigarette butts scattered around.",
+    "pattern": "made",
+    "span": "吸殻まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": true
+  },
+  {
+    "id": 75687,
+    "jp": "約束やぶったら、絶交ですからね？",
+    "en": "If you break your promise, we're through, you hear?",
+    "pattern": "kara-reason",
+    "span": "ですから",
+    "why": "sentence-initial だから (a connective) or a sentence-final からね / からな (a promise or warning), not X から Y",
+    "orphaned": false
+  },
+  {
+    "id": 76040,
+    "jp": "邪険にしないで下さいよ！",
+    "en": "Please don't be cold!",
+    "pattern": "nai-de",
+    "span": "しないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 76156,
+    "jp": "今のはノーカンだからね。",
+    "en": "It's OK, that doesn't count.",
+    "pattern": "kara-reason",
+    "span": "だから",
+    "why": "sentence-initial だから (a connective) or a sentence-final からね / からな (a promise or warning), not X から Y",
+    "orphaned": true
+  },
+  {
+    "id": 76417,
+    "jp": "まあまあ、そう怒らないでくださいな。",
+    "en": "Now, please don't get so angry.",
+    "pattern": "nai-de",
+    "span": "怒らないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 77153,
+    "jp": "話をさえぎらないでください。",
+    "en": "Please don't cut me off like that.",
+    "pattern": "nai-de",
+    "span": "さえぎらないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 77472,
+    "jp": "列車は昼までに駅に着くだろう。",
+    "en": "The train will probably arrive at the station before noon.",
+    "pattern": "made",
+    "span": "昼まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 77642,
+    "jp": "冷蔵庫に入れておけば肉は痛まない。",
+    "en": "A refrigerator keeps meat fresh.",
+    "pattern": "ba",
+    "span": "おけば",
+    "why": "痛む (to hurt) where 傷む (to spoil) is meant",
+    "orphaned": true
+  },
+  {
+    "id": 77642,
+    "jp": "冷蔵庫に入れておけば肉は痛まない。",
+    "en": "A refrigerator keeps meat fresh.",
+    "pattern": "te-oku",
+    "span": "入れておけ",
+    "why": "痛む (to hurt) where 傷む (to spoil) is meant",
+    "orphaned": true
+  },
+  {
+    "id": 78079,
+    "jp": "両手でつかんでいなさい。",
+    "en": "Hold it with both hands.",
+    "pattern": "te-iru",
+    "span": "つかんでい",
+    "why": "ていろ / ていなさい, a command ('stay ...!'), not 'is doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 78483,
+    "jp": "卵をあまり固くゆでないでください。",
+    "en": "Please don't boil the eggs so hard.",
+    "pattern": "nai-de",
+    "span": "ゆでないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 78633,
+    "jp": "来週までにその詩を暗記しなさい。",
+    "en": "Memorize the poem by next week.",
+    "pattern": "made",
+    "span": "来週まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 78799,
+    "jp": "要約を火曜日までに提出しなさい。",
+    "en": "Please send in your summary by Tuesday.",
+    "pattern": "made",
+    "span": "日まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 79504,
+    "jp": "約束を破らないでよ。",
+    "en": "Don't go back on your promise.",
+    "pattern": "nai-de",
+    "span": "破らないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 79540,
+    "jp": "約束の時間までに必ずここへ来るように。",
+    "en": "Be sure to come here by the appointed time.",
+    "pattern": "made",
+    "span": "時間まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 79541,
+    "jp": "約束の時間までに必ずここに来るように。",
+    "en": "Don't fail to come here by the appointed time.",
+    "pattern": "made",
+    "span": "時間まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 79542,
+    "jp": "約束の時間までに必ずきてください。",
+    "en": "Always come by the time promised.",
+    "pattern": "made",
+    "span": "時間まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 79543,
+    "jp": "約束の時間までにここに必ず来るように。",
+    "en": "Do not fail to come here by the appointed time.",
+    "pattern": "made",
+    "span": "時間まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 79678,
+    "jp": "夜遅く電話しないでください。",
+    "en": "Don't call me so late at night.",
+    "pattern": "nai-de",
+    "span": "しないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 80043,
+    "jp": "黙っていなさい。",
+    "en": "Hold your tongue!",
+    "pattern": "te-iru",
+    "span": "黙ってい",
+    "why": "ていろ / ていなさい, a command ('stay ...!'), not 'is doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 80053,
+    "jp": "木曜までには結果が分かるはずだ。",
+    "en": "We should know the result by Thursday.",
+    "pattern": "made",
+    "span": "木曜まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 80243,
+    "jp": "明日遊びに行くからね。",
+    "en": "I'm coming to see you tomorrow.",
+    "pattern": "kara-reason",
+    "span": "行くから",
+    "why": "sentence-initial だから (a connective) or a sentence-final からね / からな (a promise or warning), not X から Y",
+    "orphaned": true
+  },
+  {
+    "id": 80372,
+    "jp": "明日までに書かなければならないレポートがいくつかある。",
+    "en": "I have a few essays to write by tomorrow.",
+    "pattern": "made",
+    "span": "明日まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 80374,
+    "jp": "明日までに仕上げる必要はありません。",
+    "en": "You needn't finish it by tomorrow.",
+    "pattern": "made",
+    "span": "明日まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 80377,
+    "jp": "明日までにレポートを提出しなさい。",
+    "en": "Hand in your report by tomorrow.",
+    "pattern": "made",
+    "span": "明日まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 80378,
+    "jp": "明日までには必要です。",
+    "en": "I need to know by tomorrow.",
+    "pattern": "made",
+    "span": "明日まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 80521,
+    "jp": "明日の朝は早く出かけないといけないからな。",
+    "en": "We must be off early tomorrow morning.",
+    "pattern": "kara-reason",
+    "span": "ないから",
+    "why": "sentence-initial だから (a connective) or a sentence-final からね / からな (a promise or warning), not X から Y",
+    "orphaned": false
+  },
+  {
+    "id": 80734,
+    "jp": "明かりを消さないで下さい。",
+    "en": "Don't turn off the light.",
+    "pattern": "nai-de",
+    "span": "消さないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 80886,
+    "jp": "無理しないでね。",
+    "en": "Take it easy.",
+    "pattern": "nai-de",
+    "span": "しないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 81539,
+    "jp": "本当にたまにしか来ないからね。",
+    "en": "I only come once in a blue moon.",
+    "pattern": "kara-reason",
+    "span": "ないから",
+    "why": "sentence-initial だから (a connective) or a sentence-final からね / からな (a promise or warning), not X から Y",
+    "orphaned": true
+  },
+  {
+    "id": 82044,
+    "jp": "僕はなんとか時間までにそこに着いた。",
+    "en": "I managed to get there in time.",
+    "pattern": "made",
+    "span": "時間まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 83636,
+    "jp": "聞かないでくれ。",
+    "en": "Don't ask.",
+    "pattern": "nai-de",
+    "span": "聞かないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 83861,
+    "jp": "腹を立てないで。",
+    "en": "Don't lose your temper.",
+    "pattern": "nai-de",
+    "span": "立てないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 83960,
+    "jp": "風邪をひかないでよ。",
+    "en": "Don't catch a cold.",
+    "pattern": "nai-de",
+    "span": "ひかないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 84583,
+    "jp": "父は今までに病気になったことがない。",
+    "en": "Father has never gotten sick in his life.",
+    "pattern": "made",
+    "span": "今まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": true
+  },
+  {
+    "id": 84584,
+    "jp": "父は今までに病気にかかったことがない。",
+    "en": "Father has never gotten sick in his life.",
+    "pattern": "made",
+    "span": "今まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": true
+  },
+  {
+    "id": 85463,
+    "jp": "必ず明日までに宿題を提出してください。",
+    "en": "Be sure to hand in your homework by tomorrow.",
+    "pattern": "made",
+    "span": "明日まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 85955,
+    "jp": "悲しまないで下さい。",
+    "en": "Don't be sad.",
+    "pattern": "nai-de",
+    "span": "悲しまないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 88373,
+    "jp": "彼女は正午までにここに来ることになっていた。",
+    "en": "She was supposed to be here by noon.",
+    "pattern": "made",
+    "span": "正午まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 95683,
+    "jp": "彼女がこれまでになったのは母のおかげです。",
+    "en": "Her mother has made her what she is.",
+    "pattern": "made",
+    "span": "これまで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": true
+  },
+  {
+    "id": 99601,
+    "jp": "彼は明日までにその仕事を終えるだろう。",
+    "en": "He will end the work by tomorrow.",
+    "pattern": "made",
+    "span": "明日まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 107168,
+    "jp": "彼は今まで外国に行ったことがありません。",
+    "en": "He has never been abroad.",
+    "pattern": "made",
+    "span": "今まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 113402,
+    "jp": "彼はずけずけものをいうからね。",
+    "en": "He doesn't mince words.",
+    "pattern": "kara-reason",
+    "span": "いうから",
+    "why": "sentence-initial だから (a connective) or a sentence-final からね / からな (a promise or warning), not X から Y",
+    "orphaned": false
+  },
+  {
+    "id": 121511,
+    "jp": "梅雨らしく空はどんよりしている。",
+    "en": "The sky is gloomy and gray - a typical rainy-season sky.",
+    "pattern": "rashii",
+    "span": "らしく",
+    "why": "らしく is the 'befitting, like a real X' らしい, not 'apparently X'",
+    "orphaned": false
+  },
+  {
+    "id": 122363,
+    "jp": "日本語が少し話せるからね。",
+    "en": "You know some Japanese.",
+    "pattern": "kara-reason",
+    "span": "話せるから",
+    "why": "sentence-initial だから (a connective) or a sentence-final からね / からな (a promise or warning), not X から Y",
+    "orphaned": true
+  },
+  {
+    "id": 122841,
+    "jp": "日没までにもう十マイル歩かなければならない。",
+    "en": "We have another ten miles to walk before sunset.",
+    "pattern": "made",
+    "span": "日没まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 123773,
+    "jp": "動物に餌を与えないで下さい。",
+    "en": "Visitors may not feed the animals.",
+    "pattern": "nai-de",
+    "span": "与えないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 123774,
+    "jp": "動物に餌をやらないでください。",
+    "en": "Do not feed the animals.",
+    "pattern": "nai-de",
+    "span": "やらないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 123791,
+    "jp": "動かないでください。",
+    "en": "Don't move, please.",
+    "pattern": "nai-de",
+    "span": "動かないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 123792,
+    "jp": "動かないで！",
+    "en": "Hold it!",
+    "pattern": "nai-de",
+    "span": "動かないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 124647,
+    "jp": "電話を切らないで下さい。まだ話が終わっていません。",
+    "en": "Don't hang up; I haven't finished talking to you.",
+    "pattern": "nai-de",
+    "span": "切らないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 125002,
+    "jp": "展示品に手を触れないでください。",
+    "en": "Please do not handle the exhibits.",
+    "pattern": "nai-de",
+    "span": "触れないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 125387,
+    "jp": "諦めないで。",
+    "en": "Don't give up!",
+    "pattern": "nai-de",
+    "span": "諦めないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 125394,
+    "jp": "締め切りまでにあまり時間が無くてすいません。",
+    "en": "I'm sorry for the short deadline.",
+    "pattern": "made",
+    "span": "締め切りまで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 126641,
+    "jp": "遅刻するなんて彼らしくない。",
+    "en": "It is unlike him to be late.",
+    "pattern": "rashii",
+    "span": "らしく",
+    "why": "らしく is the 'befitting, like a real X' らしい, not 'apparently X'",
+    "orphaned": true
+  },
+  {
+    "id": 127179,
+    "jp": "男らしく振る舞いなさい。",
+    "en": "You must behave yourself like a man.",
+    "pattern": "rashii",
+    "span": "らしく",
+    "why": "らしく is the 'befitting, like a real X' らしい, not 'apparently X'",
+    "orphaned": true
+  },
+  {
+    "id": 137499,
+    "jp": "大丈夫、心配しないで。",
+    "en": "Come on, it'll be all right.",
+    "pattern": "nai-de",
+    "span": "しないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 137502,
+    "jp": "大丈夫、気にしないで。",
+    "en": "It's nothing to get upset about.",
+    "pattern": "nai-de",
+    "span": "しないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 138758,
+    "jp": "チケットを忘れないでください。",
+    "en": "Don't forget the ticket.",
+    "pattern": "nai-de",
+    "span": "忘れないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 139657,
+    "jp": "袖を引っ張らないでください。",
+    "en": "Don't pull my sleeve.",
+    "pattern": "nai-de",
+    "span": "引っ張らないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 140508,
+    "jp": "早合点しないで。",
+    "en": "Don't jump to conclusions.",
+    "pattern": "nai-de",
+    "span": "しないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 140936,
+    "jp": "前髪は短く切りすぎないでください。",
+    "en": "Don't cut it too short in the front.",
+    "pattern": "nai-de",
+    "span": "すぎないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 142115,
+    "jp": "切らないでよ！",
+    "en": "Don't hang up!",
+    "pattern": "nai-de",
+    "span": "切らないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 144418,
+    "jp": "人をからかわないで。",
+    "en": "Are you kidding?",
+    "pattern": "nai-de",
+    "span": "からかわないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 145279,
+    "jp": "新校舎は来春までには完成の予定である。",
+    "en": "The new school building is expected to be completed by spring next year.",
+    "pattern": "made",
+    "span": "来春まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 145545,
+    "jp": "心配しないで。私に任せておきなさい。",
+    "en": "Don't worry. You can count on me.",
+    "pattern": "nai-de",
+    "span": "しないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 145933,
+    "jp": "食べないでいいよ。",
+    "en": "It's OK not to eat it.",
+    "pattern": "nai-de",
+    "span": "食べないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 146963,
+    "jp": "小言を言わないでください。",
+    "en": "Don't pick at me.",
+    "pattern": "nai-de",
+    "span": "言わないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 147204,
+    "jp": "傷口をさわらないでください。",
+    "en": "Don't touch the wound.",
+    "pattern": "nai-de",
+    "span": "さわらないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 147597,
+    "jp": "春らしくなってきましたね。",
+    "en": "I feel spring in the air.",
+    "pattern": "rashii",
+    "span": "らしく",
+    "why": "らしく is the 'befitting, like a real X' らしい, not 'apparently X'",
+    "orphaned": true
+  },
+  {
+    "id": 147837,
+    "jp": "宿題を来週の月曜日までに提出しなさい。",
+    "en": "Hand in your homework by next Monday.",
+    "pattern": "made",
+    "span": "日まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 148052,
+    "jp": "十二時までに帰ってくるのですよ。",
+    "en": "You are supposed to be back by noon.",
+    "pattern": "made",
+    "span": "時まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 148070,
+    "jp": "十時までにはディナーの用意を終えているでしょう。",
+    "en": "I can have dinner ready by 10 o'clock.",
+    "pattern": "made",
+    "span": "時まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 148614,
+    "jp": "手を動かさないで。",
+    "en": "Keep your hand still.",
+    "pattern": "nai-de",
+    "span": "動かさないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 148729,
+    "jp": "若者らしくふるまいなさい。",
+    "en": "Behave yourself like a young man.",
+    "pattern": "rashii",
+    "span": "らしく",
+    "why": "らしく is the 'befitting, like a real X' らしい, not 'apparently X'",
+    "orphaned": true
+  },
+  {
+    "id": 149270,
+    "jp": "芝生に入らないでください。",
+    "en": "Keep off the grass.",
+    "pattern": "nai-de",
+    "span": "入らないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 150276,
+    "jp": "次の授業までにこの詩を暗記しなければならない。",
+    "en": "We must learn this poem by heart by the next lesson.",
+    "pattern": "made",
+    "span": "授業まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 150563,
+    "jp": "時間までに着けそうかな？",
+    "en": "Are we likely to arrive in time?",
+    "pattern": "made",
+    "span": "時間まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 150564,
+    "jp": "時間までに家に着けないよ。",
+    "en": "We won't be able to arrive home in time.",
+    "pattern": "made",
+    "span": "時間まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 151960,
+    "jp": "私達の事は心配しないで下さい。",
+    "en": "Don't worry about us.",
+    "pattern": "nai-de",
+    "span": "しないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 152098,
+    "jp": "私を騙さないで下さい。",
+    "en": "Don't deceive me.",
+    "pattern": "nai-de",
+    "span": "騙さないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 152168,
+    "jp": "私をからかわないでください。",
+    "en": "Don't make sport of me.",
+    "pattern": "nai-de",
+    "span": "からかわないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 152171,
+    "jp": "私をいびらないで。",
+    "en": "Don't pick on me, please.",
+    "pattern": "nai-de",
+    "span": "いびらないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 152249,
+    "jp": "六時までに戻る。",
+    "en": "I'll be back by six o'clock.",
+    "pattern": "made",
+    "span": "時まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 153031,
+    "jp": "私は普通六時までに帰宅する。",
+    "en": "I usually get home by six o'clock.",
+    "pattern": "made",
+    "span": "時まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 156024,
+    "jp": "私は週末までに済まさなければならない仕事がたくさんある。",
+    "en": "I have a lot of work to finish up before the end of the week.",
+    "pattern": "made",
+    "span": "週末まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 159847,
+    "jp": "その本を明日までに読み終えなければならないんだ。",
+    "en": "I must get through with reading the book by tomorrow.",
+    "pattern": "made",
+    "span": "明日まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 162710,
+    "jp": "私の勉強の邪魔をしないでください。",
+    "en": "Don't interfere with my studying.",
+    "pattern": "nai-de",
+    "span": "しないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 163416,
+    "jp": "私の邪魔をしないでください。",
+    "en": "Don't interfere with me.",
+    "pattern": "nai-de",
+    "span": "しないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 164186,
+    "jp": "私のことを誤解しないでください。",
+    "en": "Please don't misunderstand me.",
+    "pattern": "nai-de",
+    "span": "しないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 164189,
+    "jp": "私のことは心配しないで下さい。",
+    "en": "Don't trouble about me.",
+    "pattern": "nai-de",
+    "span": "しないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 164195,
+    "jp": "私のことはかまわないで下さい。",
+    "en": "Don't bother yourself about me.",
+    "pattern": "nai-de",
+    "span": "かまわないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 164201,
+    "jp": "私のコーヒーには砂糖を入れないでください。",
+    "en": "Don't put sugar in my coffee.",
+    "pattern": "nai-de",
+    "span": "入れないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 164830,
+    "jp": "私にかまわないでください。",
+    "en": "Leave me alone.",
+    "pattern": "nai-de",
+    "span": "かまわないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 164831,
+    "jp": "私にかまわないで。",
+    "en": "Leave me alone, please.",
+    "pattern": "nai-de",
+    "span": "かまわないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 168173,
+    "jp": "死なないで。",
+    "en": "Please don't die!",
+    "pattern": "nai-de",
+    "span": "死なないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 168184,
+    "jp": "枝を折らないでください。",
+    "en": "Don't break the branches.",
+    "pattern": "nai-de",
+    "span": "折らないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 168245,
+    "jp": "指を切らないでよ。",
+    "en": "Don't cut your finger.",
+    "pattern": "nai-de",
+    "span": "切らないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 168475,
+    "jp": "子供を池に近づけないで下さい。",
+    "en": "Keep children away from the pond.",
+    "pattern": "nai-de",
+    "span": "近づけないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 169132,
+    "jp": "仕事の邪魔をしないでください。",
+    "en": "Please don't distract me from my work.",
+    "pattern": "nai-de",
+    "span": "しないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 170193,
+    "jp": "財布を無くさないでね。",
+    "en": "Don't lose your purse.",
+    "pattern": "nai-de",
+    "span": "無くさないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 171691,
+    "jp": "今日は何もしないでください。",
+    "en": "Please don't do anything today.",
+    "pattern": "nai-de",
+    "span": "しないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 171796,
+    "jp": "今日は君らしくないな。",
+    "en": "You aren't yourself today.",
+    "pattern": "rashii",
+    "span": "らしく",
+    "why": "らしく is the 'befitting, like a real X' らしい, not 'apparently X'",
+    "orphaned": true
+  },
+  {
+    "id": 171810,
+    "jp": "今日はいつもの君らしくない。",
+    "en": "You aren't yourself today.",
+    "pattern": "rashii",
+    "span": "らしく",
+    "why": "らしく is the 'befitting, like a real X' らしい, not 'apparently X'",
+    "orphaned": true
+  },
+  {
+    "id": 171831,
+    "jp": "今日は、これまでになく寒い。",
+    "en": "Today's the coldest day we've ever had.",
+    "pattern": "made",
+    "span": "これまで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": true
+  },
+  {
+    "id": 171833,
+    "jp": "今日はここまでにしておこう。",
+    "en": "Let's call it a day today.",
+    "pattern": "made",
+    "span": "ここまで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 172577,
+    "jp": "今までヨーロッパに行ったことがありますか。",
+    "en": "Have you ever been to Europe?",
+    "pattern": "made",
+    "span": "今まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 172598,
+    "jp": "今までに本物の牛を見たことがない。",
+    "en": "I've never seen a real cow.",
+    "pattern": "made",
+    "span": "今まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 172601,
+    "jp": "今までに重い病気にかかったことがありますか。",
+    "en": "Have you ever had any serious illness?",
+    "pattern": "made",
+    "span": "今まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 172603,
+    "jp": "今までに何冊の本を読んだと思いますか。",
+    "en": "How many books do you think you have read so far?",
+    "pattern": "made",
+    "span": "今まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 172607,
+    "jp": "今までにこの問題が解けた者はひとりもいない。",
+    "en": "No one has ever been able to solve this problem.",
+    "pattern": "made",
+    "span": "今まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": true
+  },
+  {
+    "id": 172608,
+    "jp": "今までにオオカミを見たことがありますか。",
+    "en": "Have you ever seen a wolf?",
+    "pattern": "made",
+    "span": "今まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 172622,
+    "jp": "今までにどれだけの本を読んだと思いますか。",
+    "en": "How many books do you think you have read so far?",
+    "pattern": "made",
+    "span": "今まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 174212,
+    "jp": "誤解しないでよ。",
+    "en": "Don't get me wrong.",
+    "pattern": "nai-de",
+    "span": "しないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 174213,
+    "jp": "誤解しないでくれ。",
+    "en": "Don't get me wrong.",
+    "pattern": "nai-de",
+    "span": "しないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 174573,
+    "jp": "固いものは食べないでください。",
+    "en": "Don't eat hard foods.",
+    "pattern": "nai-de",
+    "span": "食べないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 175590,
+    "jp": "月曜日までにこの仕事を終えて下さい。",
+    "en": "Please get this work finished by Monday.",
+    "pattern": "made",
+    "span": "日まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 175605,
+    "jp": "月曜までに確定見積もりが必要です。",
+    "en": "We need a firm quotation by Monday.",
+    "pattern": "made",
+    "span": "月曜まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 175606,
+    "jp": "月曜までにすべてが整っていることが重要なのだ。",
+    "en": "It is important for everything to be ready by Monday.",
+    "pattern": "made",
+    "span": "月曜まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 175607,
+    "jp": "月曜までにこの仕事を終えてください。",
+    "en": "Please get this work finished by Monday.",
+    "pattern": "made",
+    "span": "月曜まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 175864,
+    "jp": "結果は可もなく不可もなしと言ったところです。",
+    "en": "The result is neither good nor bad.",
+    "pattern": "ta-tokoro",
+    "span": "言ったところ",
+    "why": "ところ as a place noun (a case particle follows) or と言ったところ ('so to speak'), not 〜たところ",
+    "orphaned": true
+  },
+  {
+    "id": 176764,
+    "jp": "君を信じているからね。",
+    "en": "I believe in you.",
+    "pattern": "kara-reason",
+    "span": "いるから",
+    "why": "sentence-initial だから (a connective) or a sentence-final からね / からな (a promise or warning), not X から Y",
+    "orphaned": false
+  },
+  {
+    "id": 178824,
+    "jp": "君たち、騒がないで。",
+    "en": "Boys, don't make any noise.",
+    "pattern": "nai-de",
+    "span": "騒がないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 179609,
+    "jp": "金曜日までに必ず電話してね。",
+    "en": "Be sure to telephone by Friday, OK?",
+    "pattern": "made",
+    "span": "日まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 179610,
+    "jp": "金曜日までに回答が必要です。",
+    "en": "I need to know your answer by Friday.",
+    "pattern": "made",
+    "span": "日まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 179611,
+    "jp": "金曜日までに何とか原稿を仕上げられますか。",
+    "en": "Can you manage to complete the manuscript by Friday?",
+    "pattern": "made",
+    "span": "日まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 180084,
+    "jp": "脅かさないでよ。",
+    "en": "Don't scare me like that!",
+    "pattern": "nai-de",
+    "span": "脅かさないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 181905,
+    "jp": "知ったふうなこと・・・言わないでください・・・。",
+    "en": "Don't talk ... as if you know what it's like...",
+    "pattern": "nai-de",
+    "span": "言わないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 183267,
+    "jp": "気になさらないでください。",
+    "en": "Please think nothing of it.",
+    "pattern": "nai-de",
+    "span": "なさらないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 183276,
+    "jp": "気にしないで。",
+    "en": "Don't worry about it!",
+    "pattern": "nai-de",
+    "span": "しないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 185190,
+    "jp": "回りくどい言い方はしないでくれ。",
+    "en": "Don't say it in a roundabout way.",
+    "pattern": "nai-de",
+    "span": "しないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 185191,
+    "jp": "回りくどい言い方はしないで。",
+    "en": "Don't beat around the bush.",
+    "pattern": "nai-de",
+    "span": "しないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 186630,
+    "jp": "花に触れないで下さい。",
+    "en": "Don't touch the flowers.",
+    "pattern": "nai-de",
+    "span": "触れないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 186764,
+    "jp": "火から離れていなさい。",
+    "en": "Stay away from the fire.",
+    "pattern": "te-iru",
+    "span": "離れてい",
+    "why": "ていろ / ていなさい, a command ('stay ...!'), not 'is doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 187425,
+    "jp": "何時までにチェックインすればいいですか。",
+    "en": "How late can I check in?",
+    "pattern": "made",
+    "span": "時まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 189902,
+    "jp": "右側では噛まないでくださいね。",
+    "en": "Don't bite on the right side.",
+    "pattern": "nai-de",
+    "span": "噛まないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 191418,
+    "jp": "悪事千里を走るって言うからね。",
+    "en": "Well, they say bad news travels fast.",
+    "pattern": "kara-reason",
+    "span": "言うから",
+    "why": "sentence-initial だから (a connective) or a sentence-final からね / からな (a promise or warning), not X から Y",
+    "orphaned": false
+  },
+  {
+    "id": 191483,
+    "jp": "悪い噂はすぐに伝わるからね。",
+    "en": "Bad news travels quickly.",
+    "pattern": "kara-reason",
+    "span": "伝わるから",
+    "why": "sentence-initial だから (a connective) or a sentence-final からね / からな (a promise or warning), not X から Y",
+    "orphaned": true
+  },
+  {
+    "id": 191997,
+    "jp": "わけは聞かないで。",
+    "en": "Don't ask me why.",
+    "pattern": "nai-de",
+    "span": "聞かないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 192281,
+    "jp": "ロープから下がっていなさい。",
+    "en": "Stand back from the rope.",
+    "pattern": "te-iru",
+    "span": "下がってい",
+    "why": "ていろ / ていなさい, a command ('stay ...!'), not 'is doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 192333,
+    "jp": "レポートは今月の末日までに提出してください。",
+    "en": "Please hand in your papers by the last day of this month.",
+    "pattern": "made",
+    "span": "末日まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 192334,
+    "jp": "レポートは会議までに間に合いますか。",
+    "en": "Will your report be finished in time for the meeting?",
+    "pattern": "made",
+    "span": "会議まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 193036,
+    "jp": "やめなさいって言ってるでしょ。",
+    "en": "Stop, I say.",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": true
+  },
+  {
+    "id": 194058,
+    "jp": "もう寝なくてはいけない時間でしょ。",
+    "en": "It's high time you were in bed.",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": false
+  },
+  {
+    "id": 194624,
+    "jp": "めっきり春らしくなったね。",
+    "en": "It's getting quite springlike.",
+    "pattern": "rashii",
+    "span": "らしく",
+    "why": "らしく is the 'befitting, like a real X' らしい, not 'apparently X'",
+    "orphaned": true
+  },
+  {
+    "id": 194657,
+    "jp": "メキシコと言えば、やっぱタコスでしょ。",
+    "en": "Mention Mexico, and tacos come to mind.",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": false
+  },
+  {
+    "id": 195959,
+    "jp": "ほら、彼女動物が好きでしょ？",
+    "en": "She likes animals, you know?",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": true
+  },
+  {
+    "id": 197236,
+    "jp": "ファイルを暗号化しないでください。",
+    "en": "Please don't encrypt your file.",
+    "pattern": "nai-de",
+    "span": "しないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 197659,
+    "jp": "ビールをあまり飲まないで。",
+    "en": "Go easy on the beer!",
+    "pattern": "nai-de",
+    "span": "飲まないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 197796,
+    "jp": "腫れるかもしれませんが気にしないでください。",
+    "en": "You may have swelling, but don't worry about it.",
+    "pattern": "nai-de",
+    "span": "しないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 201624,
+    "jp": "手紙を出すのを忘れないでくださいね。",
+    "en": "Please don't forget to post the letter.",
+    "pattern": "nai-de",
+    "span": "忘れないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 201649,
+    "jp": "どうか悪く思わないでください。",
+    "en": "Please don't have any hard feelings.",
+    "pattern": "nai-de",
+    "span": "思わないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 201771,
+    "jp": "ドアを閉めるのを忘れないでください。",
+    "en": "Please don't forget to shut the door.",
+    "pattern": "nai-de",
+    "span": "忘れないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 203416,
+    "jp": "たばこは絶対に吸わないでください。",
+    "en": "You must not smoke.",
+    "pattern": "nai-de",
+    "span": "吸わないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 204035,
+    "jp": "そんなふうに私を見ないでください。",
+    "en": "Don't look at me that way.",
+    "pattern": "nai-de",
+    "span": "見ないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 204119,
+    "jp": "そんな事は気にしないでください。",
+    "en": "Oh, don't worry about that.",
+    "pattern": "nai-de",
+    "span": "しないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 204249,
+    "jp": "そんなに速くしゃべらないで。",
+    "en": "Don't speak so fast.",
+    "pattern": "nai-de",
+    "span": "しゃべらないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 204256,
+    "jp": "そんなに早口でしゃべらないでください。",
+    "en": "Please don't speak so fast.",
+    "pattern": "nai-de",
+    "span": "しゃべらないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 204273,
+    "jp": "そんなに見つめないでください。",
+    "en": "Please don't look at me like that.",
+    "pattern": "nai-de",
+    "span": "見つめないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 204288,
+    "jp": "そんなに音を立てないで下さい。",
+    "en": "Please don't make so much noise.",
+    "pattern": "nai-de",
+    "span": "立てないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 204329,
+    "jp": "そんなこと言わないで。",
+    "en": "Don't say that.",
+    "pattern": "nai-de",
+    "span": "言わないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 207221,
+    "jp": "その箱の上に、何も置かないで下さい。",
+    "en": "Don't put anything on top of the box.",
+    "pattern": "nai-de",
+    "span": "置かないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 209997,
+    "jp": "その事を僕に隠さないでください。",
+    "en": "Don't keep me in the dark about it.",
+    "pattern": "nai-de",
+    "span": "隠さないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 210348,
+    "jp": "その仕事は明日までに仕上げなければならない。",
+    "en": "The work must be completed by tomorrow.",
+    "pattern": "made",
+    "span": "明日まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 210349,
+    "jp": "その仕事は明日までに完成するだろうか。",
+    "en": "Will the work be finished by tomorrow?",
+    "pattern": "made",
+    "span": "明日まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 216085,
+    "jp": "しびれがとれるまで食事はしないでください。",
+    "en": "Don't eat till the numbness wears off.",
+    "pattern": "nai-de",
+    "span": "しないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 218049,
+    "jp": "これまでに何回そこへ行きましたか。",
+    "en": "How many times have you been there?",
+    "pattern": "made",
+    "span": "これまで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 218407,
+    "jp": "これは今までに読んだ中でもっとも難しい本だ。",
+    "en": "This is the most difficult book I have ever read.",
+    "pattern": "made",
+    "span": "今まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": true
+  },
+  {
+    "id": 220054,
+    "jp": "この部屋でたばこを吸わないで下さい。",
+    "en": "Don't smoke in this room.",
+    "pattern": "nai-de",
+    "span": "吸わないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 221318,
+    "jp": "この手紙を出すのを忘れないで下さいね。",
+    "en": "Please remember to mail this letter.",
+    "pattern": "nai-de",
+    "span": "忘れないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 221908,
+    "jp": "この頃あなたらしくない。",
+    "en": "You don't seem to be yourself these days.",
+    "pattern": "rashii",
+    "span": "らしく",
+    "why": "らしく is the 'befitting, like a real X' らしい, not 'apparently X'",
+    "orphaned": true
+  },
+  {
+    "id": 223479,
+    "jp": "このドアを開けないで下さい。",
+    "en": "Don't open this door, please.",
+    "pattern": "nai-de",
+    "span": "開けないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 225624,
+    "jp": "くよくよしないで、楽しく行こう！",
+    "en": "Don't worry, be happy!",
+    "pattern": "nai-de",
+    "span": "しないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 226215,
+    "jp": "カメラを持っていくのを忘れないでください。",
+    "en": "Don't forget to take a camera with you.",
+    "pattern": "nai-de",
+    "span": "忘れないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 226355,
+    "jp": "がっかりしないで。",
+    "en": "Don't lose heart.",
+    "pattern": "nai-de",
+    "span": "しないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 226820,
+    "jp": "お昼までには戻ってきなさい。",
+    "en": "You are supposed to be back by noon.",
+    "pattern": "made",
+    "span": "昼まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 227962,
+    "jp": "えっ嘘でしょ。",
+    "en": "Oh my God, I can't believe this.",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": true
+  },
+  {
+    "id": 228790,
+    "jp": "いつまでに必要ですか。",
+    "en": "How soon do you need it?",
+    "pattern": "made",
+    "span": "いつまで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 228792,
+    "jp": "いつまでにその仕事を終わらせることができますか。",
+    "en": "How soon will you be able to finish the task?",
+    "pattern": "made",
+    "span": "いつまで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 229366,
+    "jp": "いい結果、期待してるからな。",
+    "en": "I'm looking forward to good news.",
+    "pattern": "kara-reason",
+    "span": "てるから",
+    "why": "sentence-initial だから (a connective) or a sentence-final からね / からな (a promise or warning), not X から Y",
+    "orphaned": true
+  },
+  {
+    "id": 229563,
+    "jp": "あんなに怒るなんて彼らしくない。",
+    "en": "It's unlike him to get so angry.",
+    "pattern": "rashii",
+    "span": "らしく",
+    "why": "らしく is the 'befitting, like a real X' らしい, not 'apparently X'",
+    "orphaned": true
+  },
+  {
+    "id": 229771,
+    "jp": "あれがゴールデン・ゲート・ブリッジでしょ。",
+    "en": "Isn't that the Golden Gate Bridge?",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": true
+  },
+  {
+    "id": 230321,
+    "jp": "あまり自分を責めないで。",
+    "en": "Don't be too hard on yourself.",
+    "pattern": "nai-de",
+    "span": "責めないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 230579,
+    "jp": "あの池には近づかないでください。",
+    "en": "Keep away from that pond, please.",
+    "pattern": "nai-de",
+    "span": "近づかないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 232004,
+    "jp": "三時までには着きますよ。",
+    "en": "You'll get there by three o'clock.",
+    "pattern": "made",
+    "span": "時まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 232055,
+    "jp": "あなたは今まで鯨を見たことがありますか。",
+    "en": "Have you ever seen a whale?",
+    "pattern": "made",
+    "span": "今まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 232057,
+    "jp": "今までに富士山に登ったことってある？",
+    "en": "Have you ever climbed Mt. Fuji?",
+    "pattern": "made",
+    "span": "今まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": true
+  },
+  {
+    "id": 232059,
+    "jp": "あなたは今までに神戸に行ったことがありますか。",
+    "en": "Have you ever been to Kobe?",
+    "pattern": "made",
+    "span": "今まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 232060,
+    "jp": "あなたは今までに京都を訪れたことがありますか。",
+    "en": "Have you ever visited Kyoto?",
+    "pattern": "made",
+    "span": "今まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 232061,
+    "jp": "あなたは今までに外国へ行ったことがありますか。",
+    "en": "Have you ever visited a foreign country?",
+    "pattern": "made",
+    "span": "今まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 232368,
+    "jp": "あなたはもう寝る時間でしょ。",
+    "en": "It is high time you were in bed.",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": true
+  },
+  {
+    "id": 233484,
+    "jp": "あなたには、もっと人間らしく生きてほしいの。",
+    "en": "I want you to live more like a human being.",
+    "pattern": "rashii",
+    "span": "らしく",
+    "why": "らしく is the 'befitting, like a real X' らしい, not 'apparently X'",
+    "orphaned": true
+  },
+  {
+    "id": 236277,
+    "jp": "「芝生に入らないで下さい」という標識があった。",
+    "en": "There was a sign saying, \"Keep off the grass.\"",
+    "pattern": "nai-de",
+    "span": "入らないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 236447,
+    "jp": "「フェスティバ」ってフォードの車でしょ？",
+    "en": "\"Festiva\" is a Ford, right?",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": true
+  },
+  {
+    "id": 236707,
+    "jp": "心配しないでください。調べてみましょう。",
+    "en": "Don't worry. I'll look it up for you.",
+    "pattern": "nai-de",
+    "span": "しないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 236815,
+    "jp": "どうぞおたちにならないで下さい。",
+    "en": "Please don't get up.",
+    "pattern": "nai-de",
+    "span": "ならないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 237340,
+    "jp": "いい子だから泣かないで。",
+    "en": "Don't cry, there's a dear.",
+    "pattern": "nai-de",
+    "span": "泣かないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 660872,
+    "jp": "これは親には言わないで下さい。",
+    "en": "Please don't tell this to your parents.",
+    "pattern": "nai-de",
+    "span": "言わないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 767719,
+    "jp": "お金を忘れないでください。",
+    "en": "Don't forget your money.",
+    "pattern": "nai-de",
+    "span": "忘れないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 769620,
+    "jp": "注釈を加えないでください。",
+    "en": "Don't add annotations.",
+    "pattern": "nai-de",
+    "span": "加えないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 772442,
+    "jp": "すぐに会いに行くからね。",
+    "en": "I'll go meet him soon.",
+    "pattern": "kara-reason",
+    "span": "行くから",
+    "why": "sentence-initial だから (a connective) or a sentence-final からね / からな (a promise or warning), not X から Y",
+    "orphaned": true
+  },
+  {
+    "id": 888512,
+    "jp": "テレビを見ながら宿題なんて、そんなのダメに決まってるでしょ。",
+    "en": "Doing your homework while watching TV, that's obviously wrong.",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": false
+  },
+  {
+    "id": 893232,
+    "jp": "私を見捨てないで！",
+    "en": "Don't forsake me!",
+    "pattern": "nai-de",
+    "span": "見捨てないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 929992,
+    "jp": "お願いだから死なないで。",
+    "en": "Please don't die.",
+    "pattern": "nai-de",
+    "span": "死なないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 965573,
+    "jp": "飲み過ぎないでね。",
+    "en": "Don't drink too much.",
+    "pattern": "nai-de",
+    "span": "過ぎないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 999691,
+    "jp": "彼女は今までになく引っ込み思案なタイプだ。",
+    "en": "She's the most introverted person I've ever met.",
+    "pattern": "made",
+    "span": "今まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": true
+  },
+  {
+    "id": 1031258,
+    "jp": "電車が止まるまで扉を開けないでください。",
+    "en": "Please don't open the train doors until the train has stopped.",
+    "pattern": "nai-de",
+    "span": "開けないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 1033709,
+    "jp": "怒らないで。",
+    "en": "Don't be angry.",
+    "pattern": "nai-de",
+    "span": "怒らないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 1046258,
+    "jp": "教室で走らないでください。",
+    "en": "Please don't run in the classroom.",
+    "pattern": "nai-de",
+    "span": "走らないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 1052819,
+    "jp": "踊れるんでしょ？",
+    "en": "You can dance, can't you?",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": true
+  },
+  {
+    "id": 1055803,
+    "jp": "六時までに戻ります。",
+    "en": "I'll be back by six o'clock.",
+    "pattern": "made",
+    "span": "時まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 1130330,
+    "jp": "来週までにこの詩を覚えてきなさい。",
+    "en": "Memorize the poem by next week.",
+    "pattern": "made",
+    "span": "来週まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 1138959,
+    "jp": "雨が降っているときは、この通りを渡らないでください。",
+    "en": "Avoid crossing this street when it is raining.",
+    "pattern": "nai-de",
+    "span": "渡らないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 1140495,
+    "jp": "わたしを蚊帳の外に置かないでください。",
+    "en": "Don't leave me out in the cold, come on.",
+    "pattern": "nai-de",
+    "span": "置かないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 1166883,
+    "jp": "ナンシーは今までにパンダを見たことがなかった。",
+    "en": "Nancy had never seen a giant panda before.",
+    "pattern": "made",
+    "span": "今まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 1174712,
+    "jp": "子供たちが寝ているんです。あまり騒がないでください。",
+    "en": "The children are sleeping. Please don't be so noisy.",
+    "pattern": "nai-de",
+    "span": "騒がないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 1189857,
+    "jp": "明日までに論文をいくつか書かなければいけない。",
+    "en": "I have a few essays to write by tomorrow.",
+    "pattern": "made",
+    "span": "明日まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 1200727,
+    "jp": "もう見ないでください！",
+    "en": "Don't look at it anymore, please!",
+    "pattern": "nai-de",
+    "span": "見ないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 1272437,
+    "jp": "干渉しないで。",
+    "en": "You keep out of this.",
+    "pattern": "nai-de",
+    "span": "しないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 1277913,
+    "jp": "男らしく決着をつけるぞ。サイコロ持ってこい！",
+    "en": "We'll decide it like men. Bring the dice!",
+    "pattern": "rashii",
+    "span": "らしく",
+    "why": "らしく is the 'befitting, like a real X' らしい, not 'apparently X'",
+    "orphaned": false
+  },
+  {
+    "id": 1278024,
+    "jp": "かっかしないで。",
+    "en": "Don't lose your temper.",
+    "pattern": "nai-de",
+    "span": "しないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 1291785,
+    "jp": "せーの、じゃんけんぽん！あいこでしょ！",
+    "en": "Ready, rock-paper-scissors! It's a draw!",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": true
+  },
+  {
+    "id": 1417710,
+    "jp": "明日までには知っておかないといけない。",
+    "en": "I need to know by tomorrow.",
+    "pattern": "made",
+    "span": "明日まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 1417711,
+    "jp": "明日までに知っておく必要がある。",
+    "en": "I need to know by tomorrow.",
+    "pattern": "made",
+    "span": "明日まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 1421863,
+    "jp": "彼を傷付けないで。",
+    "en": "Don't hurt him.",
+    "pattern": "nai-de",
+    "span": "傷付けないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 1421864,
+    "jp": "彼女を傷付けないで。",
+    "en": "Don't hurt her.",
+    "pattern": "nai-de",
+    "span": "傷付けないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 1421867,
+    "jp": "傷付けないでくれ。",
+    "en": "Don't hurt me.",
+    "pattern": "nai-de",
+    "span": "傷付けないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 1471014,
+    "jp": "ドアを開けないで。",
+    "en": "Don't open the door.",
+    "pattern": "nai-de",
+    "span": "開けないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 1484666,
+    "jp": "明日までにご用意いたします。",
+    "en": "I'll have it ready for you by tomorrow.",
+    "pattern": "made",
+    "span": "明日まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 1485415,
+    "jp": "私を殺さないでください。",
+    "en": "Please don't kill me.",
+    "pattern": "nai-de",
+    "span": "殺さないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 1490026,
+    "jp": "謝らないで。",
+    "en": "Don't apologize.",
+    "pattern": "nai-de",
+    "span": "謝らないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 1558842,
+    "jp": "窓を開けないでください。",
+    "en": "Please! Don't open the window.",
+    "pattern": "nai-de",
+    "span": "開けないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 1558860,
+    "jp": "クラスを休まないでください。",
+    "en": "Please! Please don't skip class.",
+    "pattern": "nai-de",
+    "span": "休まないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 1608758,
+    "jp": "じゃましないで。",
+    "en": "Stop bugging me!",
+    "pattern": "nai-de",
+    "span": "しないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 1624832,
+    "jp": "メアドは基本変えないからな。",
+    "en": "'Cause I don't really change my E-mail address.",
+    "pattern": "kara-reason",
+    "span": "ないから",
+    "why": "sentence-initial だから (a connective) or a sentence-final からね / からな (a promise or warning), not X から Y",
+    "orphaned": true
+  },
+  {
+    "id": 1627154,
+    "jp": "そう速く歩かないでください。",
+    "en": "Please don't walk so fast.",
+    "pattern": "nai-de",
+    "span": "歩かないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 1642045,
+    "jp": "シスター、この患者から目を離さないでください。",
+    "en": "Sister, don't let this patient out of your sight.",
+    "pattern": "nai-de",
+    "span": "離さないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 1642068,
+    "jp": "あなたは夏までに帰ると約束したじゃない。",
+    "en": "You promised me to come back before summer.",
+    "pattern": "made",
+    "span": "夏まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 1680729,
+    "jp": "ここで騒がないで下さい。",
+    "en": "Don't make noise here.",
+    "pattern": "nai-de",
+    "span": "騒がないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 1690121,
+    "jp": "これまでになく絶好調です。",
+    "en": "I've never been better.",
+    "pattern": "made",
+    "span": "これまで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": true
+  },
+  {
+    "id": 1751751,
+    "jp": "お願い、死なないで！",
+    "en": "Please don't die!",
+    "pattern": "nai-de",
+    "span": "死なないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 1806941,
+    "jp": "お小遣いは無駄遣いしないでください。",
+    "en": "Don't waste your pocket money.",
+    "pattern": "nai-de",
+    "span": "しないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 1827547,
+    "jp": "誰にも言わないでください。",
+    "en": "Please keep it under your hat.",
+    "pattern": "nai-de",
+    "span": "言わないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 1866548,
+    "jp": "それを買わないでください。",
+    "en": "Please do not buy it.",
+    "pattern": "nai-de",
+    "span": "買わないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 2006376,
+    "jp": "行かないで。",
+    "en": "Don't go.",
+    "pattern": "nai-de",
+    "span": "行かないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 2006378,
+    "jp": "行かないでください。",
+    "en": "Please don't go.",
+    "pattern": "nai-de",
+    "span": "行かないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 2040869,
+    "jp": "それは飲まないでください。",
+    "en": "Don't drink that.",
+    "pattern": "nai-de",
+    "span": "飲まないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 2040870,
+    "jp": "町を出ないでください。",
+    "en": "Don't leave town.",
+    "pattern": "nai-de",
+    "span": "出ないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 2040871,
+    "jp": "私に話しかけないで。",
+    "en": "Don't talk to me.",
+    "pattern": "nai-de",
+    "span": "話しかけないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 2040872,
+    "jp": "誰にも話さないで。",
+    "en": "Don't tell anyone.",
+    "pattern": "nai-de",
+    "span": "話さないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 2043989,
+    "jp": "トムはただ隣人らしくしたいだけだった。",
+    "en": "Tom just wanted to be neighborly.",
+    "pattern": "rashii",
+    "span": "らしく",
+    "why": "らしく is the 'befitting, like a real X' らしい, not 'apparently X'",
+    "orphaned": false
+  },
+  {
+    "id": 2045937,
+    "jp": "今まで実際にそれを試したことがありますか。",
+    "en": "Have you actually ever tried it?",
+    "pattern": "made",
+    "span": "今まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 2096199,
+    "jp": "くどくど言わないで。",
+    "en": "Stop badgering me.",
+    "pattern": "nai-de",
+    "span": "言わないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 2101457,
+    "jp": "かばんを忘れないで。",
+    "en": "Don't forget your bag.",
+    "pattern": "nai-de",
+    "span": "忘れないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 2121100,
+    "jp": "自分を責めないで。",
+    "en": "Don't beat yourself up.",
+    "pattern": "nai-de",
+    "span": "責めないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 2125059,
+    "jp": "意地悪しないで。",
+    "en": "Don't be mean.",
+    "pattern": "nai-de",
+    "span": "しないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 2125749,
+    "jp": "私に怒らないで。",
+    "en": "Don't be mad at me.",
+    "pattern": "nai-de",
+    "span": "怒らないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 2179196,
+    "jp": "そんな難しいこと、私に訊かないでください。",
+    "en": "Don't ask me such difficult questions.",
+    "pattern": "nai-de",
+    "span": "訊かないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 2213886,
+    "jp": "本を開かないで。",
+    "en": "Don't open your book.",
+    "pattern": "nai-de",
+    "span": "開かないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 2215497,
+    "jp": "うつむかないで。",
+    "en": "Don't slouch.",
+    "pattern": "nai-de",
+    "span": "うつむかないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 2255785,
+    "jp": "分かってるんでしょ。",
+    "en": "I know that you know.",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": true
+  },
+  {
+    "id": 2263369,
+    "jp": "僕がついてるからね。",
+    "en": "I will always be there for you.",
+    "pattern": "kara-reason",
+    "span": "てるから",
+    "why": "sentence-initial だから (a connective) or a sentence-final からね / からな (a promise or warning), not X から Y",
+    "orphaned": true
+  },
+  {
+    "id": 2269390,
+    "jp": "だから言ったでしょ。",
+    "en": "Didn't I tell you?",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": true
+  },
+  {
+    "id": 2269394,
+    "jp": "トム、邪魔しないで。",
+    "en": "Tom, don't interrupt.",
+    "pattern": "nai-de",
+    "span": "しないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 2275755,
+    "jp": "彼を起こさないでほしい。",
+    "en": "Don't wake him up.",
+    "pattern": "nai-de",
+    "span": "起こさないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 2275758,
+    "jp": "こいつを起こさないでくれ。",
+    "en": "Don't wake him up.",
+    "pattern": "nai-de",
+    "span": "起こさないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 2312105,
+    "jp": "傘忘れないでね。",
+    "en": "Don't forget your umbrella.",
+    "pattern": "nai-de",
+    "span": "忘れないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 2349145,
+    "jp": "心配しないでください。",
+    "en": "Don't worry.",
+    "pattern": "nai-de",
+    "span": "しないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 2402034,
+    "jp": "触らないで、このブタ！",
+    "en": "Don't touch me, you pig!",
+    "pattern": "nai-de",
+    "span": "触らないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 2409483,
+    "jp": "機械翻訳は使わないでください。",
+    "en": "Don't use computer translation.",
+    "pattern": "nai-de",
+    "span": "使わないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 2460894,
+    "jp": "何か隠してるでしょ。",
+    "en": "You must be hiding something.",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": true
+  },
+  {
+    "id": 2596673,
+    "jp": "フランス語は使わないでください。",
+    "en": "Please don't use French.",
+    "pattern": "nai-de",
+    "span": "使わないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 2719720,
+    "jp": "このアドバイスには従わないでください。",
+    "en": "Please don't follow this advice.",
+    "pattern": "nai-de",
+    "span": "従わないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 2751760,
+    "jp": "そんなじろじろ見つめないでください。",
+    "en": "Please don't stare at me like that.",
+    "pattern": "nai-de",
+    "span": "見つめないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 2763594,
+    "jp": "あんまり急がなくてもいいからね。",
+    "en": "You don't need to be in that much of a hurry.",
+    "pattern": "kara-reason",
+    "span": "いいから",
+    "why": "sentence-initial だから (a connective) or a sentence-final からね / からな (a promise or warning), not X から Y",
+    "orphaned": false
+  },
+  {
+    "id": 2869675,
+    "jp": "わざと間違えたんでしょ。",
+    "en": "You made the mistake on purpose, didn't you?",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": true
+  },
+  {
+    "id": 2904882,
+    "jp": "着いて来ないでよ。",
+    "en": "Don't follow me.",
+    "pattern": "nai-de",
+    "span": "来ないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 2927093,
+    "jp": "この例文を削除しないでください。",
+    "en": "Do not delete this example sentence.",
+    "pattern": "nai-de",
+    "span": "しないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 2993257,
+    "jp": "風邪引かないでね。",
+    "en": "Don't catch a cold.",
+    "pattern": "nai-de",
+    "span": "引かないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 3045969,
+    "jp": "あんまり考えすぎないでね。人生まだまだ長いんだし。",
+    "en": "Don’t worry about it too much. You’ve still got such a long life ahead of you.",
+    "pattern": "nai-de",
+    "span": "すぎないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 3060523,
+    "jp": "まだ寝足りないでしょ？",
+    "en": "Still sleepy, right?",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": true
+  },
+  {
+    "id": 3070041,
+    "jp": "頼むからもう泣かないでくれ。",
+    "en": "Please don't cry any more.",
+    "pattern": "nai-de",
+    "span": "泣かないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 3137742,
+    "jp": "冬休み明けないでほしいな。",
+    "en": "I wish winter vacation would never end.",
+    "pattern": "nai-de",
+    "span": "明けないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 3167096,
+    "jp": "警報機が鳴り始めたら踏切内に入らないでください。",
+    "en": "Don't go onto the railroad crossing when the alarm starts going off.",
+    "pattern": "nai-de",
+    "span": "入らないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 3233482,
+    "jp": "明日までにやらないといけないことがたくさんあるんだ。",
+    "en": "I have a lot of things I have to do before tomorrow.",
+    "pattern": "made",
+    "span": "明日まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 3324125,
+    "jp": "人生において一番大切なのは、自分らしく生きることです。",
+    "en": "The most important thing in life is to be yourself.",
+    "pattern": "rashii",
+    "span": "らしく",
+    "why": "らしく is the 'befitting, like a real X' らしい, not 'apparently X'",
+    "orphaned": true
+  },
+  {
+    "id": 3367091,
+    "jp": "あなた、まだ独身でしょ。違う？",
+    "en": "You're still single, aren't you?",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": true
+  },
+  {
+    "id": 3367092,
+    "jp": "まだ怒ってるでしょ。違う？",
+    "en": "You're still mad, aren't you?",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": true
+  },
+  {
+    "id": 3367113,
+    "jp": "感動してるでしょ、違う？",
+    "en": "You're impressed, aren't you?",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": true
+  },
+  {
+    "id": 3440946,
+    "jp": "これまでに飲食店で働いた経験はおありですか？",
+    "en": "Have you ever worked at a restaurant before?",
+    "pattern": "made",
+    "span": "これまで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": true
+  },
+  {
+    "id": 3455660,
+    "jp": "テレビのボリュームを上げないでください。",
+    "en": "Please don't turn up the volume on the television.",
+    "pattern": "nai-de",
+    "span": "上げないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 3460712,
+    "jp": "次の授業までにこの詩を覚えてくるように。",
+    "en": "You're supposed to have this poem memorized before our next class.",
+    "pattern": "made",
+    "span": "授業まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 3480350,
+    "jp": "切らないで！",
+    "en": "Don't hang up.",
+    "pattern": "nai-de",
+    "span": "切らないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 3480355,
+    "jp": "切らないで。",
+    "en": "Hang on.",
+    "pattern": "nai-de",
+    "span": "切らないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 3480414,
+    "jp": "下がっていろ！",
+    "en": "Back off!",
+    "pattern": "te-iru",
+    "span": "下がっていろ",
+    "why": "ていろ / ていなさい, a command ('stay ...!'), not 'is doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 3488050,
+    "jp": "ダメだって言ったでしょ。",
+    "en": "I said no.",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": true
+  },
+  {
+    "id": 3488253,
+    "jp": "時間に遅れないで。",
+    "en": "Be on time.",
+    "pattern": "nai-de",
+    "span": "遅れないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 3488266,
+    "jp": "ふざけないで。",
+    "en": "Be serious.",
+    "pattern": "nai-de",
+    "span": "ふざけないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 3488276,
+    "jp": "見ないで。",
+    "en": "Don't look.",
+    "pattern": "nai-de",
+    "span": "見ないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 3488284,
+    "jp": "来ないで。",
+    "en": "Don't come.",
+    "pattern": "nai-de",
+    "span": "来ないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 3491596,
+    "jp": "撃たないで！",
+    "en": "Don't shoot!",
+    "pattern": "nai-de",
+    "span": "撃たないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 3491598,
+    "jp": "怒鳴らないで。",
+    "en": "Don't shout.",
+    "pattern": "nai-de",
+    "span": "怒鳴らないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 3495530,
+    "jp": "冗談でしょ？",
+    "en": "Are you joking?",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": true
+  },
+  {
+    "id": 3502345,
+    "jp": "あんまり期待しすぎないでね。",
+    "en": "Don't get your hopes up too much.",
+    "pattern": "nai-de",
+    "span": "すぎないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 3506593,
+    "jp": "笑顔を絶やさないで。",
+    "en": "Keep smiling.",
+    "pattern": "nai-de",
+    "span": "絶やさないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 3552036,
+    "jp": "やめてって言ってるでしょ！",
+    "en": "I said drop it!",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": true
+  },
+  {
+    "id": 3572193,
+    "jp": "何もきかないで。",
+    "en": "Don't ask any questions.",
+    "pattern": "nai-de",
+    "span": "きかないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 3588637,
+    "jp": "それに近づかないで。",
+    "en": "Stay away from it.",
+    "pattern": "nai-de",
+    "span": "近づかないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 3588638,
+    "jp": "私たちに近づかないで。",
+    "en": "Stay away from us.",
+    "pattern": "nai-de",
+    "span": "近づかないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 3588659,
+    "jp": "口出ししないで。",
+    "en": "Stay out of it.",
+    "pattern": "nai-de",
+    "span": "しないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 3608171,
+    "jp": "細かいことは気にしないでください。",
+    "en": "Don't worry about the minor details.",
+    "pattern": "nai-de",
+    "span": "しないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 3689551,
+    "jp": "クリスマスまでに彼女欲しいなあ。",
+    "en": "I'd like to have a girlfriend before Christmas.",
+    "pattern": "made",
+    "span": "クリスマスまで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 3705752,
+    "jp": "これが欲しかったんでしょ？",
+    "en": "You wanted this, didn't you?",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": true
+  },
+  {
+    "id": 3706389,
+    "jp": "泣かないで。",
+    "en": "Don't cry.",
+    "pattern": "nai-de",
+    "span": "泣かないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 3710894,
+    "jp": "女の子らしくなりたい。",
+    "en": "I want to be girlish.",
+    "pattern": "rashii",
+    "span": "らしく",
+    "why": "らしく is the 'befitting, like a real X' らしい, not 'apparently X'",
+    "orphaned": false
+  },
+  {
+    "id": 3878043,
+    "jp": "嘘ついてるでしょ。",
+    "en": "You're lying, aren't you?",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": true
+  },
+  {
+    "id": 4212770,
+    "jp": "馬鹿なことをしないでください。",
+    "en": "Don't do anything stupid.",
+    "pattern": "nai-de",
+    "span": "しないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 4213319,
+    "jp": "待って。行かないでよ。",
+    "en": "Wait. Don't go.",
+    "pattern": "nai-de",
+    "span": "行かないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 4260187,
+    "jp": "今日はここまでにしよう。",
+    "en": "Let's call it a day.",
+    "pattern": "made",
+    "span": "ここまで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 4323370,
+    "jp": "急かさないで。",
+    "en": "Don't rush me.",
+    "pattern": "nai-de",
+    "span": "急かさないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 4493088,
+    "jp": "トムはあまり男らしくない。",
+    "en": "Tom isn't very manly.",
+    "pattern": "rashii",
+    "span": "らしく",
+    "why": "らしく is the 'befitting, like a real X' らしい, not 'apparently X'",
+    "orphaned": true
+  },
+  {
+    "id": 4641623,
+    "jp": "動かないで。",
+    "en": "Don't move.",
+    "pattern": "nai-de",
+    "span": "動かないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 4726073,
+    "jp": "お金忘れないでね。",
+    "en": "Don't forget your money.",
+    "pattern": "nai-de",
+    "span": "忘れないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 4819327,
+    "jp": "こっち見ないで。",
+    "en": "Don't look at me.",
+    "pattern": "nai-de",
+    "span": "見ないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 4819328,
+    "jp": "こっち見ないでよ。",
+    "en": "Don't look at me.",
+    "pattern": "nai-de",
+    "span": "見ないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 4819329,
+    "jp": "こっち見ないでください。",
+    "en": "Don't look at me.",
+    "pattern": "nai-de",
+    "span": "見ないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 4819330,
+    "jp": "こっち見ないでくださいよ。",
+    "en": "Don't look at me.",
+    "pattern": "nai-de",
+    "span": "見ないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 4856416,
+    "jp": "お願い、泣かないで。",
+    "en": "Please stop crying.",
+    "pattern": "nai-de",
+    "span": "泣かないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 4972777,
+    "jp": "今度やったら許さないからね。",
+    "en": "If you try that again, I won't tolerate it.",
+    "pattern": "kara-reason",
+    "span": "ないから",
+    "why": "sentence-initial だから (a connective) or a sentence-final からね / からな (a promise or warning), not X から Y",
+    "orphaned": false
+  },
+  {
+    "id": 5065466,
+    "jp": "抗議をしないでくれ。",
+    "en": "Please, don't protest.",
+    "pattern": "nai-de",
+    "span": "しないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 5067267,
+    "jp": "私は年寄りらしくない。",
+    "en": "I don't look like I'm elderly.",
+    "pattern": "rashii",
+    "span": "らしく",
+    "why": "らしく is the 'befitting, like a real X' らしい, not 'apparently X'",
+    "orphaned": true
+  },
+  {
+    "id": 5072726,
+    "jp": "トムを心配しないで。",
+    "en": "Don't worry about Tom.",
+    "pattern": "nai-de",
+    "span": "しないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 5388383,
+    "jp": "雰囲気を壊さないで。",
+    "en": "Don't spoil the mood.",
+    "pattern": "nai-de",
+    "span": "壊さないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 6854275,
+    "jp": "明日までに出さなきゃいけないレポートがある。",
+    "en": "I have a paper due tomorrow.",
+    "pattern": "made",
+    "span": "明日まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 6854276,
+    "jp": "ぐずぐずしないで。",
+    "en": "Don't procrastinate.",
+    "pattern": "nai-de",
+    "span": "しないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 7820269,
+    "jp": "月曜日の朝までにすべて終わらせなければいけない。",
+    "en": "We must finish everything before Monday morning.",
+    "pattern": "made",
+    "span": "朝まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 7820276,
+    "jp": "月曜日の朝までにすべて終わらせる必要がある。",
+    "en": "We need to finish everything before Monday morning.",
+    "pattern": "made",
+    "span": "朝まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 7894147,
+    "jp": "水ぶくれを潰さないでくれ。",
+    "en": "Please don't pop the blisters.",
+    "pattern": "nai-de",
+    "span": "潰さないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 7977674,
+    "jp": "心配しないで、助けるよ。",
+    "en": "Don't worry, I'll help you.",
+    "pattern": "nai-de",
+    "span": "しないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 8305429,
+    "jp": "トムが助けてくれれば、二時半までに出来る。",
+    "en": "I'm sure we'd be able to get this done by 2:30 if Tom helped us.",
+    "pattern": "made",
+    "span": "半まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 8454949,
+    "jp": "枝を折らないで。",
+    "en": "Don't break the branches.",
+    "pattern": "nai-de",
+    "span": "折らないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 8504233,
+    "jp": "同情はしないでください。",
+    "en": "I don't want your sympathy.",
+    "pattern": "nai-de",
+    "span": "しないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 8513154,
+    "jp": "あなたたちはミュージシャンでしょ？",
+    "en": "Both of you are musicians, aren't you?",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": true
+  },
+  {
+    "id": 8513244,
+    "jp": "両方ともカナダ人でしょ？",
+    "en": "Both of you are Canadians, aren't you?",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": true
+  },
+  {
+    "id": 8521935,
+    "jp": "からかわないで。",
+    "en": "Do not make fun of me.",
+    "pattern": "nai-de",
+    "span": "からかわないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 8521946,
+    "jp": "バカにしないで。",
+    "en": "Don't make fun of me.",
+    "pattern": "nai-de",
+    "span": "しないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 8569448,
+    "jp": "今までにオーストラリアへ行ったことある？",
+    "en": "Have you ever been to Australia before?",
+    "pattern": "made",
+    "span": "今まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 8576172,
+    "jp": "梯子の下を歩かないでください。",
+    "en": "Don't walk under ladders.",
+    "pattern": "nai-de",
+    "span": "歩かないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 8576432,
+    "jp": "勉強の邪魔をしないでください。",
+    "en": "Don't distract me from studying.",
+    "pattern": "nai-de",
+    "span": "しないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 8577509,
+    "jp": "梯子の下を通らないでください。",
+    "en": "Don't walk under ladders.",
+    "pattern": "nai-de",
+    "span": "通らないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 8581271,
+    "jp": "仕事に遅れないでよ。",
+    "en": "Don't be late for work.",
+    "pattern": "nai-de",
+    "span": "遅れないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 8585698,
+    "jp": "お腹すいてるでしょ。",
+    "en": "I suppose you're hungry.",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": true
+  },
+  {
+    "id": 8587348,
+    "jp": "猫を起こさないで！",
+    "en": "Don't wake the cat.",
+    "pattern": "nai-de",
+    "span": "起こさないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 8591160,
+    "jp": "誰もこの部屋から出ないでください。",
+    "en": "Don't let anybody leave this room.",
+    "pattern": "nai-de",
+    "span": "出ないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 8591161,
+    "jp": "これに触らないでください。",
+    "en": "Don't touch this.",
+    "pattern": "nai-de",
+    "span": "触らないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 8591364,
+    "jp": "子供たちを責めないで！",
+    "en": "Don't blame the children.",
+    "pattern": "nai-de",
+    "span": "責めないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 8592091,
+    "jp": "トムってあまり喋らないでしょ。",
+    "en": "Tom doesn't talk much, does he?",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": true
+  },
+  {
+    "id": 8592714,
+    "jp": "そんなに難しくなかったでしょ？",
+    "en": "That wasn't so hard, was it?",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": true
+  },
+  {
+    "id": 8596036,
+    "jp": "まだ始めないで。",
+    "en": "Don't start yet.",
+    "pattern": "nai-de",
+    "span": "始めないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 8596758,
+    "jp": "怒らないでよ。",
+    "en": "Don't fly off the handle.",
+    "pattern": "nai-de",
+    "span": "怒らないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 8612294,
+    "jp": "トム、今つまみ食いしたでしょ。",
+    "en": "Tom, you just had a snack right now.",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": true
+  },
+  {
+    "id": 8617389,
+    "jp": "夢をあきらめないで。",
+    "en": "Don't give up on your dream.",
+    "pattern": "nai-de",
+    "span": "あきらめないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 8619691,
+    "jp": "大声を出さないでください。",
+    "en": "Please don't shout.",
+    "pattern": "nai-de",
+    "span": "出さないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 8619692,
+    "jp": "叫ばないでください。",
+    "en": "Please don't shout.",
+    "pattern": "nai-de",
+    "span": "叫ばないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 8619698,
+    "jp": "壁に登らないでください。",
+    "en": "Don't climb on the wall.",
+    "pattern": "nai-de",
+    "span": "登らないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 8657714,
+    "jp": "落とさないでよ。",
+    "en": "Don't drop it.",
+    "pattern": "nai-de",
+    "span": "落とさないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 8665729,
+    "jp": "今までに銃を撃ったことある？",
+    "en": "Have you ever shot a gun before?",
+    "pattern": "made",
+    "span": "今まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 8667821,
+    "jp": "疲れてるんでしょ。",
+    "en": "You're tired, aren't you?",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": true
+  },
+  {
+    "id": 8724569,
+    "jp": "遅れちゃうかもしれないけど、そこには行くからね。",
+    "en": "I'll be there, although I may be late.",
+    "pattern": "kara-reason",
+    "span": "行くから",
+    "why": "sentence-initial だから (a connective) or a sentence-final からね / からな (a promise or warning), not X から Y",
+    "orphaned": false
+  },
+  {
+    "id": 8746485,
+    "jp": "彼女はあなたの叔母でしょ。",
+    "en": "She's your aunt, isn't she?",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": true
+  },
+  {
+    "id": 8748144,
+    "jp": "私たち友達でしょ？",
+    "en": "Are we friends?",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": true
+  },
+  {
+    "id": 8748146,
+    "jp": "友達でしょ？",
+    "en": "Are you friends?",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": true
+  },
+  {
+    "id": 8764474,
+    "jp": "メアリーは頭がいいでしょ。",
+    "en": "Mary is intelligent, isn't she?",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": true
+  },
+  {
+    "id": 8794743,
+    "jp": "次の授業までにこの詩を覚えないといけないの。",
+    "en": "We have to memorize this poem by the next class.",
+    "pattern": "made",
+    "span": "授業まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 8808570,
+    "jp": "触らないで、汚らわしい！",
+    "en": "Don't you touch me, you'll make me dirty!",
+    "pattern": "nai-de",
+    "span": "触らないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 8854414,
+    "jp": "そんなに安易に妥協しないでください。",
+    "en": "Don't give in so easily.",
+    "pattern": "nai-de",
+    "span": "しないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 8858995,
+    "jp": "今までに交通事故にあったことある？",
+    "en": "Have you ever had a traffic accident?",
+    "pattern": "made",
+    "span": "今まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": true
+  },
+  {
+    "id": 8870901,
+    "jp": "眠いんでしょ。",
+    "en": "You must be sleepy.",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": true
+  },
+  {
+    "id": 8945987,
+    "jp": "興味がなかったら、読まなくてもいいからね。",
+    "en": "If you aren't interested, you don't have to read it.",
+    "pattern": "kara-reason",
+    "span": "いいから",
+    "why": "sentence-initial だから (a connective) or a sentence-final からね / からな (a promise or warning), not X から Y",
+    "orphaned": false
+  },
+  {
+    "id": 8960588,
+    "jp": "トムは豚肉食べないでしょ。",
+    "en": "Tom doesn't eat pork, does he?",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": true
+  },
+  {
+    "id": 8961563,
+    "jp": "鉛筆で契約書にサインしないでください。",
+    "en": "Don't sign the contract with a pencil.",
+    "pattern": "nai-de",
+    "span": "しないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 9001535,
+    "jp": "私を撮らないで！",
+    "en": "Don't take my picture!",
+    "pattern": "nai-de",
+    "span": "撮らないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 9003156,
+    "jp": "夜更かしは駄目だからね。",
+    "en": "You must not stay up late.",
+    "pattern": "kara-reason",
+    "span": "だから",
+    "why": "sentence-initial だから (a connective) or a sentence-final からね / からな (a promise or warning), not X から Y",
+    "orphaned": true
+  },
+  {
+    "id": 9009250,
+    "jp": "明日の朝、絶対来るからね。",
+    "en": "I'll come without fail tomorrow morning.",
+    "pattern": "kara-reason",
+    "span": "来るから",
+    "why": "sentence-initial だから (a connective) or a sentence-final からね / からな (a promise or warning), not X から Y",
+    "orphaned": true
+  },
+  {
+    "id": 9020801,
+    "jp": "口出ししないでちょうだい。",
+    "en": "Don't interfere.",
+    "pattern": "nai-de",
+    "span": "しないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 9025843,
+    "jp": "トムはよく知ってるからね。",
+    "en": "Tom is in the know.",
+    "pattern": "kara-reason",
+    "span": "てるから",
+    "why": "sentence-initial だから (a connective) or a sentence-final からね / からな (a promise or warning), not X から Y",
+    "orphaned": true
+  },
+  {
+    "id": 9025844,
+    "jp": "メアリーはよく知ってるからね。",
+    "en": "Mary is in the know.",
+    "pattern": "kara-reason",
+    "span": "てるから",
+    "why": "sentence-initial だから (a connective) or a sentence-final からね / からな (a promise or warning), not X から Y",
+    "orphaned": true
+  },
+  {
+    "id": 9034797,
+    "jp": "精神的に参ってるでしょ。",
+    "en": "You must be mentally exhausted.",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": true
+  },
+  {
+    "id": 9081010,
+    "jp": "秋らしくなってきたね。",
+    "en": "It seems like autumn has come.",
+    "pattern": "rashii",
+    "span": "らしく",
+    "why": "らしく is the 'befitting, like a real X' らしい, not 'apparently X'",
+    "orphaned": true
+  },
+  {
+    "id": 9096682,
+    "jp": "私に見せつけないでよ。",
+    "en": "Don't tantalize me.",
+    "pattern": "nai-de",
+    "span": "見せつけないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 9107613,
+    "jp": "寝る前に電気を消すのを忘れないでくださいね。",
+    "en": "Please don't forget to turn off the light before you go to bed.",
+    "pattern": "nai-de",
+    "span": "忘れないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 9115795,
+    "jp": "お願いだから、怒らないで。",
+    "en": "I'm begging you, don't be mad.",
+    "pattern": "nai-de",
+    "span": "怒らないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 9116040,
+    "jp": "そんなふうに私のこと見ないでください。",
+    "en": "Please don't look at me like that.",
+    "pattern": "nai-de",
+    "span": "見ないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 9142081,
+    "jp": "そんな遠慮しないで。",
+    "en": "Don't be so reserved.",
+    "pattern": "nai-de",
+    "span": "しないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 9159101,
+    "jp": "ドアは開けないでくださいね。",
+    "en": "Please don't open the door.",
+    "pattern": "nai-de",
+    "span": "開けないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 9171400,
+    "jp": "トムは危ない男だからね。",
+    "en": "Tom is a dangerous man.",
+    "pattern": "kara-reason",
+    "span": "だから",
+    "why": "sentence-initial だから (a connective) or a sentence-final からね / からな (a promise or warning), not X から Y",
+    "orphaned": true
+  },
+  {
+    "id": 9183091,
+    "jp": "もう学校へ行く時間でしょ。",
+    "en": "It is time you went to school.",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": false
+  },
+  {
+    "id": 9214092,
+    "jp": "この仕事は月曜日までに終わらせなきゃいけないんだ。",
+    "en": "This work has to be finished by Monday.",
+    "pattern": "made",
+    "span": "日まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 9232760,
+    "jp": "ねえ、行かないでよ。",
+    "en": "Hey, don't go.",
+    "pattern": "nai-de",
+    "span": "行かないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 9296073,
+    "jp": "冗談でしょ！",
+    "en": "You've got to be kidding me!",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": true
+  },
+  {
+    "id": 9314846,
+    "jp": "笑わないで。",
+    "en": "Don't laugh.",
+    "pattern": "nai-de",
+    "span": "笑わないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 9314891,
+    "jp": "決して愛を諦めないで。",
+    "en": "Never give up on love.",
+    "pattern": "nai-de",
+    "span": "諦めないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 9334231,
+    "jp": "トムなら電話でできるでしょ。",
+    "en": "Tom could do that by phone.",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": false
+  },
+  {
+    "id": 9344817,
+    "jp": "タバコは吸い過ぎないでね。",
+    "en": "Don't smoke too much.",
+    "pattern": "nai-de",
+    "span": "過ぎないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 9359871,
+    "jp": "俺が正しいでしょ？",
+    "en": "I'm right, aren't I?",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": true
+  },
+  {
+    "id": 9431885,
+    "jp": "内緒なので、誰にも言わないでくださいね。",
+    "en": "It's a secret, so please don't tell anybody.",
+    "pattern": "nai-de",
+    "span": "言わないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 9439930,
+    "jp": "僕って、かわいい子でしょ？",
+    "en": "I'm a cute kid, right?",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": true
+  },
+  {
+    "id": 9462513,
+    "jp": "私が必要でしょ？",
+    "en": "Do you need me?",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": true
+  },
+  {
+    "id": 9472138,
+    "jp": "キャンディーを食べ過ぎないで。",
+    "en": "Don't eat too many candies.",
+    "pattern": "nai-de",
+    "span": "過ぎないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 9474752,
+    "jp": "来週の水曜までにレポートを出さなきゃいけないの。",
+    "en": "I have to hand in my report by next Wednesday.",
+    "pattern": "made",
+    "span": "水曜まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 9478063,
+    "jp": "マスクを外さないで。",
+    "en": "Don't take off your mask.",
+    "pattern": "nai-de",
+    "span": "外さないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 9501490,
+    "jp": "ケンカしないで。",
+    "en": "Don't fight.",
+    "pattern": "nai-de",
+    "span": "しないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 9506002,
+    "jp": "ライオンの歯は鋭いからね。",
+    "en": "A lion's teeth are sharp.",
+    "pattern": "kara-reason",
+    "span": "鋭いから",
+    "why": "sentence-initial だから (a connective) or a sentence-final からね / からな (a promise or warning), not X から Y",
+    "orphaned": true
+  },
+  {
+    "id": 9553167,
+    "jp": "すごくおいしいでしょ？",
+    "en": "It tastes very good, doesn't it?",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": true
+  },
+  {
+    "id": 9589164,
+    "jp": "あいつ俺より疑い深いからな。",
+    "en": "He is more skeptical than I am.",
+    "pattern": "kara-reason",
+    "span": "疑い深いから",
+    "why": "sentence-initial だから (a connective) or a sentence-final からね / からな (a promise or warning), not X から Y",
+    "orphaned": true
+  },
+  {
+    "id": 9614539,
+    "jp": "私のコップにキスの証を残さないでください。",
+    "en": "Please don't leave kiss marks on my cups.",
+    "pattern": "nai-de",
+    "span": "残さないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 9614704,
+    "jp": "私の耳を引っ張らないでください。",
+    "en": "Please don't pull my ears.",
+    "pattern": "nai-de",
+    "span": "引っ張らないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 9641474,
+    "jp": "いたっ！尻尾掴まないで！",
+    "en": "Ow! Don't grab my tail!",
+    "pattern": "nai-de",
+    "span": "掴まないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 9641501,
+    "jp": "僕のこと食べないで！",
+    "en": "Please don't eat me!",
+    "pattern": "nai-de",
+    "span": "食べないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 9651101,
+    "jp": "今日はここまでにしましょう。",
+    "en": "Let's end here for today.",
+    "pattern": "made",
+    "span": "ここまで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 9679445,
+    "jp": "寝る前に飲みすぎないで。",
+    "en": "Don't drink too much before going to bed.",
+    "pattern": "nai-de",
+    "span": "すぎないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 9681642,
+    "jp": "くすぐらないで！",
+    "en": "Don't tickle me!",
+    "pattern": "nai-de",
+    "span": "くすぐらないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 9681662,
+    "jp": "馴れ馴れしくしないで。",
+    "en": "Don't be fresh with me.",
+    "pattern": "nai-de",
+    "span": "しないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 9689379,
+    "jp": "ドアは閉めないでよ。",
+    "en": "Don't close the door.",
+    "pattern": "nai-de",
+    "span": "閉めないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 9697202,
+    "jp": "僕のほっぺつねらないで！",
+    "en": "Don't pinch my cheeks.",
+    "pattern": "nai-de",
+    "span": "つねらないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 9705166,
+    "jp": "頼むから、今邪魔しないで。",
+    "en": "Please, I'm asking you. Don't be a hindrance right now.",
+    "pattern": "nai-de",
+    "span": "しないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 9728995,
+    "jp": "許可なく部屋には入らないでください。",
+    "en": "Don't enter the room without permission.",
+    "pattern": "nai-de",
+    "span": "入らないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 9751952,
+    "jp": "絶対にあきらめないで。",
+    "en": "Never say never.",
+    "pattern": "nai-de",
+    "span": "あきらめないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 9776671,
+    "jp": "これほどひどい病気になったことは今までにないな。",
+    "en": "I've never been this sick before.",
+    "pattern": "made",
+    "span": "今まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": true
+  },
+  {
+    "id": 9778077,
+    "jp": "そのコップ、落とさないでよ。",
+    "en": "Don't drop that glass.",
+    "pattern": "nai-de",
+    "span": "落とさないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 9808997,
+    "jp": "この手紙を出すの、忘れないでくださいよ。",
+    "en": "Please don't forget to mail this letter.",
+    "pattern": "nai-de",
+    "span": "忘れないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 9846195,
+    "jp": "トムはまだ同じでしょ？",
+    "en": "Tom is still the same, isn't he?",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": true
+  },
+  {
+    "id": 9853678,
+    "jp": "話しかけてこないでよ！",
+    "en": "Don't talk to me!",
+    "pattern": "nai-de",
+    "span": "こないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 9853679,
+    "jp": "話しかけてこないで。",
+    "en": "Don't talk to me.",
+    "pattern": "nai-de",
+    "span": "こないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 9853680,
+    "jp": "今、話しかけないで。",
+    "en": "Don't talk to me now.",
+    "pattern": "nai-de",
+    "span": "話しかけないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 9853689,
+    "jp": "そんな言い方しないでよ！",
+    "en": "Don't talk to me like that!",
+    "pattern": "nai-de",
+    "span": "しないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 9857379,
+    "jp": "まばたきしないで。",
+    "en": "Don't blink.",
+    "pattern": "nai-de",
+    "span": "しないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 9859015,
+    "jp": "お行儀が悪いでしょ。",
+    "en": "Where are your manners?",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": true
+  },
+  {
+    "id": 9916173,
+    "jp": "寝る前にビール飲まないでよ。",
+    "en": "Don't drink beer before going to bed.",
+    "pattern": "nai-de",
+    "span": "飲まないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 9930948,
+    "jp": "とぼけないで。",
+    "en": "Don't play dumb.",
+    "pattern": "nai-de",
+    "span": "とぼけないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 9936158,
+    "jp": "心変わりしないでね。",
+    "en": "Don't change your mind.",
+    "pattern": "nai-de",
+    "span": "しないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 9953004,
+    "jp": "駄々をこねないで。",
+    "en": "Don't whine.",
+    "pattern": "nai-de",
+    "span": "こねないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 9954409,
+    "jp": "忘れないでよ。",
+    "en": "Don't forget.",
+    "pattern": "nai-de",
+    "span": "忘れないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 9961185,
+    "jp": "できれば明日までにこの仕事やっといて。",
+    "en": "Do this work by tomorrow if possible.",
+    "pattern": "made",
+    "span": "明日まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 9981897,
+    "jp": "動物にエサをあげないでください。",
+    "en": "Don't feed the animals.",
+    "pattern": "nai-de",
+    "span": "あげないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 9988871,
+    "jp": "邪魔しないで。",
+    "en": "Don't bother me.",
+    "pattern": "nai-de",
+    "span": "しないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 9994369,
+    "jp": "明日までに履修登録をしなきゃいけないんだ。",
+    "en": "We must register for the courses that we're going to take by tomorrow.",
+    "pattern": "made",
+    "span": "明日まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 9994423,
+    "jp": "著作権と言えば、トムでしょ！",
+    "en": "If talking about copyright, I guess we need Tom!",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": false
+  },
+  {
+    "id": 10006822,
+    "jp": "言わないで。",
+    "en": "Don't say it.",
+    "pattern": "nai-de",
+    "span": "言わないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 10008272,
+    "jp": "電車の時間までにはまだ余裕があるよ。",
+    "en": "You have plenty of time to catch the train.",
+    "pattern": "made",
+    "span": "時間まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 10016863,
+    "jp": "もう赤ちゃんじゃないでしょ。",
+    "en": "You are no longer a baby.",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": true
+  },
+  {
+    "id": 10028651,
+    "jp": "今までに、あんなキスされたことなんてないよ。",
+    "en": "I had never been kissed like that before.",
+    "pattern": "made",
+    "span": "今まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": true
+  },
+  {
+    "id": 10037401,
+    "jp": "展示物に手を触れないでください。",
+    "en": "Don't touch the exhibits.",
+    "pattern": "nai-de",
+    "span": "触れないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 10049559,
+    "jp": "無理しないで。",
+    "en": "Don't kill yourself.",
+    "pattern": "nai-de",
+    "span": "しないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 10049562,
+    "jp": "あなたも学生でしょ？",
+    "en": "You're a student, too, aren't you?",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": true
+  },
+  {
+    "id": 10055104,
+    "jp": "この木を切り倒さないでください。",
+    "en": "Don't cut these trees down.",
+    "pattern": "nai-de",
+    "span": "切り倒さないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 10073519,
+    "jp": "あいつ、ほんと口が軽いからな。",
+    "en": "He's a real blabbermouth.",
+    "pattern": "kara-reason",
+    "span": "軽いから",
+    "why": "sentence-initial だから (a connective) or a sentence-final からね / からな (a promise or warning), not X から Y",
+    "orphaned": true
+  },
+  {
+    "id": 10125561,
+    "jp": "邪魔しないでよ。",
+    "en": "Don't disturb me.",
+    "pattern": "nai-de",
+    "span": "しないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 10134373,
+    "jp": "ママに言わないで。",
+    "en": "Don't tell Mom.",
+    "pattern": "nai-de",
+    "span": "言わないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 10146339,
+    "jp": "安全が第一だからな。",
+    "en": "Safety always comes first.",
+    "pattern": "kara-reason",
+    "span": "だから",
+    "why": "sentence-initial だから (a connective) or a sentence-final からね / からな (a promise or warning), not X から Y",
+    "orphaned": true
+  },
+  {
+    "id": 10148299,
+    "jp": "手を洗わなきゃいけないでしょ。",
+    "en": "Your hands need to be washed.",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": false
+  },
+  {
+    "id": 10165202,
+    "jp": "この仕事は明日までに終わらせなきゃいけないんだ。",
+    "en": "This work must be finished by tomorrow.",
+    "pattern": "made",
+    "span": "明日まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 10175907,
+    "jp": "グラスにお湯は入れないでください。割れる場合があります。",
+    "en": "Don't pour hot water into a glass, or it may crack.",
+    "pattern": "nai-de",
+    "span": "入れないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 10185166,
+    "jp": "間違えやすいからね。",
+    "en": "It's easy to make mistakes.",
+    "pattern": "kara-reason",
+    "span": "やすいから",
+    "why": "sentence-initial だから (a connective) or a sentence-final からね / からな (a promise or warning), not X から Y",
+    "orphaned": false
+  },
+  {
+    "id": 10185477,
+    "jp": "期限までに仕事は仕上がりますか？",
+    "en": "Can you get the work finished in time?",
+    "pattern": "made",
+    "span": "期限まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 10191426,
+    "jp": "車で待ってるからね。",
+    "en": "I'll be waiting in my car.",
+    "pattern": "kara-reason",
+    "span": "てるから",
+    "why": "sentence-initial だから (a connective) or a sentence-final からね / からな (a promise or warning), not X から Y",
+    "orphaned": true
+  },
+  {
+    "id": 10197571,
+    "jp": "期待しないでね。",
+    "en": "Don't hold your breath.",
+    "pattern": "nai-de",
+    "span": "しないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 10206534,
+    "jp": "例文を消さないで。",
+    "en": "Don't erase the sample sentence.",
+    "pattern": "nai-de",
+    "span": "消さないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 10212628,
+    "jp": "もう断ったでしょ。",
+    "en": "I've told you no already.",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": true
+  },
+  {
+    "id": 10231739,
+    "jp": "触らないで！",
+    "en": "Don't touch me!",
+    "pattern": "nai-de",
+    "span": "触らないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 10327613,
+    "jp": "絶対楽しいでしょ！",
+    "en": "I'm sure that it'll be fun.",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": true
+  },
+  {
+    "id": 10330598,
+    "jp": "男らしく言おうと思ったら、どう言えばいいの？",
+    "en": "What's a more masculine way of saying it?",
+    "pattern": "rashii",
+    "span": "らしく",
+    "why": "らしく is the 'befitting, like a real X' らしい, not 'apparently X'",
+    "orphaned": false
+  },
+  {
+    "id": 10330601,
+    "jp": "どう言えば、男らしく聞こえる？",
+    "en": "What would you say to sound like a male?",
+    "pattern": "rashii",
+    "span": "らしく",
+    "why": "らしく is the 'befitting, like a real X' らしい, not 'apparently X'",
+    "orphaned": false
+  },
+  {
+    "id": 10336432,
+    "jp": "僕は無関係だからね。",
+    "en": "I have nothing to do with it.",
+    "pattern": "kara-reason",
+    "span": "だから",
+    "why": "sentence-initial だから (a connective) or a sentence-final からね / からな (a promise or warning), not X から Y",
+    "orphaned": true
+  },
+  {
+    "id": 10450147,
+    "jp": "きれいでしょ？",
+    "en": "It's pretty, isn't it?",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": true
+  },
+  {
+    "id": 10455153,
+    "jp": "僕を見捨てないで。",
+    "en": "Don't give up on me.",
+    "pattern": "nai-de",
+    "span": "見捨てないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 10472533,
+    "jp": "置いてきぼりにしないで。",
+    "en": "Don't leave me here alone.",
+    "pattern": "nai-de",
+    "span": "しないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 10472537,
+    "jp": "置いてけぼりにしないで。",
+    "en": "Don't leave me here alone.",
+    "pattern": "nai-de",
+    "span": "しないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 10545468,
+    "jp": "頼むからついてこないで。",
+    "en": "Please don't follow me.",
+    "pattern": "nai-de",
+    "span": "こないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 10574353,
+    "jp": "泣かせたでしょ。",
+    "en": "You've made him cry.",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": true
+  },
+  {
+    "id": 10575986,
+    "jp": "私たちみんなを殺すつもりでしょ。",
+    "en": "You're going to kill us all.",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": false
+  },
+  {
+    "id": 10605269,
+    "jp": "犬に餌をあげないでください。",
+    "en": "Don't feed the dog.",
+    "pattern": "nai-de",
+    "span": "あげないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 10615987,
+    "jp": "箱の上にものを載せないでください。",
+    "en": "Please don't put anything on the box.",
+    "pattern": "nai-de",
+    "span": "載せないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 10616182,
+    "jp": "好きじゃないんでしょ？",
+    "en": "You don't like it, do you?",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": true
+  },
+  {
+    "id": 10618143,
+    "jp": "その時は、若かったからな。",
+    "en": "I was young at the time.",
+    "pattern": "kara-reason",
+    "span": "たから",
+    "why": "sentence-initial だから (a connective) or a sentence-final からね / からな (a promise or warning), not X から Y",
+    "orphaned": true
+  },
+  {
+    "id": 10624456,
+    "jp": "本来の用途以外で使用しないでください。",
+    "en": "Use only as originally intended.",
+    "pattern": "nai-de",
+    "span": "しないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 10630206,
+    "jp": "あれ、やりたいんでしょ？",
+    "en": "You want to do that, don't you?",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": false
+  },
+  {
+    "id": 10631802,
+    "jp": "私が言ったこと、忘れないでくださいね。",
+    "en": "Don't forget what I said.",
+    "pattern": "nai-de",
+    "span": "忘れないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 10631806,
+    "jp": "気をつけて。ここ滑りやすいからね。",
+    "en": "Be careful. It's slippery here.",
+    "pattern": "kara-reason",
+    "span": "やすいから",
+    "why": "sentence-initial だから (a connective) or a sentence-final からね / からな (a promise or warning), not X から Y",
+    "orphaned": false
+  },
+  {
+    "id": 10636967,
+    "jp": "自分では今までに何冊本を読んでると思う？",
+    "en": "How many books do you think you've read so far?",
+    "pattern": "made",
+    "span": "今まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 10651816,
+    "jp": "ダメって、言ったでしょ！",
+    "en": "I told you no!",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": true
+  },
+  {
+    "id": 10661590,
+    "jp": "構わないでください。忙しいんです。",
+    "en": "Please leave me alone. I'm busy.",
+    "pattern": "nai-de",
+    "span": "構わないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 10677416,
+    "jp": "心配しないで。私が訳してあげるわ。",
+    "en": "Don't worry, I'll translate that for you.",
+    "pattern": "nai-de",
+    "span": "しないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 10680403,
+    "jp": "頑張り過ぎないでね。わかった？",
+    "en": "Don't work too much, OK?",
+    "pattern": "nai-de",
+    "span": "過ぎないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 10683440,
+    "jp": "女の子が好きでしょ？",
+    "en": "You like girls, don't you?",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": true
+  },
+  {
+    "id": 10683442,
+    "jp": "女性がいいんでしょ？",
+    "en": "You like girls, don't you?",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": true
+  },
+  {
+    "id": 10699192,
+    "jp": "耳元で叫ばないで！",
+    "en": "Don't scream in my ear!",
+    "pattern": "nai-de",
+    "span": "叫ばないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 10734054,
+    "jp": "そのリンクはクリックしないでください。",
+    "en": "Don't click on that link.",
+    "pattern": "nai-de",
+    "span": "しないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 10746649,
+    "jp": "もう泣かないで。",
+    "en": "Now stop crying.",
+    "pattern": "nai-de",
+    "span": "泣かないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 10774750,
+    "jp": "間食はしないで。",
+    "en": "Don't snack between meals.",
+    "pattern": "nai-de",
+    "span": "しないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 10778217,
+    "jp": "最近らしくないけど、何かあったの？",
+    "en": "You haven't been yourself recently. Is something wrong?",
+    "pattern": "rashii",
+    "span": "らしく",
+    "why": "らしく is the 'befitting, like a real X' らしい, not 'apparently X'",
+    "orphaned": true
+  },
+  {
+    "id": 10788821,
+    "jp": "明日までに期末レポートを仕上げるなんて不可能だよ。",
+    "en": "It's impossible for me to finish my term paper by tomorrow.",
+    "pattern": "made",
+    "span": "明日まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 10793134,
+    "jp": "トムはオオカミだからな。",
+    "en": "Tom is a wolf.",
+    "pattern": "kara-reason",
+    "span": "だから",
+    "why": "sentence-initial だから (a connective) or a sentence-final からね / からな (a promise or warning), not X から Y",
+    "orphaned": true
+  },
+  {
+    "id": 10798074,
+    "jp": "あまり心配しないで。",
+    "en": "Don't worry too much.",
+    "pattern": "nai-de",
+    "span": "しないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 10798122,
+    "jp": "私が珈琲を飲む前に話しかけないで。",
+    "en": "Don't talk to me before I've had my coffee.",
+    "pattern": "nai-de",
+    "span": "話しかけないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 10798137,
+    "jp": "お昼までにそれ仕上げられる？",
+    "en": "Can you finish it by noon?",
+    "pattern": "made",
+    "span": "昼まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 10808916,
+    "jp": "すごい昔の写真だからね。",
+    "en": "It's a very old picture.",
+    "pattern": "kara-reason",
+    "span": "だから",
+    "why": "sentence-initial だから (a connective) or a sentence-final からね / からな (a promise or warning), not X から Y",
+    "orphaned": true
+  },
+  {
+    "id": 10837121,
+    "jp": "明日までには仕事は片付くよ。",
+    "en": "I'll be through with my work by tomorrow.",
+    "pattern": "made",
+    "span": "明日まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 10840502,
+    "jp": "靴は脱がないでくださいね。",
+    "en": "Please don't take off your shoes.",
+    "pattern": "nai-de",
+    "span": "脱がないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 10877338,
+    "jp": "自分のお金でしょ？",
+    "en": "It's your money, isn't it?",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": true
+  },
+  {
+    "id": 10901613,
+    "jp": "そう思わないでください。",
+    "en": "Please don't think in that way.",
+    "pattern": "nai-de",
+    "span": "思わないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 10901625,
+    "jp": "家庭ゴミを入れないでください。",
+    "en": "Please refrain from putting waste here.",
+    "pattern": "nai-de",
+    "span": "入れないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 10901637,
+    "jp": "今日はお風呂に入らないでください。",
+    "en": "Please don't bathe today.",
+    "pattern": "nai-de",
+    "span": "入らないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 10901645,
+    "jp": "危ないので、そちらへ行かないでください。",
+    "en": "Please don't go there. It is dangerous.",
+    "pattern": "nai-de",
+    "span": "行かないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 10901648,
+    "jp": "コンピューターを使っています。スイッチを切らないでください。",
+    "en": "I am using the computer. Please do not switch it off.",
+    "pattern": "nai-de",
+    "span": "切らないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 10921756,
+    "jp": "窓は開けないでください。",
+    "en": "Please don't open the window.",
+    "pattern": "nai-de",
+    "span": "開けないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 10937123,
+    "jp": "悲観しないでください。",
+    "en": "Don't be pessimistic.",
+    "pattern": "nai-de",
+    "span": "しないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 10979896,
+    "jp": "あなた、興奮しないで。",
+    "en": "Don't you get excited.",
+    "pattern": "nai-de",
+    "span": "しないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 10979945,
+    "jp": "火曜日までに本を返さなければなりません。",
+    "en": "The book must be returned by Tuesday.",
+    "pattern": "made",
+    "span": "日まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 10989582,
+    "jp": "そんなことないでしょ。",
+    "en": "Of course not.",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": true
+  },
+  {
+    "id": 11001435,
+    "jp": "私が担任だからね。",
+    "en": "After all, I am a homeroom teacher.",
+    "pattern": "kara-reason",
+    "span": "だから",
+    "why": "sentence-initial だから (a connective) or a sentence-final からね / からな (a promise or warning), not X から Y",
+    "orphaned": true
+  },
+  {
+    "id": 11003220,
+    "jp": "病気じゃありませんから、心配しないでください。",
+    "en": "Don't worry, I'm not sick.",
+    "pattern": "nai-de",
+    "span": "しないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 11013804,
+    "jp": "なんか馬鹿らしくなっちゃった。",
+    "en": "I feel like an idiot.",
+    "pattern": "rashii",
+    "span": "らしく",
+    "why": "らしく is the 'befitting, like a real X' らしい, not 'apparently X'",
+    "orphaned": true
+  },
+  {
+    "id": 11015327,
+    "jp": "無理言わないで。",
+    "en": "Don't tell me what I can't do.",
+    "pattern": "nai-de",
+    "span": "言わないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 11016901,
+    "jp": "怒らないでね。",
+    "en": "Don't get angry, OK?",
+    "pattern": "nai-de",
+    "span": "怒らないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 11022933,
+    "jp": "きみ、初めてでしょ。",
+    "en": "It's the first time for you right?",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": true
+  },
+  {
+    "id": 11022976,
+    "jp": "どうせ復活するんでしょ。",
+    "en": "You will likely be restored.",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": true
+  },
+  {
+    "id": 11022989,
+    "jp": "その言い訳は、ないでしょ。",
+    "en": "That is not a good excuse.",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": true
+  },
+  {
+    "id": 11022990,
+    "jp": "そのやり方は、ひどすぎるでしょ。",
+    "en": "That approach is just too much, don't you think?",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": false
+  },
+  {
+    "id": 11023109,
+    "jp": "あのヘディングのゴールは技ありといったところだな。",
+    "en": "That heading goal is impressive, to say the least.",
+    "pattern": "ta-tokoro",
+    "span": "いったところ",
+    "why": "ところ as a place noun (a case particle follows) or と言ったところ ('so to speak'), not 〜たところ",
+    "orphaned": true
+  },
+  {
+    "id": 11023175,
+    "jp": "焦らさないで。",
+    "en": "Don't tease me.",
+    "pattern": "nai-de",
+    "span": "焦らさないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 11034451,
+    "jp": "なんか微妙でしょ？",
+    "en": "It's kind of iffy, don't you think?",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": true
+  },
+  {
+    "id": 11041373,
+    "jp": "本は明日までに返却してください。",
+    "en": "Please return the book by tomorrow.",
+    "pattern": "made",
+    "span": "明日まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 11041709,
+    "jp": "辞めないでください。",
+    "en": "Please don't quit.",
+    "pattern": "nai-de",
+    "span": "辞めないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 11041828,
+    "jp": "寒いでしょ？",
+    "en": "It's cold, isn't it?",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": true
+  },
+  {
+    "id": 11053692,
+    "jp": "これ、わざとでしょ！",
+    "en": "You did this on purpose!",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": true
+  },
+  {
+    "id": 11056150,
+    "jp": "あの大企業のお膝元らしく巨大工場が立ち並ぶ。",
+    "en": "There's a row of huge factories as though it were the seat of that large corporation.",
+    "pattern": "rashii",
+    "span": "らしく",
+    "why": "らしく is the 'befitting, like a real X' らしい, not 'apparently X'",
+    "orphaned": true
+  },
+  {
+    "id": 11067383,
+    "jp": "明日のこの時間までに、全部整理しておきたいんだ。",
+    "en": "I want everything in order by this time tomorrow.",
+    "pattern": "made",
+    "span": "時間まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 11071179,
+    "jp": "いつも言ってるでしょ。",
+    "en": "I say that all the time.",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": true
+  },
+  {
+    "id": 11138244,
+    "jp": "嘘ついてるでしょ？",
+    "en": "I think you're telling lies.",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": true
+  },
+  {
+    "id": 11156593,
+    "jp": "悲しまないで。",
+    "en": "Don't grieve.",
+    "pattern": "nai-de",
+    "span": "悲しまないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 11195397,
+    "jp": "私のプランの邪魔をしないでください。",
+    "en": "Please don't interfere with my plan.",
+    "pattern": "nai-de",
+    "span": "しないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 11220018,
+    "jp": "この計画については口外しないでください。",
+    "en": "Keep mum about this plan.",
+    "pattern": "nai-de",
+    "span": "しないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 11236559,
+    "jp": "結婚の話なんて早すぎじゃない？まだ付き合い始めたばかりでしょ？",
+    "en": "Don't you think it's a bit early to be talking about getting married? I mean, you guys just started dating.",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": false
+  },
+  {
+    "id": 11252709,
+    "jp": "まだ怒ってるんでしょ？",
+    "en": "You're still angry, aren't you?",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": true
+  },
+  {
+    "id": 11256186,
+    "jp": "今までに、こんなに雪が積もったことはない。",
+    "en": "In the past, there was never this much snow.",
+    "pattern": "made",
+    "span": "今まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": true
+  },
+  {
+    "id": 11257868,
+    "jp": "広告は入れないで？",
+    "en": "Could you not include ads?",
+    "pattern": "nai-de",
+    "span": "入れないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 11263415,
+    "jp": "「構わないでしょ？」「もちろん」",
+    "en": "\"You don't mind, do you?\" \"Of course I don't.\"",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": true
+  },
+  {
+    "id": 11264739,
+    "jp": "夕飯までに宿題を終わらせておきなさい。",
+    "en": "See that you finish your homework before supper.",
+    "pattern": "made",
+    "span": "夕飯まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 11310607,
+    "jp": "花は触らないで。",
+    "en": "Don't touch the flowers.",
+    "pattern": "nai-de",
+    "span": "触らないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 11310715,
+    "jp": "焦らないで。",
+    "en": "Don't rush things.",
+    "pattern": "nai-de",
+    "span": "焦らないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 11310782,
+    "jp": "一人にしないで。",
+    "en": "Don't leave me alone.",
+    "pattern": "nai-de",
+    "span": "しないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 11317152,
+    "jp": "そんなつんけんした言い方しなくてもいいでしょ。",
+    "en": "You don't have to use such a harsh tone with me.",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": false
+  },
+  {
+    "id": 11320514,
+    "jp": "ここなら少し暖かいでしょ？",
+    "en": "It's a bit warm in here, isn't it?",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": false
+  },
+  {
+    "id": 11331997,
+    "jp": "ちょっと露骨すぎでしょ。",
+    "en": "You're just a little too frank.",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": true
+  },
+  {
+    "id": 11337826,
+    "jp": "青いボタンには触れないでください。",
+    "en": "Don't touch the blue button.",
+    "pattern": "nai-de",
+    "span": "触れないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 11363737,
+    "jp": "花壇は踏まないで。",
+    "en": "Don't step in the flower bed.",
+    "pattern": "nai-de",
+    "span": "踏まないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 11376328,
+    "jp": "私のことは心配しないでください。",
+    "en": "Please don't worry about me.",
+    "pattern": "nai-de",
+    "span": "しないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 11457983,
+    "jp": "明後日までに仕事を片付けてしまわないといけないんだ。",
+    "en": "I must get my work done by the day after tomorrow.",
+    "pattern": "made",
+    "span": "明後日まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 11483527,
+    "jp": "すぐ後ろにいるからね。",
+    "en": "We're right behind you.",
+    "pattern": "kara-reason",
+    "span": "いるから",
+    "why": "sentence-initial だから (a connective) or a sentence-final からね / からな (a promise or warning), not X から Y",
+    "orphaned": true
+  },
+  {
+    "id": 11512920,
+    "jp": "地震の際は、エレベーターは使わないでください。",
+    "en": "Don't use the elevator during an earthquake.",
+    "pattern": "nai-de",
+    "span": "使わないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 11550296,
+    "jp": "月曜日までにやらなければいけないことのリストです。",
+    "en": "Here's a list of things we need to do before Monday.",
+    "pattern": "made",
+    "span": "日まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 11571104,
+    "jp": "正午までには届くはずなんだけどね。",
+    "en": "They should arrive by noon.",
+    "pattern": "made",
+    "span": "正午まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 11571105,
+    "jp": "お昼までには着くはずなんだけどね。",
+    "en": "They should arrive by noon.",
+    "pattern": "made",
+    "span": "昼まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 11571566,
+    "jp": "狭い部屋でしょ？",
+    "en": "It's a small room, isn't it?",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": true
+  },
+  {
+    "id": 11571866,
+    "jp": "あいつ、いつも遅いからな。",
+    "en": "She is always late.",
+    "pattern": "kara-reason",
+    "span": "遅いから",
+    "why": "sentence-initial だから (a connective) or a sentence-final からね / からな (a promise or warning), not X から Y",
+    "orphaned": true
+  },
+  {
+    "id": 11571981,
+    "jp": "それ、できないんでしょ？",
+    "en": "You can't do that, right?",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": true
+  },
+  {
+    "id": 11574657,
+    "jp": "それが普通でしょ？",
+    "en": "That's normal, isn't it?",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": true
+  },
+  {
+    "id": 11603874,
+    "jp": "トムって、面白い奴でしょ？",
+    "en": "Tom is a funny guy, isn't he?",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": true
+  },
+  {
+    "id": 11648590,
+    "jp": "走らないでください。",
+    "en": "Please don't run.",
+    "pattern": "nai-de",
+    "span": "走らないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 11683155,
+    "jp": "明日までに決められる？",
+    "en": "Can you decide by tomorrow?",
+    "pattern": "made",
+    "span": "明日まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 11748160,
+    "jp": "絶対に忘れないからな。",
+    "en": "I would never forget that.",
+    "pattern": "kara-reason",
+    "span": "ないから",
+    "why": "sentence-initial だから (a connective) or a sentence-final からね / からな (a promise or warning), not X から Y",
+    "orphaned": true
+  },
+  {
+    "id": 11754710,
+    "jp": "明日までにこの仕事を終わらせないといけないんだ。",
+    "en": "I have to finish this job by tomorrow.",
+    "pattern": "made",
+    "span": "明日まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 11792751,
+    "jp": "デザート、作ってるからね。",
+    "en": "We're making dessert.",
+    "pattern": "kara-reason",
+    "span": "てるから",
+    "why": "sentence-initial だから (a connective) or a sentence-final からね / からな (a promise or warning), not X から Y",
+    "orphaned": true
+  },
+  {
+    "id": 11795636,
+    "jp": "ビールを飲み過ぎないで。",
+    "en": "Don't drink too much beer.",
+    "pattern": "nai-de",
+    "span": "過ぎないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 11797166,
+    "jp": "悪く思わないでね。",
+    "en": "Don't take it personally.",
+    "pattern": "nai-de",
+    "span": "思わないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 11831604,
+    "jp": "あいつ、ホント地獄耳だからな。",
+    "en": "He has really big ears.",
+    "pattern": "kara-reason",
+    "span": "だから",
+    "why": "sentence-initial だから (a connective) or a sentence-final からね / からな (a promise or warning), not X から Y",
+    "orphaned": true
+  },
+  {
+    "id": 11875837,
+    "jp": "真似しないでよ。",
+    "en": "Stop copying me.",
+    "pattern": "nai-de",
+    "span": "しないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 11953097,
+    "jp": "このことはトムに言わないでください。",
+    "en": "Don't mention this to Tom.",
+    "pattern": "nai-de",
+    "span": "言わないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 11998672,
+    "jp": "めっちゃ眠いんでしょ？",
+    "en": "You're feeling very sleepy, aren't you?",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": true
+  },
+  {
+    "id": 12000643,
+    "jp": "トムには何も言わないでください。",
+    "en": "Please don't tell Tom anything.",
+    "pattern": "nai-de",
+    "span": "言わないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 12010594,
+    "jp": "心配なんでしょ？",
+    "en": "You're worried, aren't you?",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": true
+  },
+  {
+    "id": 12022251,
+    "jp": "忘れるわけないでしょ？",
+    "en": "How could I forget?",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": true
+  },
+  {
+    "id": 12022887,
+    "jp": "ドイツ語、分かるんでしょ？",
+    "en": "You understand German, right?",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": true
+  },
+  {
+    "id": 12037794,
+    "jp": "次壊したら、直さないからね。",
+    "en": "If you break it again, I'm not going to fix it.",
+    "pattern": "kara-reason",
+    "span": "ないから",
+    "why": "sentence-initial だから (a connective) or a sentence-final からね / からな (a promise or warning), not X から Y",
+    "orphaned": false
+  },
+  {
+    "id": 12037826,
+    "jp": "今日、授業ないんでしょ？",
+    "en": "You don't have class today, do you?",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": true
+  },
+  {
+    "id": 12039713,
+    "jp": "トムが行くまでしないでください。",
+    "en": "Please don't do that until Tom gets there.",
+    "pattern": "nai-de",
+    "span": "しないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 12051993,
+    "jp": "明日までにこれを仕上げるのは無理だよ。",
+    "en": "There's no way I can finish this by tomorrow.",
+    "pattern": "made",
+    "span": "明日まで",
+    "why": "までに ('by' a deadline, or 今までに 'ever'), 今まで + ことがある ('ever') or まで as 'even', not 'until'",
+    "orphaned": false
+  },
+  {
+    "id": 12098569,
+    "jp": "人のせいにしないでください。",
+    "en": "Please don't pin the blame on other people.",
+    "pattern": "nai-de",
+    "span": "しないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 12132228,
+    "jp": "怒らないでよ。いい？",
+    "en": "Don't get mad, OK?",
+    "pattern": "nai-de",
+    "span": "怒らないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 12287041,
+    "jp": "避難したら、絶対に引き返さないでください。",
+    "en": "Once you evacuate, do not go back under any circumstances.",
+    "pattern": "nai-de",
+    "span": "引き返さないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 12295394,
+    "jp": "コメント消さないでね。",
+    "en": "Don't delete the comments.",
+    "pattern": "nai-de",
+    "span": "消さないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": true
+  },
+  {
+    "id": 12349622,
+    "jp": "あの靴、高いんだからね。",
+    "en": "Those shoes are very dear.",
+    "pattern": "kara-reason",
+    "span": "だから",
+    "why": "sentence-initial だから (a connective) or a sentence-final からね / からな (a promise or warning), not X から Y",
+    "orphaned": true
+  },
+  {
+    "id": 12461913,
+    "jp": "お願いだから、撃たないで。",
+    "en": "Please don't shoot.",
+    "pattern": "nai-de",
+    "span": "撃たないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 12486168,
+    "jp": "もう電話をかけてこないでください。",
+    "en": "Please don't phone me any more.",
+    "pattern": "nai-de",
+    "span": "こないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 12486169,
+    "jp": "もうかけてこないでください。",
+    "en": "Please don't phone me any more.",
+    "pattern": "nai-de",
+    "span": "こないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 12652393,
+    "jp": "ほんとうに男らしくないよね。",
+    "en": "He really does have small dick energy.",
+    "pattern": "rashii",
+    "span": "らしく",
+    "why": "らしく is the 'befitting, like a real X' らしい, not 'apparently X'",
+    "orphaned": true
+  },
+  {
+    "id": 12698588,
+    "jp": "危ないことはしないでください。",
+    "en": "Please don't do anything dangerous.",
+    "pattern": "nai-de",
+    "span": "しないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 12725607,
+    "jp": "次壊したら、直さないからな。",
+    "en": "If you break it again, I'm not fixing it.",
+    "pattern": "kara-reason",
+    "span": "ないから",
+    "why": "sentence-initial だから (a connective) or a sentence-final からね / からな (a promise or warning), not X から Y",
+    "orphaned": false
+  },
+  {
+    "id": 12760080,
+    "jp": "これは捨てないでください。",
+    "en": "Don't throw this away.",
+    "pattern": "nai-de",
+    "span": "捨てないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 13155610,
+    "jp": "デマを流さないで。",
+    "en": "Please don't spread any false rumors.",
+    "pattern": "nai-de",
+    "span": "流さないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 13164949,
+    "jp": "戻ってくるんでしょ？",
+    "en": "You'll come back, right?",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": true
+  },
+  {
+    "id": 13194469,
+    "jp": "嘘をつかないで！",
+    "en": "Don't lie!",
+    "pattern": "nai-de",
+    "span": "つかないで",
+    "why": "ないで as a request ('please don't') or ないでいい ('it's okay not to'), not 'without doing X'",
+    "orphaned": false
+  },
+  {
+    "id": 13209429,
+    "jp": "自由な国だからね。",
+    "en": "It's a free country.",
+    "pattern": "kara-reason",
+    "span": "だから",
+    "why": "sentence-initial だから (a connective) or a sentence-final からね / からな (a promise or warning), not X から Y",
+    "orphaned": true
+  },
+  {
+    "id": 13863218,
+    "jp": "隠し事は嫌いでしょ？",
+    "en": "You hate secrets, don't you?",
+    "pattern": "deshou",
+    "span": "でしょ",
+    "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
+    "orphaned": true
+  },
+  {
+    "id": 13932904,
+    "jp": "落としたら、給料から引くからな。",
+    "en": "If you drop it, I'll take it out of your wage.",
+    "pattern": "kara-reason",
+    "span": "引くから",
+    "why": "sentence-initial だから (a connective) or a sentence-final からね / からな (a promise or warning), not X から Y",
+    "orphaned": false
   }
 ]
