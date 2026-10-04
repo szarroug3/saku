@@ -2686,6 +2686,39 @@ test("the 〜てもいい lesson builds it on a verb, both adjectives and a noun
   }
 });
 
+test("a build table fits the Atlas panel, its meaning on a line under each row, and the lesson keeps its columns (SAK-509)", async ({ page }) => {
+  // Seen 2026-10-03: the な-adjective table on 〜てもいい has four columns, and
+  // in the Atlas panel the Meaning column was cut off at the panel's edge. In
+  // the panel the English now drops to a second line under each row. Signed out.
+  for (const width of [1440, 390]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto(`/atlas?sample&entry=${encodeURIComponent("grammar:te-permission")}`);
+    const panel = page.locator("[data-atlas-panel]");
+    const table = panel.locator("table").filter({ hasText: "しずかでもいい" });
+    await expect(table, `${width}`).toHaveCount(1);
+    await table.scrollIntoViewIfNeeded();
+    // nothing to scroll sideways: the table and the box it sits in
+    const sizes = await table.evaluate((t) => [t.scrollWidth, t.clientWidth, t.parentElement!.scrollWidth, t.parentElement!.clientWidth]);
+    expect(sizes[0], `${width}: the table`).toBe(sizes[1]);
+    expect(sizes[2], `${width}: the table's box`).toBe(sizes[3]);
+    // the meaning is whole and inside the panel
+    const meaning = table.getByText("it's okay even if it's quiet", { exact: true }).filter({ visible: true });
+    await expect(meaning).toBeVisible();
+    const [m, p] = [await meaning.boundingBox(), await panel.boundingBox()];
+    expect(m!.x + m!.width, `${width}: the meaning ends inside the panel`).toBeLessThanOrEqual(p!.x + p!.width);
+    await expect(table.getByRole("columnheader", { name: "Meaning" })).toBeHidden();
+  }
+  // the lesson card is wide, so its table is the four columns it always was
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto(`/lesson?picks=${encodeURIComponent("grammar:te-permission")}`);
+  const lesson = page.locator("table").filter({ hasText: "しずかでもいい" });
+  await expect(lesson).toHaveCount(1);
+  await expect(lesson.getByRole("columnheader", { name: "Meaning" })).toBeVisible();
+  const row = lesson.getByRole("row").filter({ hasText: "しずかでもいい" }).first();
+  await expect(row.getByRole("cell")).toHaveCount(4);
+  await expect(row.getByRole("cell").nth(3)).toHaveText("it's okay even if it's quiet");
+});
+
 test("the 〜なくてもいい and 〜てはいけない lessons build them on a verb, both adjectives and a noun (SAK-505)", async ({ page }) => {
   // Both patterns had a verb row only. The adjective and noun rows use では,
   // the same as a な-adjective's ない-form (しずかではない). Signed out.

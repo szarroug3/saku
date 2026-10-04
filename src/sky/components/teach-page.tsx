@@ -30,7 +30,9 @@ export function Sound({ line }: { line: SoundLine }) {
         const run = s.ruby
           ? <ruby><Mixed text={s.text} /><rt className="font-kana text-[0.55em] font-normal leading-none tracking-normal">{s.ruby}</rt></ruby>
           : <Mixed text={s.text} />;
-        return <span key={i} className={s.accent ? "font-semibold text-sky-accent" : ""}>{run}</span>;
+        // a run that may start a new line (`wrap`) gets a break before it,
+        // which only a cell allowed to wrap ever takes (SAK-509)
+        return <Fragment key={i}>{s.wrap && <wbr />}<span className={s.accent ? "font-semibold text-sky-accent" : ""}>{run}</span></Fragment>;
       })}
     </>
   );
@@ -145,6 +147,26 @@ function Formula({ formula }: { formula: TeachFormula }) {
   );
 }
 
+/** The width under which a build table's English columns drop to a line
+ * under each row (SAK-509). The Atlas panel opens 288px wide inside its
+ * padding, at 1440 and on a phone alike. The widest build tables in the
+ * grammar (the Godan rows of the て-form and the た-form, with a Note) need
+ * 634 to 640px with every column, and the lesson card is 1000px. So the panel
+ * as it opens, or dragged anywhere short of 640px inside, gets two lines a
+ * row, and the lesson and a widened panel get the table as it always was.
+ * Tailwind reads these class names whole, so the width is written out in each
+ * of them. */
+const WIDE_ONLY = "@max-[40rem]:hidden";
+const NARROW_ONLY = "hidden @max-[40rem]:table-row";
+const NARROW_TIGHT = "@max-[40rem]:pb-0";
+// and the Japanese cells may wrap there, at a space or a run marked `wrap`
+// only: a change breaks between − る and + させる, a pattern between しずかではな
+// and くてもいい, and no word is cut anywhere else (keep-all)
+const NARROW_WRAP = "@max-[40rem]:whitespace-normal @max-[40rem]:break-keep @max-[40rem]:pr-1.5";
+// the headings give up their letter spacing there, since ADJECTIVE was wider
+// than any word under it
+const NARROW_HEAD = "@max-[40rem]:pr-1.5 @max-[40rem]:tracking-normal";
+
 /** One table of the teaching, with its heading, instruction and formula.
  *
  * `onOpen` is what a row's own page is opened with, for a table whose rows each
@@ -153,15 +175,20 @@ function Formula({ formula }: { formula: TeachFormula }) {
  * the same rule the word-kind chip follows. */
 export function Table({ table, onOpen }: { table: TeachTable; onOpen?: (id: string) => void }) {
   const formulas = table.formula ? (Array.isArray(table.formula) ? table.formula : [table.formula]) as readonly TeachFormula[] : [];
+  const under = new Set(table.under ?? []);
   return (
     <SkyBox>
       {table.title && <Eyebrow tone="accent" tight>{table.title}</Eyebrow>}
       {table.instruction && <p className="mt-1.5 text-[13.5px] leading-relaxed text-sky-ink/90">{typeof table.instruction === "string" ? table.instruction : <Sound line={table.instruction} />}</p>}
       {formulas.length > 0 && <div className="mt-2 flex flex-col gap-1">{formulas.map((f, i) => <Formula key={i} formula={f} />)}</div>}
-      <div className="mt-2 overflow-x-auto">
+      {/* a build table's English columns drop under their row when the box
+          is narrow (SAK-509), so the table is a container and the cells ask
+          it how wide it is. The other tables keep scrolling sideways in a
+          narrow panel, the Particle page's four columns among them. */}
+      <div className={`mt-2 overflow-x-auto${under.size ? " @container" : ""}`}>
         <table className="w-full border-collapse text-[13.5px]">
           <thead>
-            <tr>{table.heads.map((h, i) => <th key={i} className="border-b border-sky-line pb-1 pr-3 text-left text-[10.5px] font-semibold uppercase tracking-[0.08em] text-sky-muted">{h}</th>)}</tr>
+            <tr>{table.heads.map((h, i) => <th key={i} className={`border-b border-sky-line pb-1 pr-3 text-left text-[10.5px] font-semibold uppercase tracking-[0.08em] text-sky-muted${under.size ? ` ${NARROW_HEAD}` : ""}${under.has(i) ? ` ${WIDE_ONLY}` : ""}`}>{h}</th>)}</tr>
           </thead>
           <tbody>
             {table.rows.map((row, r) => {
@@ -172,8 +199,10 @@ export function Table({ table, onOpen }: { table: TeachTable; onOpen?: (id: stri
               // a little over half its size and at the table's 13.5px it came
               // out near 7px.
               const ruby = row.some((cell) => cell.some((x) => x.ruby));
+              const english = row.filter((_, c) => under.has(c) && row[c].length > 0);
               return (
-              <tr key={r}>
+              <Fragment key={r}>
+              <tr>
                 {row.map((cell, c) => {
                   const plain = cell.map((x) => x.text).join("");
                   // short cells hold their line and the table scrolls sideways in
@@ -181,7 +210,7 @@ export function Table({ table, onOpen }: { table: TeachTable; onOpen?: (id: stri
                   const line = <Sound line={cell} />;
                   const size = cell.some((x) => x.ruby) ? " font-sky-display text-[17px] leading-[1.9]" : "";
                   return (
-                    <td key={c} className={`py-1 pr-3 ${ruby ? "align-baseline" : "align-top"} ${plain.length > 18 ? "min-w-[18ch]" : "whitespace-nowrap"}${size}`}>
+                    <td key={c} className={`py-1 pr-3 ${ruby ? "align-baseline" : "align-top"} ${plain.length > 18 ? "min-w-[18ch]" : `whitespace-nowrap${under.size ? ` ${NARROW_WRAP}` : ""}`}${size}${under.has(c) ? ` ${WIDE_ONLY}` : ""}${english.length > 0 ? ` ${NARROW_TIGHT}` : ""}`}>
                       {c === 0 && opens && onOpen
                         ? <SkyTextButton tone="accent" title={`Read about ${plain}`} onClick={() => onOpen(opens)} className="inline-flex items-center">{line}</SkyTextButton>
                         : line}
@@ -189,6 +218,16 @@ export function Table({ table, onOpen }: { table: TeachTable; onOpen?: (id: stri
                   );
                 })}
               </tr>
+              {/* the row's second line in a narrow box: its meaning, then its
+                  note, under the Japanese and as wide as the table */}
+              {english.length > 0 && (
+                <tr className={NARROW_ONLY}>
+                  <td colSpan={row.length - under.size} className="pb-1.5 pr-3 align-top text-sky-muted">
+                    {english.map((cell, i) => <span key={i} className="block"><Sound line={cell} /></span>)}
+                  </td>
+                </tr>
+              )}
+              </Fragment>
               );
             })}
           </tbody>
