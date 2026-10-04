@@ -7264,3 +7264,23 @@ Sam, 2026-10-02, on the 〜な form lesson ("Adjectives before nouns"): it teach
 **Screenshots.** In `saku-tasks/screenshots/sak-494/`: `na-form-opens.png`, `na-form-keiyoshi.png`, `te-form-godan-ichidan.png` and `atlas-keiyoshi-term.png`.
 
 **Not changed.** On the Atlas Terms shelf the tile "Keiyōshi/keiyōdōshi" is cut off at the right edge, because the name has no space to wrap at. The concept's tile did the same before this card.
+
+## Words written only in kana carry their pitch (SAK-503)
+
+Sam, 2026-10-03, on the はい vs うん card: "do these words not have pitch?" Kanjium has はい as 1 and うん as 1. The app stored nothing for either, or for any other word written only in kana.
+
+**What was wrong.** `scripts/ingest/pitch.mjs` looked a word up in Kanjium by its written form and its reading together. Kanjium leaves the reading blank when the headword is already kana, so its row for はい is `はい`, an empty reading and `1`. The app asked for `はい` read as `はい` and never found it.
+
+**The fix.** When a word's taught reading is the same as how it is written, the ingest also tries the blank-reading row. The old rules stay: a word Kanjium gives more than one accent gets none, and so does one whose two rows disagree. ええ (yes) has three accents in Kanjium and still has none. はい, うん and ええ are in the regression sample the ingest checks before it writes anything.
+
+**What changed in the data.** `pitch.json` went from 8,684 words to 9,428: 744 added, none removed, none changed. The added words are all written only in kana: はい, うん, あの (that), うっかり (carelessly), いらっしゃいませ (welcome) and most of the sound words like it. いいえ (no) and いや (no) are not in Kanjium under their kana spelling, so they still have no pitch. `pitch-pairs.json` was rebuilt from it and has 194 pairs, ten more: はい with 灰 (ash) and 肺 (lung), さす with 刺す (to stab), 差す (to raise), 指す (to point) and 射す (to shine), and おす, おっと, から and どうか with their kanji twins. None were lost.
+
+**On the page.** A kana word is its own reading, so the lesson card used to show no reading next to it, and with it no pitch line. `lesson-card.tsx` now draws the pitch over the word itself when the word and its reading are the same and the pitch is known. The Atlas, the lesson and the quiz reveal all use that card.
+
+**A test that had to learn about pitch cards.** `prompt-not-answer.test.ts` checks that no card accepts its own prompt as the answer. A pitch card shows the word and accepts its reading, only so a reveal grades; the learner never types, she picks one of two clips. For a kana word those are the same text, so 744 pitch cards tripped it. The walk now skips pitch cards, and a new test holds that a pitch card is a pick in both directions, so the skip stops being true the day that changes.
+
+**The voice cache.** Every new pitch is one more clip per voice for the quiz and the lesson card. The seed (`--set=pitch`, then `--set=lesson-pitch`) ran against the local Docker VOICEVOX and made 8,646 clips (1,441 per voice across 6 voices). The lesson set found them all already there. The audit then found two clips per voice missing from SAK-496 (しずかでもいい and ほんでもいい in `grammar-derive`), which were seeded too. The audit ends at 0 missing and 0 unwanted.
+
+**Tests.** `scripts/ingest/pitch.test.mjs` (run with `node --test`): a kana headword with a blank Kanjium reading is matched, an ambiguous one is not, two keys that disagree give nothing, the blank-reading key is never tried for a kanji word, and the regression check's own lookup agrees. `pitch-facts.test.ts`: `wordPitch` gives はい 1, うん 1, うっかり 3 and ええ nothing, and はい and うん have pitch facts. `audit-structural.test.ts` counts 9,428. In `e2e/sky.spec.ts`, the Atlas shows はい and うっかり with their pitch over the word and ええ with none.
+
+**Screenshots.** In `.logs/sak-503/` of the lane worktree: `atlas-hai.png`, `atlas-ukkari.png`, `atlas-ee-none.png` and `atlas-hashi-control.png` (箸, where the line is over the reading beside the kanji, as before).
