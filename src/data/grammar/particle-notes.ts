@@ -130,8 +130,10 @@ export interface ParticleNoteExample {
   readonly mark: string | readonly string[];
   readonly en: string;
   /** The words of `en` that say what the picked-out Japanese says, together
-   * with the word it follows (SAK-498): 雨が is "rain", 東京から is "from
-   * Tokyo". Each phrase is written as `en` has it and is in it once. A list
+   * with the word it follows (SAK-498): 雨が降っています is "raining", 東京から
+   * is "from Tokyo". Each phrase is written as `en` has it, is in it once, and
+   * starts and ends on a word boundary, so a mark never stops partway through
+   * a word. A list
    * where the English splits it (田中さんも is "Tanaka" and "too") or where
    * `mark` is two particles. null where the English has no words for it,
    * with a comment saying why. Required, so a new example has to say. */
@@ -260,7 +262,7 @@ export const PARTICLE_NOTES: readonly ParticleNote[] = [
           "Put が after a word and that word is the one doing something, or the " +
           "one that something is true of. What comes after が can be a verb, an " +
           "adjective, or a noun with です.",
-        examples: [{ jp: "雨が降っています。", mark: "が", en: "It is raining.", enMark: "rain", readings: ["あめ", "ふ"], words: [{ word: "雨", meaning: "rain" }, { word: "降る", meaning: "fall" }] }],
+        examples: [{ jp: "雨が降っています。", mark: "が", en: "It is raining.", enMark: "raining", readings: ["あめ", "ふ"], words: [{ word: "雨", meaning: "rain" }, { word: "降る", meaning: "fall" }] }],
       },
       {
         heading: "が picks one out",
