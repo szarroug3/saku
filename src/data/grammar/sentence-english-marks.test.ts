@@ -46,6 +46,16 @@ describe("the English marks on the pattern pages' sentences", () => {
     }
   });
 
+  test("no phrase starts or ends partway through a word", () => {
+    const WORD = /[A-Za-z0-9]/;
+    for (const { key, ex } of shown) {
+      const phrase = SENTENCE_ENGLISH_MARKS[key];
+      if (!phrase) continue;
+      const at = ex.en.indexOf(phrase);
+      assert.ok(!WORD.test(ex.en[at - 1] ?? "") && !WORD.test(ex.en[at + phrase.length] ?? ""), `${key}: "${phrase}" starts or ends inside a word of "${ex.en}"`);
+    }
+  });
+
   test("the page gets the phrase's place in the English", () => {
     for (const { key, ex } of shown) {
       const phrase = SENTENCE_ENGLISH_MARKS[key];
