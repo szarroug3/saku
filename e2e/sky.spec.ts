@@ -2702,7 +2702,7 @@ test("a build table fits the Atlas panel, its meaning on a line under each row, 
     expect(sizes[0], `${width}: the table`).toBe(sizes[1]);
     expect(sizes[2], `${width}: the table's box`).toBe(sizes[3]);
     // the meaning is whole and inside the panel
-    const meaning = table.getByText("it's okay even if it's quiet", { exact: true });
+    const meaning = table.getByText("it's okay even if it's quiet", { exact: true }).filter({ visible: true });
     await expect(meaning).toBeVisible();
     const [m, p] = [await meaning.boundingBox(), await panel.boundingBox()];
     expect(m!.x + m!.width, `${width}: the meaning ends inside the panel`).toBeLessThanOrEqual(p!.x + p!.width);
