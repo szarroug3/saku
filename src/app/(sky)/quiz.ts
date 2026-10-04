@@ -46,7 +46,7 @@ import { standingFor } from "./learner";
 import { readingRuleFor } from "./quiz-rules";
 import { SENTENCE_END, sentenceOf, sentencesToBuild } from "./sentence-reach";
 import { teachFor } from "./teach";
-import { shortMeaning, vocabEntryOf } from "./word-meaning";
+import { wordInSentence } from "./word-meaning";
 
 /** The basket: how many cards a session asks (SAK-311's cap). It is the
  * daily review's, and only the daily review's. A lesson's quiz asks about
@@ -658,11 +658,12 @@ function orderCard(history: HistoryFile, marker: FactId, item: AssemblyItem, pic
   const pieces = deal.map((d) => answer[d]);
   // what a piece's word means, for a word the learner has not met (Sam,
   // 2026-09-28: "if the user doesn't know a word, they need the definition"):
-  // the first sense, without the dictionary's asides, since it sits under a
-  // piece ("water", not "water (esp. cool or cold)")
+  // the sense the sentence uses, without the dictionary's asides, since it
+  // sits under a piece ("water", not "water (esp. cool or cold)"). A verb in
+  // potential form is its dictionary verb's (泳げる is 泳ぐ, SAK-514).
   const glossOf = (head: string | null): string | undefined => {
-    const e = vocabEntryOf(head);
-    return e && !standingFor(e, history, now).met ? shortMeaning(e.meanings[0]) : undefined;
+    const w = head ? wordInSentence(head, { jp: item.jp, en: item.en }) : undefined;
+    return w && !standingFor(w.entry, history, now).met ? w.meaning : undefined;
   };
   const glosses = deal.map((d) => glossOf(item.pieces[d].h));
   const agg = history.facts?.[marker];
