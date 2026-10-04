@@ -43,7 +43,7 @@ import { KEIGO_SUBJECT } from "@/data/keigo";
 import { TRANSITIVITY_SUBJECT } from "@/data/transitivity-facts";
 import { VOCAB_SUBJECT, isWordReadingFact } from "@/data/vocab";
 import { grammarProduction } from "@/data/grammar";
-import { attachmentMeaning, patternLabel, type Host } from "@/data/grammar/recipes";
+import { attachmentMeaning, patternLabel } from "@/data/grammar/recipes";
 import { answerIsJapanese } from "@/lib/engine/question";
 import type { GrammarVehicle } from "@/lib/engine/question";
 import { factInfo } from "@/lib/facts";
@@ -51,30 +51,9 @@ import { isReadingFact } from "@/lib/word-unlock";
 import { wordKindOf } from "@/lib/word-forms";
 import { openExample } from "@/lib/grammar/example";
 import { dropDoScaffold } from "@/lib/grammar/gloss";
+import { nonVerbGloss } from "@/lib/grammar/non-verb-gloss";
 import type { FactId } from "@/types/facts";
 import type { Direction } from "@/types/sky";
-
-/** A bare modal directly ahead of the X slot — "may X", "must (not) X", "can
- * X", "had better (not) X". A VERB host needs nothing more ("may eat"), but an
- * adjective or noun host still needs the copula English drops after "do"
- * ("may be expensive", not "may expensive") — the same reason appliedGloss's
- * own "do X" → "be X" branch exists for the teach page, applied here to the
- * quiz instruction's Japanese-filled X instead of an English one. A host with
- * its own hand-written meaning never reaches this (SAK-499); today every modal
- * recipe's adjective and noun rows have one, so this is the fallback for a new
- * row that does not. */
-const LEADING_MODAL = /^(?:may|must(?: not)?|can|had better(?: not)?) X\b/;
-
-/** The recipe's gloss, do/does/doing dropped (SAK-193), with X filled by
- * `word` — the vehicle's own Japanese, not an English translation. A non-verb
- * host filling a bare modal template gets "be" inserted ("may be いい"), the
- * one case where the target word alone would read as broken English. */
-function filledGlossFor(template: string, host: Host, word: string): string {
-  if (host !== "verb" && LEADING_MODAL.test(template)) {
-    return template.replace(/\bX\b/g, `be ${word}`);
-  }
-  return template.replace(/\bX\b/g, word);
-}
 
 /** How the instruction names the thing you are being asked to produce.
  *
@@ -159,10 +138,18 @@ export function quizInstruction(
     // doesn't have to be たかい", 〜てはいけない on しずか is "it must not be
     // しずか". The lesson's Meaning cell is the same string with the English word
     // in X, read through the same `attachmentMeaning`, so the two cannot drift.
-    // The modal rule in filledGlossFor is only the fallback for a host with none.
+    //
+    // AN ADJECTIVE OR NOUN WITH NO MEANING OF ITS OWN goes through nonVerbGloss
+    // first, the same function the lesson's Meaning column uses (SAK-500): "do
+    // X too much / too X" is "too たかい", "did X" is "was たかい", "may do X" is
+    // "may be たかい", "I heard that X" is "I heard it's たかい". A wrap's X is
+    // its fixed noun, so it takes the same treatment.
     const wrap = prod.recipe.wrap;
     const own = wrap ? undefined : attachmentMeaning(prod.recipe, prod.host);
-    const template = own ?? dropDoScaffold(prod.recipe.gloss);
+    const fillHost = wrap ? (prod.recipe.attach[0]?.host ?? "noun") : prod.host;
+    const template =
+      own ??
+      dropDoScaffold(fillHost === "verb" ? prod.recipe.gloss : nonVerbGloss(prod.recipe.gloss));
     const word = wrap
       ? openExample(prod.recipe).surface
       : vehicle
@@ -171,10 +158,7 @@ export function quizInstruction(
           : vehicle.kana
         : undefined;
     if (/\bX\b/.test(template) && word !== undefined) {
-      const fillHost = wrap ? (prod.recipe.attach[0]?.host ?? "noun") : prod.host;
-      const filled = own
-        ? own.replace(/\bX\b/g, word)
-        : filledGlossFor(template, fillHost, word);
+      const filled = template.replace(/\bX\b/g, word);
       // An UNKNOWN class word still needs its class named — the filled X is
       // drawn in kana precisely because she has not met it, and kana alone
       // does not say ichidan vs godan (see the `kind` note above). A known

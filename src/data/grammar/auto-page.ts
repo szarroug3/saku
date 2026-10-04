@@ -15,6 +15,7 @@ import { apply, hostOfClass } from "@/lib/grammar/apply";
 import { primaryHost } from "@/lib/grammar/example";
 import { FORM_LABEL, HOST_ARTICLE } from "@/lib/grammar/formula";
 import { dropDoScaffold } from "@/lib/grammar/gloss";
+import { nonVerbGloss } from "@/lib/grammar/non-verb-gloss";
 import { recipeAllows } from "@/lib/grammar/vehicles";
 import { examplesFor, type Example } from "@/data/grammar/corpus";
 import { attachmentMeaning, patternLabel, type Host, type Recipe } from "@/data/grammar/recipes";
@@ -226,7 +227,9 @@ function pageHost(r: Recipe): Host {
  * before " / too X" / " / looks X" (sugiru, sou-appearance) — and those get the
  * inverse treatment: the scaffold word is swapped for the copula ("is X", "was
  * X") or its verb-only half is dropped, so a non-verb row never reads as if it
- * were one ("do good" / "looks like it will good"). 〜てもいい on an adjective
+ * were one ("do good" / "looks like it will good"). A clause after "heard",
+ * "hear" or "say" gets "it's" ("I heard it's expensive"). Those rewrites live in
+ * nonVerbGloss, shared with the quiz line (SAK-500). 〜てもいい on an adjective
  * reads "it's okay even if it's X" through the attachment's own `meaning`, which
  * the quiz reads too (SAK-497, SAK-499), so it never reaches this fill. A gloss
  * with no X slot is left as it is. */
@@ -237,23 +240,10 @@ function appliedGloss(gloss: string, ex: ExampleWord): string {
     // book"); an adjective takes none ("too expensive", not "too a expensive").
     const filled =
       ex.cls === null ? `${/^[aeiou]/i.test(ex.en) ? "an" : "a"} ${ex.en}` : ex.en;
-    return (
-      gloss
-        // A verb-only leading alternative (〜すぎる "do X too much / too X", 〜そう
-        // "looks like it will X / looks X") does not apply to a non-verb row; drop
-        // it so the X-only half stands alone — the inverse of the verb branch's
-        // own adjective-only-alt strip below.
-        .replace(/^.*? \/ (?=(?:too|looks?) X\b)/, "")
-        // "do X" is verb scaffolding a non-verb predicate cannot carry. At the
-        // start of a clause it reads as a finite verb ("is X, and then…"); after
-        // a modal ("may do X") it needs the bare copula the modal already calls
-        // for ("may be X"). "did X" is always the copula's past tense.
-        .replace(/^do X\b/, `is ${filled}`)
-        .replace(/\bdo X\b/g, `be ${filled}`)
-        .replace(/\bdid X\b/g, `was ${filled}`)
-        // Bare X is filled plainly.
-        .replace(/\bX\b/g, filled)
-    );
+    // The verb-shaped frames ("do X", "did X", "I heard that X") are reshaped
+    // for an adjective or noun first, in the one function the quiz line uses
+    // too (SAK-500). Then X is filled plainly.
+    return nonVerbGloss(gloss).replace(/\bX\b/g, filled);
   }
   const base = ex.en;
   return (
