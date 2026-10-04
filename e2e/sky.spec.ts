@@ -2623,11 +2623,9 @@ test("the 〜てもいい lesson builds it on a verb, both adjectives and a noun
   await page.setViewportSize({ width: 1440, height: 900 });
   await page.goto(`/lesson?picks=${encodeURIComponent("grammar:te-permission")}`);
   await expect(page.getByText(/^Step \d+ of \d+$/)).toBeVisible();
-  // the verb and い-adjective meanings are SAK-497's to settle, so only the
-  // two new rows have theirs checked
   const rows: [string, string, string?][] = [
-    ["たべる", "たべてもいい"],
-    ["たかい", "たかくてもいい"],
+    ["たべる", "たべてもいい", "may eat"],
+    ["たかい", "たかくてもいい", "it's okay even if it's expensive"],
     ["しずか", "しずかでもいい", "it's okay even if it's quiet"],
     ["ほん", "ほんでもいい", "a book is fine too"],
   ];
@@ -2673,6 +2671,17 @@ test("the 〜なくてもいい and 〜てはいけない lessons build them on 
       await expect(row).toContainText(meaning);
     }
   }
+});
+
+test("a 〜てもいい quiz card on an adjective asks in the lesson's words (SAK-499)", async ({ page }) => {
+  // The lesson says たかくてもいい is "it's okay even if it's expensive" (SAK-497),
+  // but the quiz still asked for "may be たかい", which reads as a guess about
+  // the price. Both now read the attachment's own meaning. The card's word comes
+  // from a pool (いい, 高い, 安い, 新しい), so only the frame is pinned.
+  await page.goto(`/quiz?sample&cards=${encodeURIComponent("grammar:te-permission/production@adj-i")}`);
+  await expect(page.getByRole("button", { name: "End the quiz" })).toBeVisible();
+  await expect(page.getByText(/you say "it's okay even if it's [^"]+"/)).toBeVisible();
+  await expect(page.getByText(/may be /)).toHaveCount(0);
 });
 
 test("the 〜てもいい lesson's In a sentence block says what 話す means (SAK-506)", async ({ page }) => {

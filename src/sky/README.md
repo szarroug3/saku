@@ -7314,3 +7314,23 @@ Sam, 2026-10-03, on the 〜てもいい lesson's "In a sentence" block (話し�
 **Tests.** `teach.test.ts`: the 〜てもいい page lists 話す with はな over 話 and "to speak", and nothing else; the Atlas page for it carries the same word; いい and the すぎる sentence's なる are left off; every pattern page with a sentence has a words line with short meanings. `e2e/sky.spec.ts`, "the 〜てもいい lesson's In a sentence block says what 話す means (SAK-506)": signed out, the block's words line reads 話す to speak, with はな over 話.
 
 **Not changed.** Some first senses are the wrong one for their sentence, and the English does not name a better one: なる "to bear fruit" under 〜おかげで (馬鹿になる), ため "good" under 〜なければならない (するためには), かく "to scratch" under 〜にくい (いびきをかく), 休む "to be absent" under the 〜な form (休みたい). The vocabulary's entry for the kana なる and ため is a different word from the one the sentence uses. Fixing that is a vocabulary change, outside this card.
+
+## The quiz asks 〜てもいい on an adjective in the lesson's words (SAK-499)
+
+After SAK-497 the 〜てもいい lesson read たかくてもいい as "it's okay even if it's expensive", but the quiz card for the same row still asked for "may be たかい". That reads as a guess about the price.
+
+**One string for both.** An attachment's hand-written `meaning` in `src/data/grammar/recipes.ts` is now read by the quiz too. `attachmentMeaning(recipe, host)` in that file returns it, and both `deriveRows` in `src/data/grammar/auto-page.ts` and `quizInstruction` in `src/lib/quiz-instruction.ts` call it. The lesson fills X with the English word ("expensive", "a book"). The quiz fills X with the card's Japanese word, in kana if the learner has not met it.
+
+**〜てもいい's い-adjective row.** It had no `meaning` and got its words from a rewrite of "may do X" inside `appliedGloss`. That rewrite is gone. The い-adjective and な-adjective rows now both use one constant in `recipes.ts`, "it's okay even if it's X". The lesson reads the same as before.
+
+**What the quiz says now.**
+- 〜てもいい on an い-adjective: "it's okay even if it's たかい". On a な-adjective: "it's okay even if it's しずか".
+- 〜なくてもいい on an adjective: "it doesn't have to be たかい".
+- 〜てはいけない on an adjective: "it must not be しずか".
+- A verb card has no `meaning` and reads as before: "may いく".
+
+The noun rows of these patterns have no quiz card, so their meanings show only on the page. The older rule that puts "be" after a modal ("may be X") is still there for an adjective or noun row with no `meaning`. No row uses it today.
+
+**Tests.** `quiz-instruction.test.ts` checks たかい, いく, and the other adjective rows, and checks that every hand-written meaning on these three patterns is the quiz line with the word in place of X. In `e2e/sky.spec.ts`, "a 〜てもいい quiz card on an adjective asks in the lesson's words (SAK-499)" opens the い-adjective card and finds "it's okay even if it's" with no "may be". The SAK-496 lesson test now checks the verb and い-adjective meanings too.
+
+**Screenshots.** In `saku-tasks/screenshots/sak-499/`, all at 1440 with the pretend learner: `te-permission-adj-i-quiz-1440.png`, `te-permission-adj-na-quiz-1440.png`, `nakute-mo-ii-adj-i-quiz-1440.png` and `te-prohibition-adj-na-quiz-1440.png` (each card's instruction line), and `te-permission-lesson-adj-i-1440.png` (the lesson's verb, い-adjective and な-adjective rows).

@@ -43,7 +43,7 @@ import { KEIGO_SUBJECT } from "@/data/keigo";
 import { TRANSITIVITY_SUBJECT } from "@/data/transitivity-facts";
 import { VOCAB_SUBJECT, isWordReadingFact } from "@/data/vocab";
 import { grammarProduction } from "@/data/grammar";
-import { patternLabel, type Host } from "@/data/grammar/recipes";
+import { attachmentMeaning, patternLabel, type Host } from "@/data/grammar/recipes";
 import { answerIsJapanese } from "@/lib/engine/question";
 import type { GrammarVehicle } from "@/lib/engine/question";
 import { factInfo } from "@/lib/facts";
@@ -59,7 +59,10 @@ import type { Direction } from "@/types/sky";
  * adjective or noun host still needs the copula English drops after "do"
  * ("may be expensive", not "may expensive") — the same reason appliedGloss's
  * own "do X" → "be X" branch exists for the teach page, applied here to the
- * quiz instruction's Japanese-filled X instead of an English one. */
+ * quiz instruction's Japanese-filled X instead of an English one. A host with
+ * its own hand-written meaning never reaches this (SAK-499); today every modal
+ * recipe's adjective and noun rows have one, so this is the fallback for a new
+ * row that does not. */
 const LEADING_MODAL = /^(?:may|must(?: not)?|can|had better(?: not)?) X\b/;
 
 /** The recipe's gloss, do/does/doing dropped (SAK-193), with X filled by
@@ -150,8 +153,16 @@ export function quizInstruction(
     // (本), not the varying vehicle: the gloss's X is the fixed noun's role
     // ("only X (nothing but)"), and the vehicle verb is the halo's own word,
     // shown there rather than repeated in the sentence.
-    const template = dropDoScaffold(prod.recipe.gloss);
+    //
+    // A HOST WITH ITS OWN MEANING reads that instead (SAK-499). 〜てもいい on
+    // たかい is "it's okay even if it's たかい", 〜なくてもいい on たかい is "it
+    // doesn't have to be たかい", 〜てはいけない on しずか is "it must not be
+    // しずか". The lesson's Meaning cell is the same string with the English word
+    // in X, read through the same `attachmentMeaning`, so the two cannot drift.
+    // The modal rule in filledGlossFor is only the fallback for a host with none.
     const wrap = prod.recipe.wrap;
+    const own = wrap ? undefined : attachmentMeaning(prod.recipe, prod.host);
+    const template = own ?? dropDoScaffold(prod.recipe.gloss);
     const word = wrap
       ? openExample(prod.recipe).surface
       : vehicle
@@ -161,7 +172,9 @@ export function quizInstruction(
         : undefined;
     if (/\bX\b/.test(template) && word !== undefined) {
       const fillHost = wrap ? (prod.recipe.attach[0]?.host ?? "noun") : prod.host;
-      const filled = filledGlossFor(template, fillHost, word);
+      const filled = own
+        ? own.replace(/\bX\b/g, word)
+        : filledGlossFor(template, fillHost, word);
       // An UNKNOWN class word still needs its class named — the filled X is
       // drawn in kana precisely because she has not met it, and kana alone
       // does not say ichidan vs godan (see the `kind` note above). A known
