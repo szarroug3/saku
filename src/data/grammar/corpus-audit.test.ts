@@ -125,8 +125,10 @@ describe("coverage after the audit is recorded, not assumed", () => {
     // 212 -> 164: 48 are purpose の+に ("convenient FOR doing X") or the
     // pronoun-の + choice-に of 〜にする, not concessive のに.
     noni: 164,
-    // 33 -> 9 (SAK-501): らしく is the "befitting" らしい.
-    rashii: 9,
+    // 33 -> 9 (SAK-501). Then 74 (SAK-510): the signature now matches the
+    // "apparently" らしい after a plain-form predicate, and the rule takes the
+    // 9 old suffix tags off.
+    rashii: 74,
     // 139 -> 137 (SAK-501): と言ったところ, "so to speak".
     "ta-tokoro": 137,
     // 425 -> 420 (SAK-501): ていろ / ていなさい, a command.
@@ -147,13 +149,11 @@ describe("coverage after the audit is recorded, not assumed", () => {
     // that leaves a pattern with nothing is a pattern the app can no longer
     // teach, and that must be a decision, not a side effect.
     //
-    // Two patterns are below 20 on purpose (SAK-501). In both, the tagger's
-    // signature matches a different word far more often than the pattern:
-    // ない + で is mostly the request "please don't", and grammar.py's rashii
-    // signature reads the suffix らしい ("like a real X"), not the auxiliary
-    // ("apparently"). Every sentence the rules took out was read. The fix that
-    // brings the numbers back is in grammar.py, not here.
-    const THIN: Readonly<Record<string, number>> = { "nai-de": 2, rashii: 9 };
+    // One pattern is below 20 on purpose (SAK-501). ない + で is mostly the
+    // request "please don't", which nai-request teaches. Every sentence the
+    // rule took out was read. rashii was here too until SAK-510 fixed its
+    // signature in grammar.py.
+    const THIN: Readonly<Record<string, number>> = { "nai-de": 2 };
     for (const p of AUDITED) {
       if (p in THIN) assert.equal(examplesFor(p).length, THIN[p], `${p} moved; read its sentences before changing this`);
       else assert.ok(examplesFor(p).length >= 20, `${p} fell to ${examplesFor(p).length}`);
@@ -211,8 +211,14 @@ describe("the SAK-501 rules drop the wrong sense and keep the right one", () => 
     },
     {
       pattern: "rashii",
-      drop: [example("若者らしくふるまいなさい。", "rashii", "らしく", "Behave yourself like a young man.")],
-      keep: [example("彼は来るらしい。", "rashii", "らしい", "Apparently he's coming.")],
+      drop: [
+        example("若者らしくふるまいなさい。", "rashii", "らしく", "Behave yourself like a young man."),
+        example("それはわざとらしい笑いだった。", "rashii", "らしい", "It was a forced smile."),
+      ],
+      keep: [
+        example("彼は来るらしい。", "rashii", "来るらしい", "Apparently he's coming."),
+        example("彼は病気だったらしい。", "rashii", "たらしい", "He seems to have been ill."),
+      ],
     },
     {
       pattern: "ta-tokoro",
