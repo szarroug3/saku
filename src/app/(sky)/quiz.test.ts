@@ -20,7 +20,7 @@ import { quizzableFacts } from "@/lib/library/reading-proof-facts";
 import { CURRICULUM_KEBS_ORDERED } from "@/lib/word-rank";
 import { buildGraph } from "@/sky/lib/graph";
 import { lessonSteps } from "@/sky/lib/lesson";
-import type { QuizCard } from "@/sky/lib/quiz";
+import { answerPlaceholder, type QuizCard } from "@/sky/lib/quiz";
 import type { FactId } from "@/types/facts";
 import type { HistoryFile } from "@/types/store";
 
@@ -63,8 +63,8 @@ describe("the sample quiz", () => {
       const wantsKana = card.answerInKana !== undefined;
       if (card.item.kind === "kana" || card.answerIs === "meaning") {
         assert.equal(wantsKana, false, `${card.id} should take romaji or English, not kana`);
-      } else if (card.answerIs === "reading") {
-        assert.equal(wantsKana, true, `${card.id} asks for a reading, so its box types kana`);
+      } else if (card.answerIs === "reading" || card.answerIs === "form") {
+        assert.equal(wantsKana, true, `${card.id} asks for a reading or a built form, so its box types kana`);
       }
     }
   });
@@ -754,5 +754,35 @@ describe("a word read several ways that mean different things (SAK-459)", () => 
     assert.equal(heard.readings, undefined);
     assert.ok(matchesKey(heard.key, "behind"));
     assert.ok(!matchesKey(heard.key, "after"), "it played あと, so あと is what it asked about");
+  });
+});
+
+// SAK-513: the box on a grammar production card said "The reading", and the
+// answer there is the word built into the pattern (げんきでもいい), which the
+// quiz calls a form. A word card still asks for the reading.
+describe("what each card's box asks for", () => {
+  const box = (fact: string) => {
+    const card = quizCards(emptyHistory(), [fact as FactId], NOW)[0];
+    assert.ok(card?.typed, `${fact} has no box`);
+    return answerPlaceholder(card);
+  };
+
+  it("asks a 〜てもいい adjective card for the form", () => {
+    assert.equal(box("grammar:te-permission/production@adj-i"), "The form");
+    assert.equal(box("grammar:te-permission/production@adj-na"), "The form");
+  });
+
+  it("asks a verb's production card for the form too", () => {
+    assert.equal(box("grammar:te-sequence/production@v5b"), "The form");
+  });
+
+  it("keeps the reading on a word, a kanji and a kana card", () => {
+    assert.equal(box("word:明白/reading"), "The reading");
+    assert.equal(box("kanji:一/reading@統一"), "The reading");
+    assert.equal(box("kana:あ/reading"), "In romaji, or how it sounds");
+  });
+
+  it("keeps the meaning on a meaning card", () => {
+    assert.equal(box("word:明白/meaning"), "The meaning, in English");
   });
 });
