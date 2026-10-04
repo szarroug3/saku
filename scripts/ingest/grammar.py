@@ -440,7 +440,27 @@ SIGNATURES = {
             {"lemma_in": ("だ", "です"), "cForm_in": ("終止形-一般", "連用形-促音便")},
         ],
     },
-    "rashii": {"host": None, "seq": [{"lemma": "らしい", "pos1": "接尾辞"}]},
+    # THE "APPARENTLY" らしい, AND ONLY THAT ONE (SAK-510).
+    #
+    # Two words are spelled らしい. After a noun it is usually the suffix
+    # "like a real X" (若者らしく, 日本語らしい日本語), and UniDic files most of
+    # those as 接尾辞, which is what this signature used to match. All 33
+    # sentences it found were that sense. The pattern the app teaches is the
+    # auxiliary "apparently X", and that follows a plain-form predicate: a
+    # verb (来るらしい), its た or ない form (来たらしい, 来ないらしい), or an
+    # い-adjective (寒いらしい).
+    #
+    # So the host is the predicate, in 終止形. A noun or な-adjective host is
+    # left out on purpose: UniDic tags 学生らしい and わざとらしい with the
+    # same auxiliary らしい, so after a noun the tokens cannot tell
+    # "apparently a student" from "like a real student". だ is excluded as a
+    # host because だらしい is not Japanese and 病気だったらしい already
+    # reaches the auxiliary through た. The cases are checked by
+    # check_rashii() below.
+    "rashii": {
+        "host": {"pos1_in": ("動詞", "形容詞", "助動詞"), "cForm_prefix": "終止形", "lemma_not": "だ"},
+        "seq": [{"lemma": "らしい"}],
+    },
     # か and も are two separate 助詞; there is no かも token.
     "kamoshirenai": {
         "host": None,
@@ -627,6 +647,22 @@ NO_SIGNATURE = {
     "with no single fixed string — same structural reason as `stem-form`.",
 }
 
+# Sentences the rashii signature must and must not match (SAK-510). Run by
+# grammar.py and grammar_retag_rashii.py before either reads the export, so a
+# UniDic update that moves these tokens stops the run.
+RASHII_MATCH = ("彼は来るらしい。", "彼は来たらしい。", "彼は来ないらしい。", "外は寒いらしい。")
+RASHII_NO_MATCH = ("若者らしくふるまいなさい。", "わざとらしい。", "日本語らしい日本語ですね。", "彼は学生らしい。")
+
+
+def check_rashii(tagger):
+    """Exit when the rashii signature matches the wrong らしい, or misses the right one."""
+    sig = SIGNATURES["rashii"]
+    wrong = [s for s in RASHII_MATCH if not match_all([tok_fields(w) for w in tagger(s)], sig)]
+    wrong += [s for s in RASHII_NO_MATCH if match_all([tok_fields(w) for w in tagger(s)], sig)]
+    if wrong:
+        sys.exit(f"FATAL: the rashii signature gets these wrong: {wrong}")
+
+
 # Patterns needing two hits in one sentence to count.
 MIN_HITS = {"tari-tari": 2}
 
@@ -783,6 +819,7 @@ def main():
     import fugashi
 
     tagger = fugashi.Tagger()
+    check_rashii(tagger)
 
     jpn, owners = load_sentences_detailed(open_archive_text("tatoeba-jpn-sentences"))
     eng = load_eng(open_archive_text("tatoeba-eng-sentences"))
