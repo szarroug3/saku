@@ -21,9 +21,9 @@ import { VERDICT } from "@/sky/components/quiz-results";
 import { useMounted } from "@/sky/components/use-mounted";
 import { japaneseFont } from "@/sky/lib/japanese";
 import { seeded } from "@/sky/lib/random";
-import { endRun, isRight, kanjiDone, labelReading, nextKanji, READING_LABEL, rightLabel, shuffleReadings, startRun, type DrillKanji, type DrillReading, type DrillRun, type DrillScore, type ReadingLabel } from "@/sky/lib/readings-drill";
+import { endRun, isRight, kanjiDone, labelReading, nextKanji, READING_LABEL, READINGS_DRILL, rightLabel, shuffleReadings, startRun, type DrillKanji, type DrillReading, type DrillRun, type DrillScore, type ReadingLabel } from "@/sky/lib/readings-drill";
 
-const TITLE = "Kun'yomi or on'yomi?";
+const TITLE = READINGS_DRILL.name;
 const LABELS: readonly ReadingLabel[] = ["kun", "on"];
 
 /** A fresh seed for the readings' order, one per run. */

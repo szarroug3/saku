@@ -44,12 +44,23 @@ interface SkyPracticeProps {
   onSaved: (saved: readonly SavedRecipe[]) => void;
   /** Starts the run. */
   onStart: (recipe: Recipe) => void;
-  /** Where the readings drill is (SAK-495): sorting each reading of a kanji
-   * as kun'yomi or on'yomi. It is not a recipe and records nothing, so it
-   * sits beside the heading rather than in the recipe. */
-  readingsHref?: string;
+  /** The drills, listed in their own panel under the recipe (SAK-520). A
+   * drill is not a recipe and records nothing, so it is not in the recipe
+   * either. The readings drill (SAK-495) was a button beside the heading
+   * first; Sam found it out of place there. */
+  drills?: readonly Drill[];
   /** A recipe handed back from a run to save. */
   height?: string;
+}
+
+/** One row of the Drills panel: what the drill is called (the title on its
+ * own page), a line on what it asks, a muted line under that, and where it
+ * starts. */
+interface Drill {
+  name: string;
+  about: string;
+  note?: string;
+  href: string;
 }
 
 const LOOKUP_DELAY = 150;
@@ -59,7 +70,7 @@ const LOOKUP_DELAY = 150;
 // lib/practice.ts, with the reason written out there.
 const same = sameRecipe;
 
-export function SkyPractice({ collections, lookup, initial, saved, onSaved, onStart, readingsHref, height }: SkyPracticeProps) {
+export function SkyPractice({ collections, lookup, initial, saved, onSaved, onStart, drills = [], height }: SkyPracticeProps) {
   const [recipe, setRecipe] = useState<Recipe>(initial.recipe);
   // the preview is looked up for the recipe without what is left out by
   // hand: leaving an item out is then a filter on what is already here, with
@@ -151,99 +162,106 @@ export function SkyPractice({ collections, lookup, initial, saved, onSaved, onSt
   const load = (d: SavedRecipe) => { set(d.recipe); setLoaded(d.name); };
 
   return (
-    <SkyPageShell eyebrow="Practice" title="What would you like to practice?" height={height} aside={readingsHref && (
-      <span className="flex items-center gap-2">
-        <SkyButton variant="outline" href={readingsHref}>Sort kanji readings</SkyButton>
-        <SkyInfo label="What the readings drill is">Sort each reading of a kanji as kun&apos;yomi or on&apos;yomi. Nothing in it counts toward your progress.</SkyInfo>
-      </span>
-    )}>
-      <div className="grid min-h-0 flex-1 gap-4 font-sky-ui lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-        <SkyPanel title="The recipe" className="flex min-h-0 flex-col overflow-y-auto">
-          {saved.length > 0 && (
-            <Facet title="Saved recipes">
-              {/* a saved recipe carries what it draws from, the way a
-                  collection's chip carries its count: "Everything" says
-                  nothing about itself until you read every other chip
-                  (SAK-372) */}
-              {saved.map((d) => <SkyChip key={d.name} on={chosen?.name === d.name} onClick={() => load(d)} title={recipeSummary(d.recipe, collections)} className={japaneseFont(d.name)}>{d.name}</SkyChip>)}
-              {chosen && (
-                renaming !== null ? (
-                  <form className="flex w-full gap-2" onSubmit={(e) => { e.preventDefault(); rename(chosen.name); }}>
-                    <SkyInput value={renaming} onChange={(e) => setRenaming(e.target.value)} className="flex-1 !py-1 text-[13px]" autoFocus />
-                    <SkyButton onClick={() => rename(chosen.name)} disabled={!renaming.trim()}>Rename</SkyButton>
-                    <SkyButton variant="outline" onClick={() => setRenaming(null)}>Cancel</SkyButton>
-                  </form>
-                ) : dropping ? (
-                  // it asks now, like every other thing that cannot be got
-                  // back (SAK-364); it used to delete on the click
-                  // the verb says the whole of it, so there is no sentence
-                  // beside it saying it again (SAK-443)
-                  <InlineAsk className="w-full" confirm="Delete it forever" onConfirm={() => { remove(); setDropping(false); }} onKeep={() => setDropping(false)} />
-                ) : (
-                  <span className="flex w-full gap-3 text-[12px] text-sky-muted">
-                    <button type="button" className="underline hover:text-sky-ink" onClick={() => setRenaming(chosen.name)}>Rename</button>
-                    <button type="button" className="underline hover:text-sky-coral" onClick={() => setDropping(true)}>Delete</button>
-                  </span>
-                )
-              )}
-            </Facet>
-          )}
-          <Facet title="Draw from">
-            {collections.map((c) => {
-              const on = recipe.collections.includes(c.id);
-              const total = `${c.total.toLocaleString()} to draw from`;
-              if (!c.cuts) return <SkyChip key={c.id} on={on} onClick={() => toggleCollection(c.id)} title={total}>{c.title}</SkyChip>;
-              const cutIds = cutsOf(recipe, c.id);
-              const groups = [...new Set(c.cuts.map((cut) => cut.group ?? ""))];
-              const menu = (
-                <div className="flex flex-col gap-2.5">
-                  {groups.map((g) => (
-                    <div key={g}>
-                      {g && <Eyebrow>{g}</Eyebrow>}
-                      <ChipRow>
-                        {c.cuts!.filter((cut) => (cut.group ?? "") === g).map((cut) => <SkyChip key={cut.id} on={cutIds.includes(cut.id)} onClick={() => toggleCut(c.id, cut.id)} className={japaneseFont(cut.label)}>{cut.label}</SkyChip>)}
-                      </ChipRow>
-                    </div>
-                  ))}
-                </div>
-              );
-              const names = cutIds.map((id) => c.cuts!.find((x) => x.id === id)?.label ?? id).join(", ");
-              return <SkyMenuChip key={c.id} on={on} onClick={() => toggleCollection(c.id)} title={names ? `${c.title}: ${names}` : total} marked={cutIds.length > 0} menuLabel={`Which ${c.title.toLowerCase()}`} menu={menu}>{c.title}</SkyMenuChip>;
-            })}
-          </Facet>
-          <Facet title="Only things that are">
-            {STANDING_ORDER.map((s) => <SkyChip key={s} on={recipe.statuses.includes(s)} onClick={() => set({ statuses: toggle(recipe.statuses, s) })}>{standingWord(s)}</SkyChip>)}
-          </Facet>
-          <Facet title="Ask me for">
-            {ASKS.map((a) => {
-              const can = preview.asksAvailable[a];
-              return <SkyChip key={a} on={recipe.asks.includes(a)} disabled={!can} title={can ? ASK[a].meaning : `Nothing in this deck can be asked that way. ${ASK[a].meaning}`} onClick={() => set({ asks: toggle(recipe.asks, a) })}>{ASK[a].label}</SkyChip>;
-            })}
-          </Facet>
-          <Facet title="How many">
-            <SkyChip on={recipe.size !== "all"} onClick={() => set({ size: count })}>Limited</SkyChip>
-            <SkyChip on={recipe.size === "all"} onClick={() => set({ size: "all" })}>All of them</SkyChip>
-            {/* the number is questions, so the box says so beside itself and
-                to a screen reader, rather than leaving "How many" to be read
-                as items (SAK-437) */}
-            {recipe.size !== "all" && <SkyStepper value={recipe.size} onChange={(n) => { setCount(n); set({ size: n }); }} label="Questions" unit="questions" />}
-          </Facet>
-          <div className="mt-8 flex flex-wrap items-center gap-2">
-            {saving ? (
-              <RecipeNameForm taken={saved.map((d) => d.name)} onSave={save} onCancel={() => setSaving(false)} />
-            ) : chosen && changed ? (
-              <>
-                <SkyButton onClick={update}>Update {chosen.name}</SkyButton>
-                <SkyButton variant="outline" onClick={() => setSaving(true)}>Save as new</SkyButton>
-              </>
-            ) : (
-              <SkyButton variant="outline" onClick={() => setSaving(true)} disabled={!!chosen}>{chosen ? `Saved as ${chosen.name}` : "Save this recipe"}</SkyButton>
+    <SkyPageShell eyebrow="Practice" title="What would you like to practice?" height={height}>
+      {/* on a phone the columns stack and the stack scrolls, each panel at
+          its full height, or most of a screen for the long list (SAK-520).
+          Squeezed into one screen, the recipe was left a short box of its
+          own over the drills, and "What you would get" its heading alone */}
+      <div className="grid min-h-0 flex-1 auto-rows-max gap-4 overflow-y-auto font-sky-ui lg:auto-rows-auto lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:overflow-visible">
+        {/* the left column: the recipe, and the drills under it (SAK-520).
+            On a wide screen the recipe fills the column and scrolls, and
+            the drills keep their own height under it */}
+        <div className="flex flex-col gap-4 lg:min-h-0">
+          <SkyPanel title="The recipe" className="flex shrink-0 flex-col overflow-y-auto lg:min-h-0 lg:flex-1 lg:shrink">
+            {saved.length > 0 && (
+              <Facet title="Saved recipes">
+                {/* a saved recipe carries what it draws from, the way a
+                    collection's chip carries its count: "Everything" says
+                    nothing about itself until you read every other chip
+                    (SAK-372) */}
+                {saved.map((d) => <SkyChip key={d.name} on={chosen?.name === d.name} onClick={() => load(d)} title={recipeSummary(d.recipe, collections)} className={japaneseFont(d.name)}>{d.name}</SkyChip>)}
+                {chosen && (
+                  renaming !== null ? (
+                    <form className="flex w-full gap-2" onSubmit={(e) => { e.preventDefault(); rename(chosen.name); }}>
+                      <SkyInput value={renaming} onChange={(e) => setRenaming(e.target.value)} className="flex-1 !py-1 text-[13px]" autoFocus />
+                      <SkyButton onClick={() => rename(chosen.name)} disabled={!renaming.trim()}>Rename</SkyButton>
+                      <SkyButton variant="outline" onClick={() => setRenaming(null)}>Cancel</SkyButton>
+                    </form>
+                  ) : dropping ? (
+                    // it asks now, like every other thing that cannot be got
+                    // back (SAK-364); it used to delete on the click
+                    // the verb says the whole of it, so there is no sentence
+                    // beside it saying it again (SAK-443)
+                    <InlineAsk className="w-full" confirm="Delete it forever" onConfirm={() => { remove(); setDropping(false); }} onKeep={() => setDropping(false)} />
+                  ) : (
+                    <span className="flex w-full gap-3 text-[12px] text-sky-muted">
+                      <button type="button" className="underline hover:text-sky-ink" onClick={() => setRenaming(chosen.name)}>Rename</button>
+                      <button type="button" className="underline hover:text-sky-coral" onClick={() => setDropping(true)}>Delete</button>
+                    </span>
+                  )
+                )}
+              </Facet>
             )}
-            {!saving && <SkyInfo className="ml-1.5" label="What a saved recipe keeps">A saved recipe keeps the recipe itself instead of today&apos;s list, so it changes as you do.</SkyInfo>}
-          </div>
-        </SkyPanel>
+            <Facet title="Draw from">
+              {collections.map((c) => {
+                const on = recipe.collections.includes(c.id);
+                const total = `${c.total.toLocaleString()} to draw from`;
+                if (!c.cuts) return <SkyChip key={c.id} on={on} onClick={() => toggleCollection(c.id)} title={total}>{c.title}</SkyChip>;
+                const cutIds = cutsOf(recipe, c.id);
+                const groups = [...new Set(c.cuts.map((cut) => cut.group ?? ""))];
+                const menu = (
+                  <div className="flex flex-col gap-2.5">
+                    {groups.map((g) => (
+                      <div key={g}>
+                        {g && <Eyebrow>{g}</Eyebrow>}
+                        <ChipRow>
+                          {c.cuts!.filter((cut) => (cut.group ?? "") === g).map((cut) => <SkyChip key={cut.id} on={cutIds.includes(cut.id)} onClick={() => toggleCut(c.id, cut.id)} className={japaneseFont(cut.label)}>{cut.label}</SkyChip>)}
+                        </ChipRow>
+                      </div>
+                    ))}
+                  </div>
+                );
+                const names = cutIds.map((id) => c.cuts!.find((x) => x.id === id)?.label ?? id).join(", ");
+                return <SkyMenuChip key={c.id} on={on} onClick={() => toggleCollection(c.id)} title={names ? `${c.title}: ${names}` : total} marked={cutIds.length > 0} menuLabel={`Which ${c.title.toLowerCase()}`} menu={menu}>{c.title}</SkyMenuChip>;
+              })}
+            </Facet>
+            <Facet title="Only things that are">
+              {STANDING_ORDER.map((s) => <SkyChip key={s} on={recipe.statuses.includes(s)} onClick={() => set({ statuses: toggle(recipe.statuses, s) })}>{standingWord(s)}</SkyChip>)}
+            </Facet>
+            <Facet title="Ask me for">
+              {ASKS.map((a) => {
+                const can = preview.asksAvailable[a];
+                return <SkyChip key={a} on={recipe.asks.includes(a)} disabled={!can} title={can ? ASK[a].meaning : `Nothing in this deck can be asked that way. ${ASK[a].meaning}`} onClick={() => set({ asks: toggle(recipe.asks, a) })}>{ASK[a].label}</SkyChip>;
+              })}
+            </Facet>
+            <Facet title="How many">
+              <SkyChip on={recipe.size !== "all"} onClick={() => set({ size: count })}>Limited</SkyChip>
+              <SkyChip on={recipe.size === "all"} onClick={() => set({ size: "all" })}>All of them</SkyChip>
+              {/* the number is questions, so the box says so beside itself and
+                  to a screen reader, rather than leaving "How many" to be read
+                  as items (SAK-437) */}
+              {recipe.size !== "all" && <SkyStepper value={recipe.size} onChange={(n) => { setCount(n); set({ size: n }); }} label="Questions" unit="questions" />}
+            </Facet>
+            <div className="mt-8 flex flex-wrap items-center gap-2">
+              {saving ? (
+                <RecipeNameForm taken={saved.map((d) => d.name)} onSave={save} onCancel={() => setSaving(false)} />
+              ) : chosen && changed ? (
+                <>
+                  <SkyButton onClick={update}>Update {chosen.name}</SkyButton>
+                  <SkyButton variant="outline" onClick={() => setSaving(true)}>Save as new</SkyButton>
+                </>
+              ) : (
+                <SkyButton variant="outline" onClick={() => setSaving(true)} disabled={!!chosen}>{chosen ? `Saved as ${chosen.name}` : "Save this recipe"}</SkyButton>
+              )}
+              {!saving && <SkyInfo className="ml-1.5" label="What a saved recipe keeps">A saved recipe keeps the recipe itself instead of today&apos;s list, so it changes as you do.</SkyInfo>}
+            </div>
+          </SkyPanel>
+          {drills.length > 0 && <DrillsPanel drills={drills} />}
+        </div>
 
-        <SkyPanel title="What you would get" fit>
+        {/* on a phone it is at most most of a screen tall, so its list
+            scrolls inside it and Start is never thousands of rows down */}
+        <SkyPanel title="What you would get" fit className="max-lg:max-h-[80dvh]">
           {/* a deck is one card per fact, so a pool of items is a longer run
               of questions than it looks (Sam, 2026-09-08: her 106 items were
               202 questions). "All of them" says both counts, since it asks
@@ -323,5 +341,26 @@ function Facet({ title, children }: { title: string; children: React.ReactNode }
       <Eyebrow>{title}</Eyebrow>
       <ChipRow>{children}</ChipRow>
     </div>
+  );
+}
+
+/** The drills (SAK-520), one row each. A second drill is one more entry in
+ * the list the route hands in, and the panel does not change. */
+function DrillsPanel({ drills }: { drills: readonly Drill[] }) {
+  return (
+    <SkyPanel title="Drills" className="shrink-0">
+      <ul data-practice-drills className="mt-3 flex flex-col gap-3">
+        {drills.map((d) => (
+          <li key={d.href} className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+            <div className="min-w-0 flex-1">
+              <div className="text-[14px] font-semibold text-sky-ink">{d.name}</div>
+              <p className="mt-0.5 text-[13px] text-sky-ink/90">{d.about}</p>
+              {d.note && <p className="mt-0.5 text-[12px] text-sky-muted">{d.note}</p>}
+            </div>
+            <SkyButton variant="outline" href={d.href}>Start</SkyButton>
+          </li>
+        ))}
+      </ul>
+    </SkyPanel>
   );
 }

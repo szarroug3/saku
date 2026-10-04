@@ -2992,7 +2992,7 @@ test("the readings drill sorts a kanji's readings, shows the right label on a mi
   // kun'yomi and さん its on'yomi. Nothing is stored, so the browser's copy
   // is the same after the drill as before it, and no server action is sent.
   await page.goto("/practice");
-  const entry = page.getByRole("link", { name: "Sort kanji readings" });
+  const entry = page.locator("[data-practice-drills]").getByRole("link", { name: "Start" });
   await expect(entry).toHaveAttribute("href", "/practice/readings");
   await entry.click();
   await expect(page.getByRole("heading", { name: "Kun'yomi or on'yomi?" })).toBeVisible();
@@ -3021,6 +3021,50 @@ test("the readings drill sorts a kanji's readings, shows the right label on a mi
   // and it can start over
   await page.getByRole("button", { name: "Start over" }).click();
   await expect(page.getByText("山", { exact: true })).toBeVisible();
+});
+
+test("Practice lists the readings drill in a Drills panel under the recipe, not beside the heading", async ({ page }) => {
+  // SAK-520. Sam found the drill's button beside the Practice heading out of
+  // place, so it moved into a Drills panel at the foot of the left column.
+  // At 1440 the panel sits under the recipe; at 390 the columns stack, so it
+  // sits under the recipe and over "What you would get".
+  for (const width of [1440, 390]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto("/practice");
+    const header = page.locator("header").filter({ has: page.getByRole("heading", { name: "What would you like to practice?" }) });
+    await expect(header).toBeVisible();
+    await expect(header.getByRole("link")).toHaveCount(0);
+    await expect(page.getByRole("link", { name: "Sort kanji readings" })).toHaveCount(0);
+
+    const drills = page.locator("section").filter({ has: page.getByRole("heading", { name: "Drills", exact: true }) });
+    await expect(drills.getByText("Kun'yomi or on'yomi?", { exact: true })).toBeVisible();
+    await expect(drills.getByText("Sort each reading of a kanji as kun'yomi or on'yomi.")).toBeVisible();
+    await expect(drills.getByText("Nothing from it is saved.")).toBeVisible();
+    const start = drills.getByRole("link", { name: "Start" });
+    await expect(start).toHaveAttribute("href", "/practice/readings");
+
+    // under the recipe, in the same column
+    const recipe = page.locator("section").filter({ has: page.getByRole("heading", { name: "The recipe", exact: true }) });
+    const r = (await recipe.boundingBox())!;
+    const d = (await drills.boundingBox())!;
+    expect(d.y).toBeGreaterThanOrEqual(r.y + r.height);
+    expect(Math.abs(d.x - r.x)).toBeLessThanOrEqual(1);
+    if (width === 390) {
+      // the stack scrolls on a phone, so each panel is its full height
+      // there rather than a short box squeezed into one screen
+      const get = page.locator("section").filter({ has: page.getByRole("heading", { name: "What you would get", exact: true }) });
+      for (const panel of [recipe, drills, get]) expect(await panel.evaluate((el) => el.scrollHeight - el.clientHeight)).toBeLessThanOrEqual(1);
+      // and the long list stops at most of a screen, with its own Start in it
+      expect((await get.boundingBox())!.height).toBeLessThanOrEqual(900 * 0.8 + 1);
+      await expect(get.getByRole("button", { name: "Start" })).toBeVisible();
+      expect((await get.boundingBox())!.y).toBeGreaterThanOrEqual(d.y + d.height);
+    }
+
+    await start.scrollIntoViewIfNeeded();
+    await start.click();
+    await expect(page).toHaveURL(/\/practice\/readings$/);
+    await expect(page.getByRole("heading", { name: "Kun'yomi or on'yomi?" })).toBeVisible();
+  }
 });
 
 test("the readings intro ends on the drill in Practice, and does not run it", async ({ page }) => {
