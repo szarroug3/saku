@@ -46,7 +46,9 @@ export const SENTENCE_ENGLISH_MARKS: Readonly<Record<string, string | null>> = {
   "-10:de": "at the library",
   "4727:wo": "nap",
   "4812:e": "to Japan",
-  "5326:made": "before Saturday",
+  // ちょっとそこまで is a set phrase for stepping out nearby. The English
+  // says "step out for a short walk" and has no words for そこまで.
+  "76557:made": null,
   "5326:made-ni": "before Saturday",
   "5041:dake": "just one defect",
   "-16:shika-nai": "nothing but water",
@@ -68,7 +70,7 @@ export const SENTENCE_ENGLISH_MARKS: Readonly<Record<string, string | null>> = {
   "190902:te-morau": "see a doctor",
   "-25:nai-form": "don't eat",
   "6004:nai-request": "Please do not take",
-  "4932:nai-de": "don't cry",
+  "189932:nai-de": "Don't hold back",
   "74978:nakute-mo-ii": "There's no need",
   "4787:nakereba-naranai": "have to take",
   "77626:nakereba-ikenai": "must look to",
