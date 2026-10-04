@@ -41,6 +41,15 @@ const isName = (glyph: string) => /^[\p{Script=Latin}\p{N} /().'’-]+$/u.test(g
  * it means, and the square has no room for that. */
 const named = (item: SkyItem) => item.glyph === item.english || isName(item.glyph) || item.kind === "grammar";
 
+/** A name drawn on a tile, with a place to wrap after each slash. A name
+ * like "Keiyōshi/keiyōdōshi" has no space in it, so without one it ran past
+ * the tile's right edge (SAK-504). Only the slash gets the break; a name with
+ * spaces wraps at them as before. */
+function wrappable(name: string) {
+  const parts = name.split("/");
+  return parts.flatMap((part, i) => (i < parts.length - 1 ? [`${part}/`, <wbr key={i} />] : [part]));
+}
+
 function Tile({ item, selected, onPick, onPeek, asName = false, big = true }: { item: SkyItem; selected: boolean; onPick: OnPick; onPeek?: (id: string) => void; asName?: boolean; /** Whether a one-character glyph is drawn large: only in a cut where every glyph is one character. */ big?: boolean }) {
   // in a cut of names every tile takes the name shape, so they stay one size
   // (Sam, 2026-09-05); a glyph then sits small above its name
@@ -55,7 +64,7 @@ function Tile({ item, selected, onPick, onPeek, asName = false, big = true }: { 
       title={`${item.glyph} ${item.english}`}
       className={`flex min-w-0 flex-col items-center justify-center gap-0.5 rounded-lg border px-1.5 transition-colors ${name ? "h-16" : "aspect-square"} ${selected ? "border-sky-accent bg-sky-card-strong" : "border-transparent bg-sky-panel hover:bg-sky-card-strong"}`}
     >
-      <span className={`max-w-full text-center leading-tight ${name && item.glyph === item.english ? "line-clamp-2 font-sky-ui text-[12.5px] font-semibold" : `truncate font-sky-display leading-none ${lone ? "text-[24px]" : "text-[15px]"}`} ${STANDING[item.standing].text} ${japaneseFont(item.glyph)}`}>{item.glyph}</span>
+      <span className={`max-w-full text-center leading-tight ${name && item.glyph === item.english ? "line-clamp-2 font-sky-ui text-[12.5px] font-semibold" : `truncate font-sky-display leading-none ${lone ? "text-[24px]" : "text-[15px]"}`} ${STANDING[item.standing].text} ${japaneseFont(item.glyph)}`}>{name && item.glyph === item.english ? wrappable(item.glyph) : item.glyph}</span>
       {item.english !== item.glyph && <span className="max-w-full truncate text-[10.5px] text-sky-muted">{item.english}</span>}
     </button>
   );

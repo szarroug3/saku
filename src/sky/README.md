@@ -7568,3 +7568,13 @@ Sam, 2026-10-04, on the はい vs うん card in the Atlas: "i don't see the pit
 **Tests.** `word-groups.test.ts`: the はい and うん pages give their word with pitch 1, the "Which one to use" page and the いいえ and いや pages give nothing, and a word read differently (箸) gives nothing. In `e2e/sky.spec.ts`, the Atlas on the はい vs うん card at 1440 and 390 finds one pitch line on pages 1 and 2, inside the title, with the hear button centered within 1px and no eyebrow above the title; page 3 and the いいえ page have none. The SAK-493 test finds the title by a name that may carry the line's label.
 
 **Screenshots** in `.logs/sak-517/`: `atlas-1440-page1-はい.png`, `atlas-1440-page2-うん.png`, `atlas-1440-iie-none.png` and `atlas-390-page1-はい.png`.
+
+## A tile name wraps after a slash (SAK-504)
+
+On the Atlas Terms shelf, the tile for "Keiyōshi/keiyōdōshi" read "Keiyōshi/keiyōdōsh". The name has no space in it, the tile is 130px wide, and the line had nowhere to break, so the last letter ran past the tile's edge.
+
+`wrappable` in `atlas-grid.tsx` puts a `<wbr>` after each "/" in a name drawn on a tile, so the line can break there the way it breaks at a space. It is used only on a tile whose glyph is its name (a term, a concept, a rule with no mark), which is the tile drawn in the name style. The text style is the one every name tile has (SAK-476): 12.5px, semibold, two lines at most. Nothing changes for a name without a slash, and a glyph tile (kana, kanji, words) is drawn as before. The `<wbr>` adds no text, so the tile's accessible name and its title are unchanged.
+
+"Keiyōshi/keiyōdōshi" now reads "Keiyōshi/" on the first line and "keiyōdōshi" on the second. "Godan/ichidan" fits on one line and is unchanged. "Kun’yomi and on’yomi" wraps at its spaces as before.
+
+**Tests.** `e2e/sky.spec.ts`, "a term's name with a slash wraps on its Atlas tile instead of running off the edge (SAK-504)": at 1440px and at 390px, on the Terms shelf, the label on the Keiyōshi/keiyōdōshi, Godan/ichidan and Kun’yomi and on’yomi tiles reads the whole name, is no wider than its tile, and is no taller than its two lines.
