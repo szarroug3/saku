@@ -7364,3 +7364,23 @@ Sam, 2026-10-03, on the はい vs うん card: "do these words not have pitch?" 
 **Tests.** `scripts/ingest/pitch.test.mjs` (run with `node --test`): a kana headword with a blank Kanjium reading is matched, an ambiguous one is not, two keys that disagree give nothing, the blank-reading key is never tried for a kanji word, and the regression check's own lookup agrees. `pitch-facts.test.ts`: `wordPitch` gives はい 1, うん 1, うっかり 3 and ええ nothing, and はい and うん have pitch facts. `audit-structural.test.ts` counts 9,428. In `e2e/sky.spec.ts`, the Atlas shows はい and うっかり with their pitch over the word and ええ with none.
 
 **Screenshots.** In `.logs/sak-503/` of the lane worktree: `atlas-hai.png`, `atlas-ukkari.png`, `atlas-ee-none.png` and `atlas-hashi-control.png` (箸, where the line is over the reading beside the kanji, as before).
+
+## Corpus sentences filed under the wrong sense (SAK-501)
+
+SAK-497 read 68 Tatoeba sentences from `grammar-corpus.json`, one per pattern, and found 7 that are good Japanese filed under a pattern whose meaning they do not use. The tagger matches tokens, and the same tokens can mean something else. The rules that catch this live in `CONFOUNDS` in `src/data/grammar/corpus-audit.ts`. `scripts/audit-corpus.ts` runs them and only ever removes.
+
+**The rules.** Five are new and two are wider.
+
+- nai-de ("without doing X"): ないで at the end of a sentence, or before ください, くれ, ちょうだい or ほしい, is a request (私にかまわないで, "leave me alone"). So is ないで with a comma after it when the English starts with "Don't". ないでいい is "it's okay not to". 332 of 334 sentences were one of these. The ないでください ones are also tagged nai-request, so they stay in the app there.
+- made ("until"): までに is "by" (明日までに) or "ever" (今までに). 今まで with ことがある is "ever" too, and まで can mean "even" (吸殻まで, read off the English). 117 of 324 left.
+- rashii ("apparently"): the adverb らしく is the "like a real X" らしい (若者らしくふるまいなさい). 24 of 33 left. The other 9 are no better (らしさ, わざとらしい, 日本語らしい日本語). grammar.py's signature reads らしい as a suffix, which is the "like a real X" word. The "apparently" らしい is an auxiliary, and the fix is in the signature.
+- deshou ("probably"): でしょ without the う is a rhetorical "right?" (言ったでしょ). 90 of 230 left.
+- te-iru ("is doing"): ていろ and ていなさい are commands (下がっていろ, "stay back"). 5 of 425 left.
+- ta-tokoro, wider: と言ったところ ("so to speak") ends in です like the real pattern, so the old check for a particle after ところ let it through. The rule now also looks for the quoting と in front. 2 left.
+- kara-reason, wider: the old rule only looked for だから at the start of a sentence. A から with only ね or な after it is a promise or a warning (行くからね, "I'll come, okay?"). から。, からよ and からさ stay, since those usually answer "why?". 46 left.
+
+**痛む.** 冷蔵庫に入れておけば肉は痛まない uses 痛む (to hurt) where 傷む (to spoil) is meant. It is dropped by id in `BAD_JAPANESE`, because the audit only removes and a corrected sentence would be lost on the next run of grammar.py.
+
+**What moved.** 617 sentences changed: 268 left the corpus and 349 lost one pattern. `grammar-corpus-dropped.json` now keeps the rows of earlier runs as well as this one. The derived files were rebuilt with the tokenizer: `assembly-corpus.json` (605 to 603), `word-examples.json`, `sentence-readings.json`, `learn-index.json`, `curriculum-meta.json` and both catalogues. 38 words lost their only example sentence, since the wider pool in `word-example-candidates.json` was cut while the corpus still reached them. The made page's first sentence is now ちょっとそこまで散歩に出よう. The nai-de page's is 隠さないで話してくれ.
+
+**Tests.** `corpus-audit.test.ts` has a sentence each rule drops and one it keeps, the new pattern counts, and nai-de and rashii named as below 20 on purpose. The word example counts in `word-example.test.ts` and `source-pins.test.ts` were remeasured.

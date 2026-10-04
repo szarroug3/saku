@@ -28,14 +28,15 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
-import { confoundFor, prerequisiteGapFor, AUDITED } from "../src/data/grammar/corpus-audit.ts";
+import { confoundFor, prerequisiteGapFor, japaneseErrorFor, AUDITED } from "../src/data/grammar/corpus-audit.ts";
 import type { Example } from "../src/data/grammar/corpus.ts";
 
 /** A confound and an untaught-prerequisite gap both drop a pattern claim from
  * a sentence for the same practical reason (see corpus-audit.ts's
- * UNTAUGHT_PREREQUISITE doc for why they are still two separate tables). */
+ * UNTAUGHT_PREREQUISITE doc for why they are still two separate tables). A
+ * sentence with wrong Japanese drops every claim it has, so it leaves. */
 const guiltReasonFor = (ex: Example, p: string): string | null =>
-  confoundFor(ex, p) ?? prerequisiteGapFor(ex, p);
+  japaneseErrorFor(ex) ?? confoundFor(ex, p) ?? prerequisiteGapFor(ex, p);
 
 const GEN = fileURLToPath(new URL("../src/data/generated/", import.meta.url));
 
@@ -107,6 +108,13 @@ function main() {
     process.exit(1);
   }
 
+  // The shipped corpus has already lost what earlier runs dropped, so this run
+  // only finds what a new rule catches. Keep the earlier rows in the record
+  // so the file still lists every sentence the audit ever took out.
+  const earlier = read("grammar-corpus-dropped.json") as Dropped[];
+  const fresh = new Set(dropped.map((d) => `${d.id} ${d.pattern}`));
+  const record = [...earlier.filter((d) => !fresh.has(`${d.id} ${d.pattern}`)), ...dropped];
+
   write("grammar-corpus.json", kept);
   write(
     "grammar-corpus-meta.json",
@@ -124,16 +132,16 @@ function main() {
         by: "scripts/audit-corpus.ts",
         rules: "src/data/grammar/corpus-audit.ts",
         patterns: AUDITED,
-        droppedExamples: dropped.length,
-        droppedSentences: dropped.filter((d) => d.orphaned).length,
+        droppedExamples: record.length,
+        droppedSentences: record.filter((d) => d.orphaned).length,
       },
     },
     2,
   );
-  write("grammar-corpus-dropped.json", dropped, 2);
+  write("grammar-corpus-dropped.json", record, 2);
   console.log(`\nwrote grammar-corpus.json (${kept.length} sentences)`);
   console.log(`wrote grammar-corpus-meta.json`);
-  console.log(`wrote grammar-corpus-dropped.json (${dropped.length} rows)`);
+  console.log(`wrote grammar-corpus-dropped.json (${record.length} rows, ${dropped.length} new)`);
   // word-examples.json is derived FROM the corpus, so it is now stale. Its own
   // test catches this, but saying so here is cheaper than reading that failure.
   console.log(

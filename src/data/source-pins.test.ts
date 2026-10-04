@@ -601,11 +601,13 @@ test("every example sentence highlights the word it is an example of", () => {
   // twice: the wider pool matches a word on its dictionary form AND its
   // reading, at a token boundary, so a candidate the span pass then cannot
   // find in the sentence would be a disagreement between two tokenizations of
-  // the same text, and there are none.
-  assert.equal(spanned, 5803, "sentences that carry a highlight span");
-  assert.equal(literal, 4725, "spans that cover the word's dictionary spelling exactly");
-  assert.equal(spanned - literal, 1078, "spans that cover an inflected surface of the word");
-  assert.equal(noForms, 4263, "spans on a word with no conjugation class, all of them its spelling");
+  // the same text, and there are none. SAK-501 took them to 5,765 / 4,704 /
+  // 1,061 / 4,242: the new corpus-audit.ts rules took out the only corpus
+  // sentence of 38 words, and 73 more words moved to another sentence.
+  assert.equal(spanned, 5765, "sentences that carry a highlight span");
+  assert.equal(literal, 4704, "spans that cover the word's dictionary spelling exactly");
+  assert.equal(spanned - literal, 1061, "spans that cover an inflected surface of the word");
+  assert.equal(noForms, 4242, "spans on a word with no conjugation class, all of them its spelling");
 });
 
 /** Words that are never what a Japanese word MEANS, only how a meaning is
