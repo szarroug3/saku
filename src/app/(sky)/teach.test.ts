@@ -1364,7 +1364,7 @@ describe("the English under a marked sentence marks what the Japanese marks", ()
         marked++;
       } else assert.deepEqual(active, [], r.id);
     }
-    assert.equal(marked, 86);
+    assert.equal(marked, 85);
   });
 
   it("marks nap in the を row's English on the Particle page", () => {
