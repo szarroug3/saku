@@ -19,6 +19,7 @@ import { recipeAllows } from "@/lib/grammar/vehicles";
 import { examplesFor, type Example } from "@/data/grammar/corpus";
 import { attachmentMeaning, patternLabel, type Host, type Recipe } from "@/data/grammar/recipes";
 import { SENTENCE_ENGLISH_MARKS } from "@/data/grammar/sentence-english-marks";
+import { SENTENCE_WORD_MEANINGS } from "@/data/grammar/sentence-word-meanings";
 import type { BuildHeads, IntroBuildRule, IntroDeriveRow, PhaseIntro, SentenceExample } from "@/data/phase-intros";
 
 /** The pattern's own worked sentence, straight from the Tatoeba corpus — the
@@ -46,7 +47,16 @@ export function sentenceExampleFor(r: Recipe): SentenceExample | undefined {
   const example = candidates.find((ex) => ex.jp.includes(written)) ?? candidates[0];
   const span = example.sp[r.id]!;
   const enSpan = englishSpan(example, r.id);
-  return { jp: example.jp, en: example.en, span: [span[0], span[1]], ...(enSpan !== undefined ? { enSpan } : {}), words: sentenceWords(example, r.id, written) };
+  const wordMeanings = SENTENCE_WORD_MEANINGS[String(example.id)];
+  return {
+    jp: example.jp,
+    en: example.en,
+    span: [span[0], span[1]],
+    ...(enSpan !== undefined ? { enSpan } : {}),
+    words: sentenceWords(example, r.id, written),
+    ...(wordMeanings ? { wordMeanings } : {}),
+    gloss: r.gloss,
+  };
 }
 
 /** Where the English says what the marked Japanese says (SAK-498), from the
