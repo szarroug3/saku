@@ -66,7 +66,7 @@ export function PracticeClient({ collections, sample, signedIn, initialPreview }
   if (!preview) return loading;
   const initial = { recipe: EMPTY_RECIPE, preview };
   const onStart = (recipe: Recipe) => router.push(skyHref("/practice/run", { sample, recipe }));
-  return <SkyPractice collections={collections} lookup={lookup} initial={initial} saved={saved} onSaved={saveRecipes} onStart={onStart} />;
+  return <SkyPractice collections={collections} lookup={lookup} initial={initial} saved={saved} onSaved={saveRecipes} onStart={onStart} readingsHref={skyHref("/practice/readings")} />;
 }
 
 /** A practice run: the Quiz's screen, and the Quiz's recorder behind it
