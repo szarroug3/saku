@@ -2638,3 +2638,39 @@ test("the 〜てもいい lesson builds it on a verb, both adjectives and a noun
     if (meaning) await expect(row).toContainText(meaning);
   }
 });
+
+test("the 〜なくてもいい and 〜てはいけない lessons build them on a verb, both adjectives and a noun (SAK-505)", async ({ page }) => {
+  // Both patterns had a verb row only. The adjective and noun rows use では,
+  // the same as a な-adjective's ない-form (しずかではない). Signed out.
+  await page.setViewportSize({ width: 1440, height: 900 });
+  const lessons: [string, [string, string, string][]][] = [
+    [
+      "grammar:nakute-mo-ii",
+      [
+        ["たべる", "たべなくてもいい", "don't have to eat"],
+        ["たかい", "たかくなくてもいい", "it doesn't have to be expensive"],
+        ["しずか", "しずかではなくてもいい", "it doesn't have to be quiet"],
+        ["ほん", "ほんではなくてもいい", "it doesn't have to be a book"],
+      ],
+    ],
+    [
+      "grammar:te-prohibition",
+      [
+        ["たべる", "たべてはいけない", "must not eat"],
+        ["たかい", "たかくてはいけない", "it must not be expensive"],
+        ["しずか", "しずかではいけない", "it must not be quiet"],
+        ["ほん", "ほんではいけない", "it must not be a book"],
+      ],
+    ],
+  ];
+  for (const [pick, rows] of lessons) {
+    await page.goto(`/lesson?picks=${encodeURIComponent(pick)}`);
+    await expect(page.getByText(/^Step \d+ of \d+$/)).toBeVisible();
+    for (const [word, built, meaning] of rows) {
+      const row = page.getByRole("row").filter({ hasText: built });
+      await expect(row, `${pick} ${word}`).toHaveCount(1);
+      await expect(row).toContainText(word);
+      await expect(row).toContainText(meaning);
+    }
+  }
+});

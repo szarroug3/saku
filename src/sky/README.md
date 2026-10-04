@@ -7274,3 +7274,27 @@ Sam, 2026-10-02: the 〜てもいい lesson's adjective row read たかくても
 **Tests.** `auto-page.test.ts` pins the te-permission adjective row to "it's okay even if it's expensive".
 
 **The gates.** `npx tsc --noEmit` and `npx eslint src e2e scripts` clean. 4,388 unit tests, 4,387 pass and 1 skipped. 90 e2e pass. `scripts/unreachable.mjs --list` at zero and `scripts/button-centering.mjs` at zero over 1px across 9 pages. `scripts/unused-exports.mjs` lists 3 and 5 in `sentence-reach.ts` and `place.ts`, the same on main before this change.
+
+## 〜なくてもいい and 〜てはいけない on adjectives and nouns (SAK-505)
+
+Both patterns had a verb row only. `nakute-mo-ii` and `te-prohibition` in `src/data/grammar/recipes.ts` now each have an い-adjective, a な-adjective and a noun row, the same shape as 〜てもいい in SAK-496.
+
+**The rows.** Each was run through `deriveProduction` in `src/lib/grammar/derivation.ts` before anything else changed.
+- 〜なくてもいい on an い-adjective is `{ form: "nai", trim: "い", add: "くてもいい" }`. たかい (expensive) goes to たかくない, then たかくなくてもいい.
+- On a な-adjective it is the same shape. The engine's ない-form for しずか (quiet) is しずかではない, so the result is しずかではなくてもいい.
+- On a noun it is `{ form: null, add: "ではなくてもいい" }`, so 学生 (student) gives 学生ではなくてもいい.
+- 〜てはいけない on an い-adjective is `{ form: "te", add: "はいけない" }`. たかい goes to たかくて, then たかくてはいけない.
+- On a な-adjective the て-form is で, so しずか gives しずかではいけない.
+- On a noun it is `{ form: null, add: "ではいけない" }`, so 学生 gives 学生ではいけない.
+
+**では on the page.** The engine's ない-form for every な-adjective is ではない (静かではない), and that is what every な-adjective negative row in Saku shows. The noun rows use では too, so the な-adjective and noun rows on one page match. じゃ is the everyday spoken form. No grammar row in Saku uses it yet.
+
+**The Meaning column.** Every new row has a hand-written `meaning`. 〜なくてもいい reads "it doesn't have to be expensive", "it doesn't have to be quiet" and "it doesn't have to be a book". 〜てはいけない reads "it must not be expensive", "it must not be quiet" and "it must not be a book". The table's noun example is ほん (book). The recipes' `gloss` strings are unchanged.
+
+**The quiz.** Each pattern has two new production cards, one for い-adjectives and one for な-adjectives. They draw from the existing adjective pools and show the word in kana when the learner knows none of them. The noun rows are the bare noun plus a fixed string, so they are taught on the page with no card, as with 〜てもいい.
+
+**Tests.** `audit-grammar.test.ts` builds all six. `derivation.test.ts` checks each derivation step by step. `auto-page.test.ts` checks the four sections in order, the built words and the six meanings. `example.test.ts` and `formula.test.ts` take the new cards and the unscored noun rows. In `e2e/sky.spec.ts`, a signed-out visitor opens each lesson and finds four rows with their meanings. The generated indexes and catalogues were rebuilt.
+
+**Screenshots.** In `saku-tasks/screenshots/sak-505/`, all at 1440: `nakute-mo-ii-lesson-1440.png` and `te-prohibition-lesson-1440.png` (the top of each lesson card and its Verbs row), `nakute-mo-ii-lesson-1440-adjectives.png` and `te-prohibition-lesson-1440-adjectives.png` (the い-adjective row, the な-adjective section and the Nouns section), and the two `-scrolled.png` files (the な-adjective row, the Nouns section and the first example sentence).
+
+**The gates.** `npx tsc --noEmit` and `npx eslint src e2e scripts` clean. 4,413 unit tests, 4,412 pass and 1 skipped. 93 e2e pass. `scripts/unreachable.mjs --list` at zero and `scripts/button-centering.mjs` at zero over 1px across 9 pages. `scripts/unused-exports.mjs` lists 3 and 5 in `src/app/(sky)/sentence-reach.ts` and `src/sky/lib/place.ts`, the same on main before this card.

@@ -200,7 +200,7 @@ describe("production hosts against formula rows", () => {
     }
   });
 
-  test("the mixed patterns really have unscored rows: te-permission, shika-nai, node", () => {
+  test("the mixed patterns really have unscored rows: te-permission, te-prohibition, shika-nai, nakute-mo-ii, node", () => {
     const mixed = RECIPES.filter((r) => {
       if (!isProducible(r)) return false;
       const scored = new Set(productionHosts(r));
@@ -213,8 +213,10 @@ describe("production hosts against formula rows", () => {
     // same kind of unscored row — しか never conjugates — while its scored
     // production lives on the CLOSING half instead, which this join does not
     // see (see the next test). te-permission: its noun row (学生でもいい) is
-    // the bare noun plus a fixed string, like node's (SAK-496).
-    assert.deepEqual(mixed, ["te-permission", "shika-nai", "node"]);
+    // the bare noun plus a fixed string, like node's (SAK-496). te-prohibition
+    // and nakute-mo-ii have the same kind of noun row (学生ではいけない,
+    // 学生ではなくてもいい) (SAK-505).
+    assert.deepEqual(mixed, ["te-permission", "te-prohibition", "shika-nai", "nakute-mo-ii", "node"]);
   });
 
   test("a wrap carries a score column only when its CLOSING half conjugates", () => {

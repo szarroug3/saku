@@ -106,3 +106,49 @@ describe("〜てもいい on all four kinds of word (SAK-496)", () => {
     assert.equal(sectionGloss("te-permission", "Nouns"), "a book is fine too");
   });
 });
+
+describe("〜なくてもいい and 〜てはいけない on all four kinds of word (SAK-505)", () => {
+  const cases: [string, [string, string][]][] = [
+    [
+      "nakute-mo-ii",
+      [
+        ["い-adjectives", "たかくなくてもいい"],
+        ["な-adjectives", "しずかではなくてもいい"],
+        ["Nouns", "ほんではなくてもいい"],
+      ],
+    ],
+    [
+      "te-prohibition",
+      [
+        ["い-adjectives", "たかくてはいけない"],
+        ["な-adjectives", "しずかではいけない"],
+        ["Nouns", "ほんではいけない"],
+      ],
+    ],
+  ];
+
+  for (const [id, rows] of cases) {
+    test(`${id}: a section for verbs, both adjectives and nouns, in that order`, () => {
+      const page = autoPatternPage(recipe(id)!);
+      assert.deepEqual(
+        page.deriveTables?.map((t) => t.title),
+        ["Verbs", "い-adjectives", "な-adjectives", "Nouns"],
+      );
+      for (const [title, built] of rows) {
+        const results: (string | undefined)[] | undefined = page.deriveTables
+          ?.filter((t) => t.title === title)
+          .map((t) => t.rules[0]?.result);
+        assert.deepEqual(results, [built], `${id}/${title}`);
+      }
+    });
+  }
+
+  test("the adjective and noun rows read with their own written meanings", () => {
+    assert.equal(sectionGloss("nakute-mo-ii", "い-adjectives"), "it doesn't have to be expensive");
+    assert.equal(sectionGloss("nakute-mo-ii", "な-adjectives"), "it doesn't have to be quiet");
+    assert.equal(sectionGloss("nakute-mo-ii", "Nouns"), "it doesn't have to be a book");
+    assert.equal(sectionGloss("te-prohibition", "い-adjectives"), "it must not be expensive");
+    assert.equal(sectionGloss("te-prohibition", "な-adjectives"), "it must not be quiet");
+    assert.equal(sectionGloss("te-prohibition", "Nouns"), "it must not be a book");
+  });
+});
