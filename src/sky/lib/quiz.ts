@@ -125,8 +125,10 @@ export interface QuizCard {
    * kanji (SAK-481): 選ぶ − ぶ + んで → 選んで with えら over each 選. A card
    * drawn in kana has one plain run to the line. */
   built?: readonly SoundLine[];
-  /** What kind of answer is wanted, for the box's placeholder. */
-  answerIs: "reading" | "meaning" | "other";
+  /** What kind of answer is wanted, for the box's placeholder. `form` is a
+   * grammar production card, whose answer is a word built into a pattern
+   * (たかくてもいい), so it is not the word's reading (SAK-513). */
+  answerIs: "reading" | "meaning" | "form" | "other";
   /** Opens on the box; false opens on the options (a card only ever asked
    * by recognition). */
   typed: boolean;
@@ -318,6 +320,17 @@ interface AnswerLine {
   /** The line under it. Absent when the big line IS the card's answer, which
    * is every card that was answered the way the card writes it. */
   note?: { before: string; form: string; after: string };
+}
+
+/** What the typed box says before anything is typed: what the card wants.
+ * A kana card asks for romaji, so its reading says so. A grammar production
+ * card asks for the word built into the pattern, which the quiz calls a form
+ * ("said in the 〜て form"), so its box says "The form" (SAK-513). */
+export function answerPlaceholder(card: Pick<QuizCard, "answerIs" | "answerInKana">): string {
+  if (card.answerIs === "form") return "The form";
+  if (card.answerIs === "reading") return card.answerInKana ? "The reading" : "In romaji, or how it sounds";
+  if (card.answerIs === "meaning") return "The meaning, in English";
+  return "Your answer";
 }
 
 /** Case and spacing, the way the grader compares English (`norm` in
