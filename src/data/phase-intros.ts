@@ -657,6 +657,21 @@ export interface SentenceExample {
    * are left out, since the page above teaches them. Absent on a sentence
    * written by hand rather than drawn from the corpus. */
   readonly words?: readonly string[];
+  /** Meanings written for this sentence's words, by lemma, where the
+   * vocabulary has no word for one or gives it a sense the sentence does not
+   * use (SAK-508): 事 read こと, "thing". Read off the hand-written table in
+   * src/data/grammar/sentence-word-meanings.ts. */
+  readonly wordMeanings?: Readonly<Record<string, SentenceWordMeaning>>;
+  /** The pattern's gloss ("thanks to X"), which picks a word's sense when the
+   * English names none of them (SAK-508). */
+  readonly gloss?: string;
+}
+
+/** A meaning written for one word of one sentence (SAK-508): the word's
+ * reading when it has kanji, and the meaning it has there. */
+export interface SentenceWordMeaning {
+  readonly reading?: string;
+  readonly meaning: string;
 }
 
 // THE CARDS ARE EXPORTED, ONE BY ONE, AND THAT IS NEW

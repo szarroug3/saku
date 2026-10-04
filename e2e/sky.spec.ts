@@ -2753,6 +2753,41 @@ test("the 〜てもいい lesson's In a sentence block says what 話す means (S
   await expect(line.locator("ruby rt")).toHaveText(["はな"]);
 });
 
+/** The words line under a lesson's In a sentence block, as a reader sees it
+ * without the furigana, and the furigana it carries. */
+async function sentenceWordsLine(page: Page, pick: string, en: string, word: string) {
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto(`/lesson?picks=${encodeURIComponent(pick)}`);
+  await expect(page.getByText(/^Step \d+ of \d+$/)).toBeVisible();
+  const block = page.locator("div").filter({ has: page.getByText("In a sentence", { exact: true }) }).filter({ hasText: en }).last();
+  await expect(block).toBeVisible();
+  // the English line says "things" and "swim" too
+  const line = block.locator("p").filter({ hasText: word }).filter({ hasNotText: en });
+  await expect(line).toHaveCount(1);
+  const bare = await line.evaluate((el) => {
+    const copy = el.cloneNode(true) as Element;
+    copy.querySelectorAll("rt").forEach((rt) => rt.remove());
+    return copy.textContent ?? "";
+  });
+  return { line, bare };
+}
+
+test("the 〜すぎる lesson's words line says 事 is a thing (SAK-508)", async ({ page }) => {
+  // The vocabulary files 事 as こと, so the line used to leave it off and
+  // read "やる to do · ある to be". Signed out, as the suite runs.
+  const { line, bare } = await sentenceWordsLine(page, "grammar:sugiru", "There are too many things to do!", "thing");
+  expect(bare).toContain("事 thing");
+  await expect(line.locator("ruby", { hasText: "事" }).locator("rt")).toHaveText("こと");
+});
+
+test("the 〜らしい lesson's words line has 泳ぐ for 泳げない (SAK-514)", async ({ page }) => {
+  // The tokenizer reads 泳げない as the potential 泳げる, which the
+  // vocabulary does not have; the line folds it back to 泳ぐ. Signed out.
+  const { bare } = await sentenceWordsLine(page, "grammar:rashii", "He seems unable to swim.", "to swim");
+  expect(bare).toContain("泳ぐ to swim");
+  expect(bare).toContain("彼 he");
+});
+
 test("the を lesson's In a sentence block marks nap in the English (SAK-498)", async ({ page }) => {
   // Sam, 2026-10-03: "let's highlight the word in the sentence, so here we
   // would highlight whatever 昼寝 means in the natural English sentence."

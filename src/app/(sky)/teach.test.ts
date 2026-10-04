@@ -1073,6 +1073,52 @@ describe("the In a sentence block says what its words mean", () => {
   });
 });
 
+// SAK-508: the words line said nothing for 38 words the vocabulary does not
+// have (事 under 〜すぎる), and four of its meanings were the wrong sense.
+// SAK-514: a verb in potential form (泳げる) was left off.
+describe("the In a sentence block's words line has every word, in the sense the sentence uses", () => {
+  const wordsOf = (id: string) => {
+    const r = recipeById(id);
+    assert.ok(r, `no recipe ${id}`);
+    return (pageFromIntro(autoPatternPage(r)).examples?.[0]?.words ?? []).map((w) => ({ word: w.word.map((run) => run.text).join(""), ruby: w.word.filter((run) => run.ruby).map((run) => run.ruby).join(""), meaning: w.meaning }));
+  };
+  const meaningOf = (id: string, word: string) => wordsOf(id).find((w) => w.word === word)?.meaning;
+
+  it("says 事 is a thing on the 〜すぎる page, with こと over it", () => {
+    assert.deepEqual(wordsOf("sugiru").find((w) => w.word === "事"), { word: "事", ruby: "こと", meaning: "thing" });
+  });
+
+  it("gives the four wrong senses the card named the right one", () => {
+    assert.equal(meaningOf("okage-de", "なる"), "to become");
+    assert.equal(meaningOf("nakereba-naranai", "ため"), "in order to");
+    // いびきをかく is to snore, and the sentence has no 書 (SAK-508's card
+    // read it as 書く)
+    assert.equal(meaningOf("nikui", "かく"), "to snore");
+    assert.equal(meaningOf("prenominal-form", "休む"), "to rest");
+  });
+
+  it("lists 彼 and 泳ぐ under 彼は泳げないらしい (SAK-514)", () => {
+    assert.deepEqual(wordsOf("rashii"), [
+      { word: "彼", ruby: "かれ", meaning: "he" },
+      { word: "泳ぐ", ruby: "およ", meaning: "to swim" },
+    ]);
+  });
+
+  it("lists 行く under 日本へ行けたらいいのに, a potential of another verb class (SAK-514)", () => {
+    for (const id of ["e", "noni"]) assert.equal(meaningOf(id, "行く"), "to go", id);
+  });
+
+  it("leaves no word of a shown sentence without a meaning, but a particle", () => {
+    for (const r of RECIPES) {
+      const ex = sentenceExampleFor(r);
+      if (!ex) continue;
+      const shown = wordsOf(r.id).length;
+      const particles = (ex.words ?? []).filter((w) => w === "もの").length;
+      assert.equal(shown + particles, ex.words?.length ?? 0, `${r.id}: ${ex.jp} lists ${shown} of ${ex.words?.join(" ")}`);
+    }
+  });
+});
+
 // ===========================================================================
 // SAK-483: a verb or adjective card's forms tables have furigana.
 //

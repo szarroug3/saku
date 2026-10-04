@@ -48,7 +48,7 @@ import { libEntry } from "@/lib/library/entries";
 import { standingFor } from "./learner";
 import { authoredReader, proseReader, proseSound, wordSound, type RunReader } from "./prose-sound";
 import { TSU_RULE } from "./observatory";
-import { shortMeaning, vocabEntryOf } from "./word-meaning";
+import { wordInSentence } from "./word-meaning";
 import { particleGroup, tileOf, type ParticleGroup } from "./particle-groups";
 import { wordGroup, type WordGroup } from "./word-groups";
 import { type ExampleWord, type LessonTeach, type PartedSentence, type SoundLine as SkySoundLine, type TeachForm, type TeachPage, type TeachParagraph, type TeachTable } from "@/sky/lib/lesson";
@@ -61,31 +61,19 @@ import type { HistoryFile } from "@/types/store";
 const spans = (line: SoundLine) => line.map((s) => ({ text: s.text, ...(s.accent ? { accent: true } : {}) }));
 
 /** The words line under a grammar page's sentence (SAK-506): each content
- * word in its dictionary form, with its furigana, and its meaning cut short
- * the way the sentence quiz cuts it. Every word is listed, met or not, since
- * the page is read again from the Atlas long after the words are learned. A
- * word the vocabulary does not have is left off, and so is one the vocabulary
- * files as a particle (もの in ものに違いない). */
+ * word in its dictionary form, with its furigana, and the meaning it has in
+ * the sentence. Every word is listed, met or not, since the page is read again
+ * from the Atlas long after the words are learned. A word with a meaning
+ * written for this sentence (SAK-508) prints that. Any other goes through
+ * `wordInSentence`, which folds 泳げる back to 泳ぐ (SAK-514) and picks the
+ * sense the English uses; a word the vocabulary does not have is left off. */
 function sentenceWords(ex: SentenceExample): ExampleWord[] {
   return (ex.words ?? []).flatMap((lemma) => {
-    const entry = vocabEntryOf(lemma);
-    const row = vocabRow(lemma);
-    if (!entry || row?.pos.every((p) => p === "particle")) return [];
-    const meaning = meaningIn([...entry.meanings, ...(row?.senses.flatMap((s) => s.glosses) ?? [])], ex.en);
-    return meaning ? [{ word: wordSound(lemma), meaning }] : [];
+    const own = ex.wordMeanings?.[lemma];
+    if (own) return [{ word: own.reading ? (rubyFromReading(lemma, own.reading) ?? [{ text: lemma, ruby: own.reading }]) : wordSound(lemma), meaning: own.meaning }];
+    const word = wordInSentence(lemma, { jp: ex.jp, en: ex.en, ...(ex.gloss ? { gloss: ex.gloss } : {}) });
+    return word ? [{ word: wordSound(word.word), meaning: word.meaning }] : [];
   });
-}
-
-/** Which of a word's senses the sentence uses, as far as its English shows
- * it: the first sense whose words are in the translation (話す is "to talk"
- * first, but "May I speak to you?" uses "to speak"), else the first sense. */
-function meaningIn(meanings: readonly string[], en: string): string | undefined {
-  const short = meanings.map(shortMeaning).filter((m): m is string => !!m);
-  const said = (m: string) => {
-    const core = m.replace(/^to /, "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    return new RegExp(`\\b${core}\\b`, "i").test(en);
-  };
-  return short.find(said) ?? short[0];
 }
 
 /** The keigo registers, in the learner's terms, as the app's keigo page has them. */
