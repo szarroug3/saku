@@ -18,6 +18,7 @@ import { dropDoScaffold } from "@/lib/grammar/gloss";
 import { recipeAllows } from "@/lib/grammar/vehicles";
 import { examplesFor, type Example } from "@/data/grammar/corpus";
 import { attachmentMeaning, patternLabel, type Host, type Recipe } from "@/data/grammar/recipes";
+import { SENTENCE_ENGLISH_MARKS } from "@/data/grammar/sentence-english-marks";
 import type { BuildHeads, IntroBuildRule, IntroDeriveRow, PhaseIntro, SentenceExample } from "@/data/phase-intros";
 
 /** The pattern's own worked sentence, straight from the Tatoeba corpus — the
@@ -44,7 +45,21 @@ export function sentenceExampleFor(r: Recipe): SentenceExample | undefined {
   const written = r.pattern.replace(/^〜/, "");
   const example = candidates.find((ex) => ex.jp.includes(written)) ?? candidates[0];
   const span = example.sp[r.id]!;
-  return { jp: example.jp, en: example.en, span: [span[0], span[1]], words: sentenceWords(example, r.id, written) };
+  const enSpan = englishSpan(example, r.id);
+  return { jp: example.jp, en: example.en, span: [span[0], span[1]], ...(enSpan !== undefined ? { enSpan } : {}), words: sentenceWords(example, r.id, written) };
+}
+
+/** Where the English says what the marked Japanese says (SAK-498), from the
+ * phrase written for this sentence and pattern. null for a row that says
+ * nothing is to be marked. Undefined when there is no row, or the phrase is
+ * not in the English exactly once, so the line prints plain rather than
+ * marking a guess; the table's test fails on both. */
+function englishSpan(example: Example, recipe: string): readonly [number, number] | null | undefined {
+  const phrase = SENTENCE_ENGLISH_MARKS[`${example.id}:${recipe}`];
+  if (phrase === undefined || phrase === null) return phrase;
+  const at = example.en.indexOf(phrase);
+  if (at < 0 || example.en.indexOf(phrase, at + 1) >= 0) return undefined;
+  return [at, at + phrase.length];
 }
 
 /** A sentence's content lemmas for the words line under it (SAK-506), in the

@@ -100,6 +100,32 @@ function marked(jp: string, span: readonly [number, number]): PartedSentence {
   return [{ text: jp.slice(0, a) }, { text: jp.slice(a, b), label: "The verb", active: true }, { text: jp.slice(b) }].filter((r) => r.text);
 }
 
+/** An English line with the words that say what the Japanese's marked piece
+ * says in the accent (SAK-498): "nap" in "I may give up soon and just nap
+ * instead." for 昼寝を. The spans are `[start, end)` in `en`, in order and
+ * apart. With none, the line is one plain run. */
+function englishMarked(en: string, spans: ReadonlyArray<readonly [number, number]>): SkySoundLine {
+  const runs: Array<{ text: string; accent?: boolean }> = [];
+  let at = 0;
+  for (const [a, b] of spans) {
+    runs.push({ text: en.slice(at, a) }, { text: en.slice(a, b), accent: true });
+    at = b;
+  }
+  runs.push({ text: en.slice(at) });
+  return runs.filter((r) => r.text);
+}
+
+/** Where each of an example's English phrases is in its English, left to
+ * right. A phrase not found is skipped, which the particle notes' test does
+ * not allow. */
+function phraseSpans(en: string, enMark: string | readonly string[] | null): Array<readonly [number, number]> {
+  const phrases = enMark === null ? [] : typeof enMark === "string" ? [enMark] : enMark;
+  return phrases
+    .map((p) => [en.indexOf(p), en.indexOf(p) + p.length] as const)
+    .filter(([a]) => a >= 0)
+    .sort((x, y) => x[0] - y[0]);
+}
+
 /** A sentence's parts with the furigana over their kanji: each part carries
  * its own stretch of the sentence's readings, so the part the page teaches
  * keeps its accent and the readings sit over the kanji in every part. The
@@ -650,7 +676,9 @@ function particleListPage(): TeachPage {
         [{ text: p.particle }],
         [{ text: p.does }],
         p.example ? withParticleMarked(p.example.jp, p.particle) : [],
-        [{ text: p.example?.en ?? "" }],
+        // the English with the words for the sentence's marked piece in the
+        // accent (SAK-498): the same sentence, so the same mark as its page
+        p.example ? englishMarked(p.example.en, p.example.enSpan ? [p.example.enSpan] : []) : [],
       ]),
       // は and が each keep a row, and both open the one は vs が card (SAK-491)
       opens: PARTICLE_ROWS.map((p) => tileOf(p.entry)),
@@ -749,6 +777,7 @@ function notePara(para: ParticleNotePara): TeachParagraph {
           examples: para.examples.map((ex) => ({
             jp: exampleLine(ex),
             en: ex.en,
+            ...(ex.enMark !== null ? { enRuns: englishMarked(ex.en, phraseSpans(ex.en, ex.enMark)) } : {}),
             ...(ex.words.length > 0 ? { words: ex.words.map((w) => ({ word: exampleWord(w, ex), meaning: w.meaning })) } : {}),
           })),
         }
@@ -1051,7 +1080,10 @@ export function pageFromIntro(intro: PhaseIntro, mark?: string, prose?: RunReade
   }
   const ex = intro.sentenceExample;
   const words = ex ? sentenceWords(ex) : [];
-  const examples = ex ? [{ natural: [{ text: ex.en }], japanese: withFurigana(ex.jp, [{ text: ex.jp.slice(0, ex.span[0]) }, { text: ex.jp.slice(ex.span[0], ex.span[1]), label: "Pattern", active: true }, { text: ex.jp.slice(ex.span[1]) }].filter((r) => r.text)), ...(words.length ? { words } : {}) }] : undefined;
+  // the English with its words for the marked piece active (SAK-498), and no
+  // label, so no box is drawn under the English line
+  const natural: PartedSentence = ex ? englishMarked(ex.en, ex.enSpan ? [ex.enSpan] : []).map((r) => ({ text: r.text, ...(r.accent ? { active: true } : {}) })) : [];
+  const examples = ex ? [{ natural, japanese: withFurigana(ex.jp, [{ text: ex.jp.slice(0, ex.span[0]) }, { text: ex.jp.slice(ex.span[0], ex.span[1]), label: "Pattern", active: true }, { text: ex.jp.slice(ex.span[1]) }].filter((r) => r.text)), ...(words.length ? { words } : {}) }] : undefined;
   return {
     // the page's own name on the pager pill (〜ので, "The て/で-form"); the
     // app's eyebrow is the same "Grammar" on every generated page

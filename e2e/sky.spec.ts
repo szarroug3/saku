@@ -2753,6 +2753,32 @@ test("the 〜てもいい lesson's In a sentence block says what 話す means (S
   await expect(line.locator("ruby rt")).toHaveText(["はな"]);
 });
 
+test("the を lesson's In a sentence block marks nap in the English (SAK-498)", async ({ page }) => {
+  // Sam, 2026-10-03: "let's highlight the word in the sentence, so here we
+  // would highlight whatever 昼寝 means in the natural English sentence."
+  // Signed out, as the suite runs.
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto(`/lesson?picks=${encodeURIComponent("grammar:wo")}`);
+  await expect(page.getByText(/^Step \d+ of \d+$/)).toBeVisible();
+  const en = "I may give up soon and just nap instead.";
+  const block = page.locator("div").filter({ has: page.getByText("In a sentence", { exact: true }) }).filter({ hasText: en }).last();
+  await expect(block).toBeVisible();
+  const english = block.locator("p").filter({ hasText: new RegExp(`^${en.replace(/[.]/g, "\\.")}$`) });
+  await expect(english).toHaveCount(1);
+  await expect(english.locator(".text-sky-accent")).toHaveText(["nap"]);
+  // the Japanese line keeps its one mark, 昼寝を, with the furigana over 昼寝
+  const japanese = block.locator("p.font-sky-display");
+  await expect(japanese).toHaveCount(1);
+  const marked = japanese.locator(".text-sky-accent");
+  await expect(marked).toHaveCount(1);
+  const bare = await marked.evaluate((el) => {
+    const copy = el.cloneNode(true) as Element;
+    copy.querySelectorAll("rt").forEach((rt) => rt.remove());
+    return copy.textContent;
+  });
+  expect(bare).toBe("昼寝を");
+});
+
 test("a word written only in kana carries its pitch, drawn over the word itself (SAK-503)", async ({ page }) => {
   // Sam, on the はい vs うん card: "do these words not have pitch?" Kanjium has
   // them with a blank reading, and the ingest never matched that row. A kana
