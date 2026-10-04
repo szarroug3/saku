@@ -56,6 +56,9 @@ const PAGES = [
   // row (SAK-493); the うん pill turns to the second word's page
   { path: "/lesson?picks=" + encodeURIComponent("words:word:はい-word:うん"), name: "lesson, a word pair", reveal: [{ role: "button", name: /^うん$/ }] },
   { path: "/practice?sample", name: "practice", reveal: [{ role: "button", name: /^Kana/ }] },
+  // the Drills panel under the recipe (SAK-520), with nothing opened over
+  // it, so its Start button is measured on its own
+  { path: "/practice?sample", name: "practice, the drills panel", reveal: [] },
   // the readings drill (SAK-495): its label buttons, one reading labeled so a
   // verdict sits in a row beside two rows still asking, Next kanji once all
   // are labeled; then the score screen's two buttons
