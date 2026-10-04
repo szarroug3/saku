@@ -7384,3 +7384,23 @@ SAK-497 read 68 Tatoeba sentences from `grammar-corpus.json`, one per pattern, a
 **What moved.** 617 sentences changed: 268 left the corpus and 349 lost one pattern. `grammar-corpus-dropped.json` now keeps the rows of earlier runs as well as this one. The derived files were rebuilt with the tokenizer: `assembly-corpus.json` (605 to 603), `word-examples.json`, `sentence-readings.json`, `learn-index.json`, `curriculum-meta.json` and both catalogues. 38 words lost their only example sentence, since the wider pool in `word-example-candidates.json` was cut while the corpus still reached them. The made page's first sentence is now ちょっとそこまで散歩に出よう. The nai-de page's is 隠さないで話してくれ.
 
 **Tests.** `corpus-audit.test.ts` has a sentence each rule drops and one it keeps, the new pattern counts, and nai-de and rashii named as below 20 on purpose. The word example counts in `word-example.test.ts` and `source-pins.test.ts` were remeasured.
+
+## The quiz asks 〜てもいい on an adjective in the lesson's words (SAK-499)
+
+After SAK-497 the 〜てもいい lesson read たかくてもいい as "it's okay even if it's expensive", but the quiz card for the same row still asked for "may be たかい". That reads as a guess about the price.
+
+**One string for both.** An attachment's hand-written `meaning` in `src/data/grammar/recipes.ts` is now read by the quiz too. `attachmentMeaning(recipe, host)` in that file returns it, and both `deriveRows` in `src/data/grammar/auto-page.ts` and `quizInstruction` in `src/lib/quiz-instruction.ts` call it. The lesson fills X with the English word ("expensive", "a book"). The quiz fills X with the card's Japanese word, in kana if the learner has not met it.
+
+**〜てもいい's い-adjective row.** It had no `meaning` and got its words from a rewrite of "may do X" inside `appliedGloss`. That rewrite is gone. The い-adjective and な-adjective rows now both use one constant in `recipes.ts`, "it's okay even if it's X". The lesson reads the same as before.
+
+**What the quiz says now.**
+- 〜てもいい on an い-adjective: "it's okay even if it's たかい". On a な-adjective: "it's okay even if it's しずか".
+- 〜なくてもいい on an adjective: "it doesn't have to be たかい".
+- 〜てはいけない on an adjective: "it must not be しずか".
+- A verb card has no `meaning` and reads as before: "may いく".
+
+The noun rows of these patterns have no quiz card, so their meanings show only on the page. The older rule that puts "be" after a modal ("may be X") is still there for an adjective or noun row with no `meaning`. No row uses it today.
+
+**Tests.** `quiz-instruction.test.ts` checks たかい, いく, and the other adjective rows, and checks that every hand-written meaning on these three patterns is the quiz line with the word in place of X. In `e2e/sky.spec.ts`, "a 〜てもいい quiz card on an adjective asks in the lesson's words (SAK-499)" opens the い-adjective card and finds "it's okay even if it's" with no "may be". The SAK-496 lesson test now checks the verb and い-adjective meanings too.
+
+**Screenshots.** In `saku-tasks/screenshots/sak-499/`, all at 1440 with the pretend learner: `te-permission-adj-i-quiz-1440.png`, `te-permission-adj-na-quiz-1440.png`, `nakute-mo-ii-adj-i-quiz-1440.png` and `te-prohibition-adj-na-quiz-1440.png` (each card's instruction line), and `te-permission-lesson-adj-i-1440.png` (the lesson's verb, い-adjective and な-adjective rows).

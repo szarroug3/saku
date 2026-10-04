@@ -36,6 +36,7 @@ import { buildMcOptions } from "@/lib/engine";
 import { en2jpTypeable, fixedDirOf } from "@/lib/engine/question";
 import { isConstructionFact } from "@/data/counter-categories";
 import { ALL_FACTS } from "@/lib/facts";
+import { attachmentMeaning, recipe } from "@/data/grammar/recipes";
 import { quizInstruction } from "@/lib/quiz-instruction";
 
 describe("no card can be unanswerable", () => {
@@ -309,5 +310,75 @@ describe("a WRAP fills X with its fixed word — the halo only shows the varying
       quizInstruction(SHIKA_V1, "en2jp", "mc", KNOWN_TABERU),
       'Which of these is how you say "only 本 (nothing but)"?',
     );
+  });
+});
+
+describe("a host with its own meaning asks in that meaning (SAK-499)", () => {
+  // "may be たかい" read as a guess about the price. The lesson's Meaning cell
+  // says "it's okay even if it's expensive" (SAK-497), and the quiz now asks in
+  // the same words, read from the same attachment `meaning`.
+  const TAKAI = { surface: "高い", kana: "たかい", cls: "adj-i", known: false } as const;
+  const SHIZUKA = { surface: "静か", kana: "しずか", cls: "adj-na", known: false } as const;
+
+  test("〜てもいい on たかい says it's okay even if it's たかい", () => {
+    assert.equal(
+      quizInstruction(patternProductionFactId("te-permission", "adj-i"), "en2jp", "typed", TAKAI),
+      'How do you say "it\'s okay even if it\'s たかい" for this い-adjective?',
+    );
+    assert.equal(
+      quizInstruction(patternProductionFactId("te-permission", "adj-i"), "en2jp", "mc", {
+        ...TAKAI,
+        known: true,
+      }),
+      'Which of these is how you say "it\'s okay even if it\'s 高い"?',
+    );
+  });
+
+  test("〜てもいい on いく still says may いく", () => {
+    assert.equal(
+      quizInstruction(specialVerbProductionFactId("te-permission", "iku"), "en2jp", "typed", {
+        surface: "行く",
+        kana: "いく",
+        cls: "v5k-s",
+        known: false,
+      }),
+      'How do you say "may いく" for this irregular verb?',
+    );
+  });
+
+  test("the other adjective rows read the lesson's words", () => {
+    assert.equal(
+      quizInstruction(patternProductionFactId("te-permission", "adj-na"), "en2jp", "typed", SHIZUKA),
+      'How do you say "it\'s okay even if it\'s しずか" for this な-adjective?',
+    );
+    assert.equal(
+      quizInstruction(patternProductionFactId("nakute-mo-ii", "adj-i"), "en2jp", "typed", TAKAI),
+      'How do you say "it doesn\'t have to be たかい" for this い-adjective?',
+    );
+    assert.equal(
+      quizInstruction(patternProductionFactId("te-prohibition", "adj-na"), "en2jp", "typed", SHIZUKA),
+      'How do you say "it must not be しずか" for this な-adjective?',
+    );
+  });
+
+  test("every hand-written meaning is the quiz line with the word in place of X", () => {
+    // The drift guard: for each production host that has a meaning, the quiz
+    // line is that meaning with X filled. A new meaning cannot be added without
+    // the quiz reading it.
+    for (const [id, host, v] of [
+      ["te-permission", "adj-i", TAKAI],
+      ["te-permission", "adj-na", SHIZUKA],
+      ["nakute-mo-ii", "adj-i", TAKAI],
+      ["nakute-mo-ii", "adj-na", SHIZUKA],
+      ["te-prohibition", "adj-i", TAKAI],
+      ["te-prohibition", "adj-na", SHIZUKA],
+    ] as const) {
+      const meaning = attachmentMeaning(recipe(id)!, host);
+      assert.ok(meaning, `${id} ${host} has a meaning`);
+      assert.equal(
+        quizInstruction(patternProductionFactId(id, host), "en2jp", "typed", { ...v, known: true }),
+        `How do you say "${meaning.replace(/\bX\b/g, v.surface)}"?`,
+      );
+    }
   });
 });

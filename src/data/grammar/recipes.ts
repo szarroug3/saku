@@ -109,9 +109,27 @@ export interface Attachment {
    * noun is acceptable ("a student is fine too"), which no filling of "may do X"
    * produces. The recipe's `gloss` stays as it is, because the gloss fill reads
    * its wording as a signal (SAK-191, SAK-193). Absent on almost every row.
+   *
+   * The quiz reads it too. A production card on this host asks "How do you say
+   * "<meaning>"?" with X filled by the card's own Japanese word, so the quiz
+   * line and the lesson's Meaning cell come from this one string (SAK-499).
+   * Read it through `attachmentMeaning`.
    */
   readonly meaning?: string;
 }
+
+/** The hand-written meaning of `r` on `host` (an attachment's `meaning`, X
+ * where the word goes), or undefined when that host has none and the recipe's
+ * gloss is filled instead. The lesson's build table and the quiz instruction
+ * both read it here, so the two cannot say different things (SAK-499). */
+export function attachmentMeaning(r: Recipe, host: Host): string | undefined {
+  return r.attach.find((a) => a.host === host)?.meaning;
+}
+
+/** 〜てもいい on an adjective. "may be expensive" reads as a guess about the
+ * price; the pattern says the thing is acceptable even so (SAK-497). One string
+ * for both adjective rows. */
+const OKAY_EVEN_IF = "it's okay even if it's X";
 
 export interface Recipe {
   /** Stable id. Never parsed — see src/lib/fact-id.ts. */
@@ -488,9 +506,9 @@ export const RECIPES: readonly Recipe[] = [
     level: "N5",
     attach: [
       { host: "verb", form: "te", add: "もいい" },
-      { host: "adj-i", form: "te", add: "もいい" },
+      { host: "adj-i", form: "te", add: "もいい", meaning: OKAY_EVEN_IF },
       // the て-form of a な-adjective is で (静かで), so this reads 静かでもいい
-      { host: "adj-na", form: "te", add: "もいい", meaning: "it's okay even if it's X" },
+      { host: "adj-na", form: "te", add: "もいい", meaning: OKAY_EVEN_IF },
       // a noun takes no form; it takes でもいい whole (学生でもいい)
       { host: "noun", form: null, add: "でもいい", meaning: "X is fine too" },
     ],
