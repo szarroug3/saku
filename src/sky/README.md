@@ -7578,3 +7578,18 @@ On the Atlas Terms shelf, the tile for "Keiyōshi/keiyōdōshi" read "Keiyōshi/
 "Keiyōshi/keiyōdōshi" now reads "Keiyōshi/" on the first line and "keiyōdōshi" on the second. "Godan/ichidan" fits on one line and is unchanged. "Kun’yomi and on’yomi" wraps at its spaces as before.
 
 **Tests.** `e2e/sky.spec.ts`, "a term's name with a slash wraps on its Atlas tile instead of running off the edge (SAK-504)": at 1440px and at 390px, on the Terms shelf, the label on the Keiyōshi/keiyōdōshi, Godan/ichidan and Kun’yomi and on’yomi tiles reads the whole name, is no wider than its tile, and is no taller than its two lines.
+
+## A pattern's meaning drops the "do" everywhere it is shown (SAK-512)
+
+A recipe's gloss writes its X slot the way a dictionary would, "may do X", because the teach table needs the "do" to pick the English form when X is a real verb. SAK-193 made the pattern header and the quiz instruction run the gloss through `dropDoScaffold` (`src/lib/grammar/gloss.ts`), so they read "May X." The rail and the line under the card's title still read "may do X", right above that header. Now every place a learner sees the gloss unfilled goes through `dropDoScaffold`:
+
+- `toItem` in `src/app/(sky)/learner.ts`, for a grammar entry. The item's `english` is what the rail row, the line under the card's title, the Atlas tile, the Observatory tile, a star's hover name and a References row print, so all of them read "may X". The catalogues were rebuilt.
+- `teachFor` in `src/app/(sky)/teach.ts`: the card's meaning line, and the meaning `withoutRepeatedTitle` compares the page heading with. The heading "〜てもいい: May X." now matches "may X", so it drops the same way 〜は's did under SAK-464 and the card says the meaning once.
+- The Family table's meaning column and the page titles of a shared particle card, also in `teach.ts`.
+- `meaningOf` in `src/app/(sky)/particle-groups.ts`, for a group with no line of its own that joins its patterns' glosses.
+
+The raw gloss and `appliedGloss` are as they were. The library entry's `meanings` keep the raw string too, since search reads them. `dropDoScaffold` drops every "do", "does" and "doing" in front of X, so some lines read short: "is X / is in the state of X" (〜ている), "someone X for me" (〜てくれる), "things like X and Y" (〜たり〜たり). These are the same words the pattern header and the quiz instruction already used.
+
+The jargon test read an import path as learner copy, and `@/lib/grammar/gloss` tripped its "gloss" rule. It now skips the path of an import or export.
+
+**Tests.** `lesson.test.ts`: "Tonight, in order" lists 〜てもいい may X, 〜なくてもいい don't have to X and 〜てはいけない must not X. `teach.test.ts`: the 〜てもいい card's meaning and item read "may X", and nothing on the card says "do X". In `e2e/sky.spec.ts`, "the 〜てもいい lesson and its Atlas tile say may X, with no do (SAK-512)", signed out at 1440. The comet test finds its 〜てはいけない tile by "must not X" now.

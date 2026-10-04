@@ -366,6 +366,22 @@ describe("a pattern's page does not say again what the card says above it", () =
   });
 });
 
+// SAK-512. The line under 〜てもいい's title said "may do X" right above a
+// header that said "〜てもいい: May X." One meaning, written two ways.
+describe("a pattern's meaning line drops the do the way its header does", () => {
+  const entry = (id: string) => atlasEntryFromHistory(emptyHistory(), id as EntryId, NOW);
+
+  it("reads may X under 〜てもいい, on the card and on the item", () => {
+    const got = entry("grammar:te-permission");
+    assert.deepEqual(got?.teach?.meanings, ["may X"]);
+    assert.equal(got?.items.find((i) => i.id === "grammar:te-permission")?.english, "may X");
+  });
+
+  it("does not write may do X anywhere on the card", () => {
+    assert.ok(!JSON.stringify(entry("grammar:te-permission")).includes("do X"));
+  });
+});
+
 describe("a rule's table heads its column of words with the kind of word it holds", () => {
   it("says Adjective over the 〜な rule's adjectives", () => {
     const [table, ...rest] = everyGrammarTable().filter((t) => t.card === "gl-prenominal-form");

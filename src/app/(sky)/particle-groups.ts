@@ -24,6 +24,7 @@ import { patternEntry } from "@/data/grammar";
 import { CLUSTERS } from "@/data/grammar/clusters";
 import { PARTICLE_NOTES } from "@/data/grammar/particle-notes";
 import { RECIPES } from "@/data/grammar/recipes";
+import { dropDoScaffold } from "@/lib/grammar/gloss";
 
 import { WORD_GROUPS, wordGroup, wordGroupOfPart } from "./word-groups";
 
@@ -49,7 +50,7 @@ function meaningOf(recipes: readonly string[], meaning: string | undefined): str
   if (meaning) return meaning;
   const family = CLUSTERS.find((c) => c.members.length === recipes.length && recipes.every((r) => c.members.includes(r)));
   if (family) return family.gloss;
-  return recipes.map((id) => RECIPES.find((x) => x.id === id)?.gloss).filter(Boolean).join(", ");
+  return recipes.flatMap((id) => { const gloss = RECIPES.find((x) => x.id === id)?.gloss; return gloss ? [dropDoScaffold(gloss)] : []; }).join(", ");
 }
 
 /** Every group, one per shared note, in the Particle page's order. */
