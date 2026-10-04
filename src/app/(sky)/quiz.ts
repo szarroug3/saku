@@ -46,6 +46,7 @@ import { standingFor } from "./learner";
 import { readingRuleFor } from "./quiz-rules";
 import { SENTENCE_END, sentenceOf, sentencesToBuild } from "./sentence-reach";
 import { teachFor } from "./teach";
+import { shortMeaning, vocabEntryOf } from "./word-meaning";
 
 /** The basket: how many cards a session asks (SAK-311's cap). It is the
  * daily review's, and only the daily review's. A lesson's quiz asks about
@@ -660,10 +661,8 @@ function orderCard(history: HistoryFile, marker: FactId, item: AssemblyItem, pic
   // the first sense, without the dictionary's asides, since it sits under a
   // piece ("water", not "water (esp. cool or cold)")
   const glossOf = (head: string | null): string | undefined => {
-    const id = head ? entryForGlyph(VOCAB_SUBJECT, head) : undefined;
-    const e = id ? libEntry(id) : undefined;
-    const meaning = e && !standingFor(e, history, now).met ? e.meanings[0] : undefined;
-    return meaning?.replace(/\s*\([^)]*\)/g, "").split(";")[0].trim() || undefined;
+    const e = vocabEntryOf(head);
+    return e && !standingFor(e, history, now).met ? shortMeaning(e.meanings[0]) : undefined;
   };
   const glosses = deal.map((d) => glossOf(item.pieces[d].h));
   const agg = history.facts?.[marker];

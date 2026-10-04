@@ -167,8 +167,12 @@ export interface TeachParagraph {
   text: string;
   accent?: string;
   runs?: SoundLine;
-  examples?: ReadonlyArray<{ jp: SoundLine; en: string; words?: ReadonlyArray<{ word: SoundLine; meaning: string }> }>;
+  examples?: ReadonlyArray<{ jp: SoundLine; en: string; words?: readonly ExampleWord[] }>;
 }
+
+/** A word under an example sentence, with its furigana, and a short meaning:
+ * 雨 rain (SAK-488), 話す to speak (SAK-506). */
+export interface ExampleWord { word: SoundLine; meaning: string }
 
 /** A build formula: the form in a box, what is trimmed off it, what is
  * added. `label` names the case when a pattern branches ("Godan"). */
@@ -197,11 +201,14 @@ export interface TeachTable {
 
 /** An example sentence: natural English, the Japanese, and for a sentence
  * rule the English in Japanese order between them, each with its parts
- * named. */
+ * named. `words` are the sentence's content words and what they mean, drawn
+ * under the Japanese the way a particle page draws them under its sentences
+ * (SAK-506). */
 export interface TeachExample {
   natural: PartedSentence;
   ordered?: PartedSentence;
   japanese: PartedSentence;
+  words?: readonly ExampleWord[];
 }
 
 /** A sentence as runs of text. A run with a label is one of the sentence's

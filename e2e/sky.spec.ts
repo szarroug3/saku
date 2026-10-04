@@ -2674,3 +2674,23 @@ test("the 〜なくてもいい and 〜てはいけない lessons build them on 
     }
   }
 });
+
+test("the 〜てもいい lesson's In a sentence block says what 話す means (SAK-506)", async ({ page }) => {
+  // Sam, 2026-10-03, on 話してもいいですか: "in the in a sentence, i don't see
+  // the highlighted word's meaning at all actually." Signed out, as the suite runs.
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto(`/lesson?picks=${encodeURIComponent("grammar:te-permission")}`);
+  await expect(page.getByText(/^Step \d+ of \d+$/)).toBeVisible();
+  const block = page.locator("div").filter({ has: page.getByText("In a sentence", { exact: true }) }).filter({ hasText: "May I speak to you?" }).last();
+  await expect(block).toBeVisible();
+  const line = block.locator("p").filter({ hasText: "to speak" });
+  await expect(line).toHaveCount(1);
+  // the line as a reader sees it, without the furigana over 話
+  const bare = await line.evaluate((el) => {
+    const copy = el.cloneNode(true) as Element;
+    copy.querySelectorAll("rt").forEach((rt) => rt.remove());
+    return copy.textContent;
+  });
+  expect(bare).toBe("話す to speak");
+  await expect(line.locator("ruby rt")).toHaveText(["はな"]);
+});
