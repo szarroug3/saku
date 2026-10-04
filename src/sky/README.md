@@ -7438,3 +7438,27 @@ Sam, 2026-10-03, on the を page's "In a sentence" block: "we show a sentence wi
 **After SAK-501 and SAK-511.** Those cards took some corpus sentences off patterns they were filed under by mistake, so two pages show a different sentence and their rows were written again. 〜まで now shows ちょっとそこまで散歩に出よう ("Let's step out for a short walk."), which is null, since ちょっとそこまで is a set phrase for stepping out and the English has no words for そこまで. 〜ないで now shows 隠さないで話してくれ, which marks "Don't hold back". The old rows for 5326 on 〜まで and 4932 on 〜ないで are gone. 5326 is still 〜までに's sentence.
 
 **Not changed.** A word card's "In a sentence" (12,555 sentences, not something to write by hand), the quiz's selection items, and the sentence-rule walk, whose English was already marked by part. The Particle page's Japanese column still marks only the particle, as before. Its English now marks the particle's phrase, so the を row reads を in the accent beside "nap".
+
+## 〜らしい teaches "apparently", and its sentences say it (SAK-510)
+
+SAK-501 found that every sentence filed under 〜らしい used the other らしい, the suffix that means "like a real X" (若者らしく, わざとらしい). The page opened on わざとらしい. The pattern teaches the auxiliary, "apparently X" (彼は来るらしい).
+
+**The signature.** In `scripts/ingest/grammar.py`, rashii used to match らしい filed as a suffix. It now matches らしい after a plain-form predicate in 終止形: a verb (来るらしい), a た or ない form (来たらしい, 来ないらしい), or an い-adjective (寒いらしい). A noun or な-adjective before it is left out. UniDic files 学生らしい and わざとらしい with the same auxiliary らしい, so after a noun the tokens cannot tell "apparently a student" from "like a real student". `check_rashii()` runs before the export is read and stops the run if 彼は来るらしい, 来たらしい, 来ないらしい or 寒いらしい is missed, or if 若者らしく, わざとらしい, 日本語らしい日本語 or 彼は学生らしい matches.
+
+**Only rashii is re-cut.** The corpus came from a Tatoeba snapshot nobody can download again, and grammar.py rewrites every pattern. So `scripts/ingest/grammar_retag_rashii.py` does what `grammar_augment.py` did for the N3 patterns. It reads the pinned exports, tags every sentence the new signature matches and grammar.py's filters pass, and adds the new ones as rows. A sentence the corpus already has gains the tag in place. It also skips a sentence the word pool's vulgar or violent list would drop, and 772450 (今度の新人かわいいらしいぜ), which Sam's SAK-461 review banned from 新人's page. The old suffix tags are left for the audit. Their spans start with らし because the old signature had no host, and the rashii rule in `corpus-audit.ts` now drops any span that starts with らし, so all 9 are recorded in `grammar-corpus-dropped.json`.
+
+**The exports.** They were fetched from the URLs in `sources.json`, the way `ensure_archive()` does it, into the ignored `scripts/ingest/raw/tatoeba/`. All three hashes differed from the 2026-09-12 pins. The Japanese export grew by 1,399 bytes, the links by 113 and the English by 20,994. Every one of the corpus's 9,671 sentences and the word pool's 7,957 is still in the new export with the same Japanese, and one corpus row's first linked English is different. They are pinned now with version 2026-10-03, the exports' Last-Modified. `word_example_candidates.py` reads the same three exports, so it was rerun too, or the manifest test fails.
+
+**Rerunning.** In this order, the fugashi ones with `uv run --with fugashi --with unidic-lite`:
+
+1. `scripts/ingest/grammar_retag_rashii.py --accept-source` (without the flag once the pins match)
+2. `node scripts/audit-corpus.ts`
+3. `scripts/ingest/word_example_candidates.py`
+4. `scripts/ingest/assembly.py`, then `node scripts/check-assembly-freshness.ts`
+5. `node --import ./src/lib/conjugate/test-hooks.mjs scripts/build-word-examples.ts`, then `scripts/ingest/sentence_readings.py`
+6. `node --import ./src/lib/conjugate/test-hooks.mjs scripts/build-sentence-readings.ts`, then `scripts/ingest/teach_sentence_readings.py`
+7. the prebuild indexes and `build-catalogues.mjs`
+
+**What moved.** rashii has 74 sentences, up from 9, and every one reads as "apparently" or "it seems". The corpus has 9,744 sentences. The assembly corpus went from 603 items to 604. `word-examples.json` has 5,808 words, 5 more (余談, 折り返し, 欲, 浪人, 発火), and 16 words now show a らしい sentence, among them 病気 (彼は病気だったらしい) and 体調 (体調が悪いらしいね). The page's sentence is now うとうとしているうちに駅を通りすぎてしまったらしい ("I must have gone past the station while I was taking a nap"). Its English mark is "must have". One ordering card, 実も結ぶが挿し木でも根付くらしい, needed readings written for 実, 挿 and 木 in `teach_sentence_readings.py`.
+
+**Tests.** `corpus-audit.test.ts` drops 若者らしく and わざとらしい and keeps 彼は来るらしい and 病気だったらしい, counts 74 rashii sentences, and no longer lists rashii as below 20. The word example counts in `word-example.test.ts` and `source-pins.test.ts` were remeasured.
