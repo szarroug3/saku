@@ -1399,13 +1399,24 @@ describe("the English under a marked sentence marks what the Japanese marks", ()
     assert.equal(examples.filter((ex) => ex.enMark === null).length, 6);
   });
 
+  // after review: "rain" was marked inside "raining", which reads as a slip
+  it("never stops a particle example's mark partway through a word", () => {
+    const WORD = /[A-Za-z0-9]/;
+    for (const ex of examples) {
+      for (const p of phrasesOf(ex.enMark)) {
+        const at = ex.en.indexOf(p);
+        assert.ok(!WORD.test(ex.en[at - 1] ?? "") && !WORD.test(ex.en[at + p.length] ?? ""), `${ex.jp}: "${p}" starts or ends inside a word of "${ex.en}"`);
+      }
+    }
+  });
+
   it("draws a particle page example's English with its mark in the accent", () => {
     const pages = atlasEntryFromHistory(emptyHistory(), patternEntry("ga"), NOW)?.teach?.pages ?? [];
     const shown = pages.flatMap((p) => [...p.paragraphs, ...(p.after ?? [])]).flatMap((p) => p.examples ?? []);
     const rain = shown.find((ex) => ex.en === "It is raining.");
     assert.ok(rain?.enRuns, "雨が降っています has no marked English");
     assert.equal(text(rain.enRuns), "It is raining.");
-    assert.deepEqual(rain.enRuns.filter((r) => r.accent).map((r) => r.text), ["rain"]);
+    assert.deepEqual(rain.enRuns.filter((r) => r.accent).map((r) => r.text), ["raining"]);
     // two phrases where the English splits it: 田中さんも, "Tanaka" and "too"
     const mo = (atlasEntryFromHistory(emptyHistory(), patternEntry("mo"), NOW)?.teach?.pages ?? [])
       .flatMap((p) => [...p.paragraphs, ...(p.after ?? [])]).flatMap((p) => p.examples ?? [])
