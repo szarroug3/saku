@@ -30,6 +30,16 @@ describe("pitch facts", () => {
     assert.equal(factInfo(one.id)?.entry, wordEntry(one.glyph));
   });
 
+  it("cover kana-only words, which Kanjium lists with an empty reading (SAK-503)", () => {
+    assert.equal(wordPitch("はい"), 1);
+    assert.equal(wordPitch("うん"), 1);
+    assert.equal(wordPitch("うっかり"), 3);
+    assert.equal(wordPitch("ええ"), null, "Kanjium gives ええ three accents, so it stays without one");
+    const ids = new Set(PITCH_FACTS.map((f) => f.id));
+    assert.ok(ids.has(pitchFactId("はい")));
+    assert.ok(ids.has(pitchFactId("うん")));
+  });
+
   it("are never among an entry's own facts, known or listed", () => {
     for (const f of PITCH_FACTS.slice(0, 200)) {
       assert.ok(!factsOf(f.entry).includes(f.id), `${f.id} listed on its entry`);

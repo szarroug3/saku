@@ -241,7 +241,11 @@ export function LessonCard({ item, teach, madeOf, partOf, onSelect, onRead, writ
         {standing && <StandingChip standing={item.standing} />}
       </div>
       <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
-        <span className={`font-sky-display leading-none ${item.glyph === item.english ? "text-[28px] leading-tight" : "text-[52px]"} ${japaneseFont(item.glyph)}`}>{item.glyph}</span>
+        {/* a word written only in kana is its own reading, so its pitch is
+            drawn over the word itself (はい, うっかり; SAK-503) */}
+        {Pitch && typeof teach?.pitch === "number" && reading === item.glyph
+          ? <Pitch reading={item.glyph} downstep={teach.pitch} className={`font-sky-display leading-none text-[52px] ${japaneseFont(item.glyph)}`} />
+          : <span className={`font-sky-display leading-none ${item.glyph === item.english ? "text-[28px] leading-tight" : "text-[52px]"} ${japaneseFont(item.glyph)}`}>{item.glyph}</span>}
         {/* the reading and its hear button as one group, so the button
             centers on the reading rather than on the glyph beside it */}
         <span className="inline-flex items-center gap-2">

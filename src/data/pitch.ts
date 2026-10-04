@@ -2,11 +2,12 @@
 // form. Ingested from the Kanjium database — see scripts/ingest/pitch.mjs for
 // what it is, why only the unambiguous rows are kept, and the license.
 //
-// 8,682 of the 12,553 words (69.2%) carry a verified pitch. The rest have none,
+// 9,428 of the 12,553 words (75.1%) carry a verified pitch, kana-only words
+// like はい and うっかり included (SAK-503). The rest have none,
 // and that is deliberate: a word whose accent Kanjium records more than one way,
 // or that is not in the database, stores NO pitch rather than a guessed one, so
-// `wordPitch` returning null is the normal shape for a third of the vocabulary
-// and the renderer draws nothing at all for it — never a default mark.
+// `wordPitch` returning null is the normal shape for a quarter of the vocabulary
+// and the renderer draws nothing at all for it, never a default mark.
 
 import pitchJson from "./generated/pitch.json" with { type: "json" };
 
