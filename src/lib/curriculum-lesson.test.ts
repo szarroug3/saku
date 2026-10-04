@@ -436,10 +436,11 @@ describe("the totals are counted off the data, never typed in", () => {
   // character, so none is folded back in via isSingleCharWordGlyph — cutting
   // them from CURRICULUM_WORDS removes them from CURRICULUM_SEQUENCE entirely,
   // same as 一人/二人/割/階/円/一時/４時/７時 above.
-  test("and today those counts are 90, 2,136 and 12,540", () => {
+  // It rose to 12,541 with SAK-515, which added 日本語 to SUPPLEMENT.
+  test("and today those counts are 90, 2,136 and 12,541", () => {
     assert.equal(CURRICULUM_TOTALS.radical, 90);
     assert.equal(CURRICULUM_TOTALS.kanji, 2136);
-    assert.equal(CURRICULUM_TOTALS.word, 12540);
+    assert.equal(CURRICULUM_TOTALS.word, 12541);
   });
 
   test("a total does not move when the lesson length does", () => {
@@ -447,7 +448,7 @@ describe("the totals are counted off the data, never typed in", () => {
       for (const g of packLessons(range)) {
         assert.equal(g.position.radical?.total ?? 90, 90);
         assert.equal(g.position.kanji?.total ?? 2136, 2136);
-        assert.equal(g.position.word?.total ?? 12540, 12540);
+        assert.equal(g.position.word?.total ?? 12541, 12541);
       }
     }
   });
