@@ -1499,7 +1499,9 @@ export const RECIPES: readonly Recipe[] = [
     level: "N4",
     cluster: "conditionals",
     attach: [
-      { host: "noun", form: null, add: "なら" },
+      // "if it's the case that a book" says too much. On a noun, なら is "if
+      // it's a book" (SAK-500).
+      { host: "noun", form: null, add: "なら", meaning: "if it's X" },
       { host: "verb", form: "dictionary", add: "なら" },
     ],
   },
@@ -1585,7 +1587,9 @@ export const RECIPES: readonly Recipe[] = [
     cluster: "seems",
     attach: [
       { host: "verb", form: "dictionary", add: "ようだ" },
-      { host: "noun", form: null, add: "のようだ" },
+      // "seems that a book" has no verb. のようだ says it seems to be one
+      // (SAK-500).
+      { host: "noun", form: null, add: "のようだ", meaning: "it seems to be X" },
     ],
     note:
       "THE REGEX TRAP. A regex for ようだ scores 5,290 corpus hits against a " +
@@ -1751,7 +1755,9 @@ export const RECIPES: readonly Recipe[] = [
     level: "N3",
     attach: [
       { host: "verb", form: "dictionary", add: "ために" },
-      { host: "noun", form: null, add: "のために" },
+      // On a noun this is the benefit sense (子供のために), not a purpose:
+      // "in order to a book" is not English (SAK-500).
+      { host: "noun", form: null, add: "のために", meaning: "for the sake of X" },
     ],
     note:
       "Purpose/benefit: verb plain + ために (合格するために勉強する), noun + の + ため" +
