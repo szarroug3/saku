@@ -7516,3 +7516,27 @@ Seen 2026-10-03 on 〜てもいい in the Atlas: the な-adjective build table h
 **Measured** on the built server, with grammar:te-permission open: the な-adjective table's box is 288px wide with 288px of content at 1440, and 286 of 286 at 390. Before the change the same box held 382px of content at 1440 and 384px at 390 (measured on the dev server). A sweep of all 108 patterns that have a build table, every page of each, 388 tables, found none wider than its box at 1440 or at 390. The 〜てもいい lesson at 1440 draws the same four columns at the same widths as before.
 
 **Tests.** `teach.test.ts` checks that every 〜てもいい table marks its Meaning column, that the た-form's table marks Meaning and Note, that しずかでもいい breaks before もいい and しずかではなくてもいい before くてもいい with no accent added, that the change cell's signs are held by no-break spaces, and that the Particle page's table is left alone. The e2e test opens the Atlas on grammar:te-permission at 1440 and 390, checks the な-adjective table and its box have nothing to scroll, that "it's okay even if it's quiet" ends inside the panel and the Meaning heading is hidden, then opens the lesson at 1440 and finds the Meaning heading and four cells in the row.
+
+## A grammar production card's box asks for the form (SAK-513)
+
+On a grammar production card the typed box said "The reading". The card asks for げんき built into 〜てもいい, and the answer is げんきでもいい. That is a form of the word. It is not how げんき is read. The box now says "The form".
+
+**Where the word comes from.** The quiz already calls a built answer a form. The instruction for a pattern with no meaning to fill in reads "Type how this word is said in the 〜て form." (`quizInstruction` in `src/lib/quiz-instruction.ts`). The hint names the step as "Use the て-form." (`formHintText`, read by `grammarHint` in `src/lib/engine/hint.ts`). In the lesson, the build table heads its middle column with the form's name, such as て-form (`deriveTable` in `src/app/(sky)/teach.ts`, `formHead` in `src/data/grammar/auto-page.ts`). The reveal heads the arithmetic "How it is built". The lesson heads the finished word "Pattern", but the question already names the pattern, and "The pattern" in the box would read as asking for 〜てもいい itself.
+
+**How.** `QuizCard.answerIs` has a fourth value, `form`. `quizCards` in `src/app/(sky)/quiz.ts` gives it to any fact `grammarProduction` knows, before the meaning and reading checks. The box's text is `answerPlaceholder` in `src/sky/lib/quiz.ts`, which the quiz board calls in place of the inline ternary it had. The reveal's "Also written" line treats a form like any Japanese answer, as before.
+
+**Every other typed card is unchanged.** A sweep built the cards for every kana, radical, kanji, word and counting entry and every grammar production fact, and compared the old text with the new. Only the 765 grammar production cards changed, all from "The reading" to "The form".
+
+| Card | Box says |
+| --- | --- |
+| Kana reading | In romaji, or how it sounds |
+| Kanji reading in a word | The reading |
+| Word reading | The reading |
+| Counting (how is 六十七 said) | The reading |
+| Kanji, radical, word meaning | The meaning, in English |
+| Grammar production, any host | The form |
+| Grammar meaning, keigo, verb pair, sentence ordering, pitch | no box (picked, not typed) |
+
+A typed card the deck builder cannot name still says "Your answer".
+
+**Tests.** `src/sky/lib/quiz.test.ts` checks each answer kind's text. `src/app/(sky)/quiz.test.ts` builds the 〜てもいい adjective cards (い and な), a verb's production card, and word, kanji, kana and meaning cards, and checks each box. The test that a reading's box types kana now covers a form's box too. The e2e test opens the 〜てもいい card on each adjective and finds "The form", then a word reading card and finds "The reading".
