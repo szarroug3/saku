@@ -12,7 +12,10 @@ import { describe, test } from "node:test";
 
 import { corpus, CORPUS_META, examplesFor } from "./corpus.ts";
 import type { Example } from "./corpus.ts";
-import { AUDITED, confoundFor, japaneseErrorFor } from "./corpus-audit.ts";
+import { AUDITED, auditExample, confoundFor, japaneseErrorFor } from "./corpus-audit.ts";
+import droppedJson from "../generated/grammar-corpus-dropped.json" with { type: "json" };
+
+const DROPPED = droppedJson as readonly { readonly id: number; readonly orphaned: boolean; readonly removed: boolean }[];
 
 describe("no shipped example lacks its own pattern", () => {
   test("the audit finds nothing left to drop", () => {
@@ -38,10 +41,20 @@ describe("no shipped example lacks its own pattern", () => {
     assert.deepEqual([...CORPUS_META.audit.patterns].sort(), [...AUDITED].sort());
   });
 
-  test("every sentence still claims at least one pattern", () => {
-    // The audit removes claims, and a sentence that loses all of them must
-    // leave rather than sit in the file untagged.
-    for (const ex of corpus()) assert.ok(ex.p.length > 0, `${ex.id} has no patterns`);
+  test("a sentence with no pattern is one the audit took every tag off", () => {
+    // SAK-511: such a sentence stays for word examples and sentence readings.
+    // It must be one the audit chose to untag, and the meta must count it.
+    const struck = new Set(DROPPED.filter((d) => d.orphaned && !d.removed).map((d) => d.id));
+    const untagged = corpus().filter((ex) => ex.p.length === 0);
+    for (const ex of untagged) assert.ok(struck.has(ex.id), `${ex.id} has no patterns and the audit never untagged it`);
+    assert.equal(CORPUS_META.audit.untaggedSentences, untagged.length);
+    for (const ex of untagged) assert.deepEqual(ex.sp, {}, `${ex.id} kept a span with no pattern`);
+  });
+
+  test("no pattern's examples include a sentence with no pattern", () => {
+    for (const p of Object.keys(CORPUS_META.perPattern)) {
+      for (const ex of examplesFor(p)) assert.ok(ex.p.length > 0, `${ex.id} under ${p} has no patterns`);
+    }
   });
 
   test("meta.perPattern is the file's real content, not the cap", () => {
@@ -250,5 +263,55 @@ describe("the SAK-501 rules drop the wrong sense and keep the right one", () => 
     assert.ok(japaneseErrorFor(bad));
     assert.equal(japaneseErrorFor({ ...bad, id: 2 }), null);
     assert.ok(!corpus().some((ex) => ex.id === 77642), "77642 is still in the corpus");
+  });
+});
+
+describe("a wrong sense takes the tag off and keeps the sentence (SAK-511)", () => {
+  test("a sentence whose only pattern is confounded is kept with no tags", () => {
+    const request = example("ふざけないで。", "nai-de", "ふざけないで", "Be serious.");
+    const { kept, struck } = auditExample(request);
+    assert.ok(kept, "the sentence left the corpus");
+    assert.deepEqual(kept.p, []);
+    assert.deepEqual(kept.sp, {});
+    assert.deepEqual(
+      struck.map((s) => s.pattern),
+      ["nai-de"],
+    );
+  });
+
+  test("a confound takes off only its own tag", () => {
+    const ex: Example = {
+      id: 1,
+      jp: "窓を開けないでください。",
+      en: "Please don't open the window.",
+      n: 0,
+      v: [],
+      p: ["wo", "nai-de"],
+      sp: { wo: [1, 2, null], "nai-de": [2, 7, null] },
+    };
+    const { kept } = auditExample(ex);
+    assert.deepEqual(kept?.p, ["wo"]);
+    assert.deepEqual(Object.keys(kept?.sp ?? {}), ["wo"]);
+  });
+
+  test("a sentence with no confound comes back as it was", () => {
+    const ex = example("疲れているんだ。", "te-iru", "疲れている", "I'm tired.");
+    assert.equal(auditExample(ex).kept, ex);
+  });
+
+  test("wrong Japanese takes the whole sentence out", () => {
+    const bad = example("冷蔵庫に入れておけば肉は痛まない。", "te-oku", "入れておけ", "", 77642);
+    const { kept, struck } = auditExample(bad);
+    assert.equal(kept, null);
+    assert.deepEqual(
+      struck.map((s) => s.pattern),
+      ["te-oku"],
+    );
+  });
+
+  test("the ないで requests SAK-501 untagged are word examples again", () => {
+    const ex = corpus().find((e) => e.jp === "ふざけないで。");
+    assert.ok(ex, "ふざけないで。 left the corpus");
+    assert.deepEqual(ex.p, []);
   });
 });

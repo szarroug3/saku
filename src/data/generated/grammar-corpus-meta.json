@@ -7,7 +7,7 @@
   "counts": {
     "japanese": 248802,
     "withEnglish": 232666,
-    "kept": 9385
+    "kept": 9671
   },
   "perPattern": {
     "ba": 256,
@@ -198,6 +198,7 @@
       "to-omou"
     ],
     "droppedExamples": 676,
-    "droppedSentences": 288
+    "droppedSentences": 1,
+    "untaggedSentences": 286
   }
 }

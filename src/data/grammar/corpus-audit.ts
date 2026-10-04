@@ -322,3 +322,37 @@ export function confoundFor(ex: Example, pattern: string): string | null {
   const before = ex.jp.slice(0, sp[0]);
   return c.holds(ex, span, after, before) ? c.why : null;
 }
+
+/** One pattern tag the audit takes off a sentence, and why. */
+export interface StruckTag {
+  readonly pattern: string;
+  readonly why: string;
+}
+
+/**
+ * What the audit does to one sentence.
+ *
+ * A confound or an untaught prerequisite takes that pattern's tag off. The
+ * sentence stays even when no tag is left (SAK-511): being the wrong sense of
+ * one grammar point says nothing about whether it shows its words well, and
+ * word-examples.json and the sentence readings are drawn from this same file.
+ * examplesFor() groups by tag, so a sentence with no tag never reaches a
+ * pattern page or a grammar drill.
+ *
+ * Wrong Japanese is the one thing that takes the sentence out. Then `kept` is
+ * null and every tag it had is struck.
+ */
+export function auditExample(ex: Example): { readonly kept: Example | null; readonly struck: readonly StruckTag[] } {
+  const wrong = japaneseErrorFor(ex);
+  const struck: StruckTag[] = [];
+  for (const pattern of ex.p) {
+    const why = wrong ?? confoundFor(ex, pattern) ?? prerequisiteGapFor(ex, pattern);
+    if (why !== null) struck.push({ pattern, why });
+  }
+  if (wrong !== null) return { kept: null, struck };
+  if (struck.length === 0) return { kept: ex, struck };
+  const p = ex.p.filter((x) => !struck.some((s) => s.pattern === x));
+  const sp: Record<string, readonly [number, number, string | null]> = {};
+  for (const x of p) sp[x] = ex.sp[x]!;
+  return { kept: { ...ex, p, sp }, struck };
+}

@@ -175,7 +175,9 @@ function recognitionFacts(ex: Example): FactId[] {
  */
 export function readableRecognition(history: HistoryFile): readonly Example[] {
   const reader = readerFor(history);
-  return corpus().filter((ex) => ex.jp.trim() && ex.en.trim() && reader(ex));
+  // A sentence with no pattern tag (SAK-511) is in the corpus for word
+  // examples only. A correct pick credits its patterns, so it has none to give.
+  return corpus().filter((ex) => ex.p.length > 0 && ex.jp.trim() && ex.en.trim() && reader(ex));
 }
 
 /**
