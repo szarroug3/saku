@@ -50,6 +50,7 @@ import { authoredReader, proseReader, proseSound, wordSound, type RunReader } fr
 import { TSU_RULE } from "./observatory";
 import { shortMeaning, vocabEntryOf } from "./word-meaning";
 import { particleGroup, tileOf, type ParticleGroup } from "./particle-groups";
+import { wordGroup, type WordGroup } from "./word-groups";
 import { type ExampleWord, type LessonTeach, type PartedSentence, type SoundLine as SkySoundLine, type TeachForm, type TeachPage, type TeachParagraph, type TeachTable } from "@/sky/lib/lesson";
 import { cutLine, rubyFromReading } from "@/sky/lib/sound-line";
 import type { SkyItem } from "@/sky/lib/types";
@@ -361,6 +362,8 @@ export function teachFor(item: SkyItem, scope: TeachScope = {}): LessonTeach {
     return t;
   }
   if (item.kind === "word") {
+    const group = wordGroup(item.id);
+    if (group) return wordGroupTeach(group);
     const row = vocabRow(glyph);
     if (row) {
       // every way it is read, each with what it means read that way; a
@@ -817,6 +820,41 @@ function groupTeach(group: ParticleGroup): LessonTeach {
   if (!first) return { meanings: [group.english] };
   const pages = grammarPages(first).map((page, i) => (i === 0 ? { ...page, title: `${first.pattern} ${first.gloss}` } : page));
   return { meanings: [group.english], pages };
+}
+
+/**
+ * The card of two words taught as one (SAK-493): headed by the pair's name
+ * ("はい vs うん") and its meaning line, with a page per word and then the page
+ * that tells them apart, the three-page shape a shared particle note has.
+ *
+ * A word's page holds what that word's own card shows: the word's reading and
+ * hear button beside the page's title (`say`), its meanings, its sentence with
+ * the word picked out, and its forms. The card's own button is off for a pair,
+ * whose name is not one word to say. The note is on the third page rather than on
+ * each word's page, where a word's own card has it.
+ */
+function wordGroupTeach(group: WordGroup): LessonTeach {
+  const pages = group.words.map((word): TeachPage => {
+    const own = teachFor({ id: word, kind: "word", glyph: word, english: "", standing: "not-seen" });
+    const meanings = own.meanings ?? [];
+    const ex = own.example;
+    const line: SkySoundLine = ex?.sound ?? [{ text: ex?.jp ?? "" }];
+    const jp = ex?.span ? (() => { const [before, picked, after] = cutLine(line, ex.span[0], ex.span[1]); return [...before, ...picked.map((r) => ({ ...r, accent: true })), ...after]; })() : line;
+    return {
+      eyebrow: word,
+      title: `${word} ${meanings[0] ?? ""}`.trim(),
+      say: { word, reading: own.reading ?? word, pitch: own.pitch ?? null },
+      // the title says the first meaning, so a word with one meaning has no
+      // line repeating it
+      paragraphs: [
+        ...(meanings.length > 1 ? [{ heading: "Meanings", text: meanings.join(" · ") }] : []),
+        ...(ex ? [{ heading: "In a sentence", text: "", examples: [{ jp, en: ex.en }] }] : []),
+      ],
+      ...(own.tables?.length ? { tables: own.tables } : {}),
+    };
+  });
+  const apart: TeachPage = { eyebrow: group.glyph, title: "Which one to use", paragraphs: [{ text: group.note }] };
+  return { meanings: [group.english], pages: [...pages, apart] };
 }
 
 /** The entry a recipe's card is, which is the page its written pattern has:

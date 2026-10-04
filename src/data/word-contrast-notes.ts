@@ -39,6 +39,11 @@ export interface WordContrastPair {
   readonly a: string;
   readonly b: string;
   readonly note: string;
+  /** A pair taught as one item (SAK-493): one tile, one star, one lesson card
+   * over both words, with this line as its meaning. Only a hand-authored pair
+   * of two different words is taught this way; the ずる/じる pairs are one verb
+   * spelled two ways, and the じる spelling is the one taught. */
+  readonly together?: { readonly english: string };
 }
 
 // ---------------------------------------------------------------------------
@@ -110,15 +115,28 @@ function zuruPair(zuru: string): WordContrastPair {
 
 export const WORD_CONTRAST_PAIRS: readonly WordContrastPair[] = [
   ...ZURU_VERBS.map(zuruPair),
+  // SAK-493: the two pairs a learner meets first, taught together. The
+  // Planetarium showed "yes" twice and "no" twice with nothing telling the
+  // tiles apart, so each pair is one item whose card holds both words and
+  // this note.
+  {
+    a: "はい",
+    b: "うん",
+    note:
+      "はい (yes) and うん (yes) both say yes. はい is the one to use with anyone you are not close to, such as a teacher or a shop clerk. It also works as “I'm listening” while someone else is talking. うん is the casual one, said with friends and family. It is closer to a nod or an “mm-hm” than to a full word. Said to a boss or a stranger, it sounds too familiar.",
+    together: { english: "yes, polite and casual" },
+  },
   {
     a: "いいえ",
     b: "いや",
-    // SAK-229: いや's own example sentence ("たとえいやでもその仕事はしなけ
-    // ればいけないよ。" — "you must do the work, even if you don't like it")
-    // already demonstrates the reluctance sense; this note is what makes that
-    // connection explicit rather than leaving it for the learner to infer.
+    // SAK-229 wrote this note; SAK-493 rewrote it after the content review
+    // (docs/content-review-2026-09.md) found it overstated いや. "I don't want
+    // to" is いやだ, the adjective. The bare interjection is mostly a casual no
+    // or a hesitation. いや's own example sentence (たとえいやでも...) is that
+    // other word, and is left alone here.
     note:
-      "いいえ and いや both mean “no,” but they aren't interchangeable. いいえ is the neutral, all-purpose no. It's plain and safe in any setting, including polite conversation, and it's also how you wave off a compliment (“not at all”). いや is casual and has feeling in it. It usually means “I don't want to” or “I'd rather not,” which makes it a personal refusal, so it can sound blunt or childish somewhere formal.",
+      "いいえ (no) and いや (no) both say no. いいえ is the plain, polite no. It is safe anywhere. It is also how you turn down a compliment, as in “not at all.” いや is the casual one. Among friends, it is a quick no or a “hmm, no” while you think. It can also open an objection. Said to someone you should be polite with, it sounds blunt.",
+    together: { english: "no, polite and casual" },
   },
 ];
 

@@ -38,10 +38,10 @@ import type { SkyItem, SkyKind } from "@/sky/lib/types";
 import type { EntryId } from "@/types/facts";
 import type { HistoryFile } from "@/types/store";
 
-import { standingFor } from "./learner";
+import { groupStandingFor, standingFor } from "./learner";
 import { conceptTwin, PARTICLE_TERM, readablePatterns, teachFor } from "./teach";
 import { hasOffer, offerings, offerPicker, pickFacts, TSU_RULE, type Offerings } from "./observatory";
-import { particleGroup, tileOf } from "./particle-groups";
+import { oneCardParts, particleGroup, tileOf } from "./particle-groups";
 
 /** The shelves, in the order the app teaches the subjects. Every cut of
  * every shelf is shown (Sam's call, 2026-09-05: everything, without having
@@ -204,8 +204,14 @@ export function atlasSectionsFromHistory(history: HistoryFile, shelfId: string, 
   if (!shelf) return [];
   const out: AtlasSection[] = [];
   for (const cut of shelf.kinds.flatMap((kind) => shelfSections(kind, "everyday"))) {
-    // ids alone: the tiles come later, for the cuts scrolled near
-    const ids = cut.entries.filter((e) => !twinned(e) && standingFor(e, history, now).standing === status && hasOffer(e)).map((e) => e.id);
+    // ids alone: the tiles come later, for the cuts scrolled near. Two words
+    // taught together are one tile (SAK-493), cut by the standing they share.
+    const standingOf = (id: string): Standing | undefined => {
+      const parts = oneCardParts(id);
+      if (!parts) { const e = libEntry(id as EntryId); return e ? standingFor(e, history, now).standing : undefined; }
+      return groupStandingFor(parts.map((p) => libEntry(p as EntryId)).filter((e): e is LibEntry => !!e), history, now).standing;
+    };
+    const ids = [...new Set(cut.entries.filter((e) => !twinned(e) && hasOffer(e)).map((e) => tileOf(e.id)))].filter((id) => standingOf(id) === status);
     if (ids.length) out.push({ id: cut.id, label: cut.label, items: ids });
   }
   return out;

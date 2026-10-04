@@ -31,7 +31,7 @@ import type { FactId } from "@/types/facts";
 import type { HistoryFile } from "@/types/store";
 
 import { offerings, offerPicker, pickFacts, TSU_RULE, type Offerings } from "./observatory";
-import { particleGroup, tileOf } from "./particle-groups";
+import { oneCardParts, tileOf } from "./particle-groups";
 import { pageFromIntro, readablePatterns, teachFor } from "./teach";
 
 /** One of everything, for a look at every kind of card: a plain kana row,
@@ -166,10 +166,10 @@ function taughtReading(facts: readonly string[]): string | undefined {
  * derived from it rather than written out by hand; each page says in one
  * word which of the two it is. */
 function walkFor(starIds: readonly string[], history: HistoryFile, offer: Offerings, readings: Map<string, string>): LessonPage[] {
-  // a particle group has no entry of its own: its two patterns' facts are
-  // what the walk reads, and a page the walk puts behind either pattern stands
-  // behind the group, which is the star (SAK-491)
-  const facts = starIds.flatMap((id): FactId[] => { const e = libEntry(id as Parameters<typeof libEntry>[0]); return e ? [...knownFactsOf(e)] : particleGroup(id) ? pickFacts([id]) : []; });
+  // a particle group or a word group has no entry of its own: its two parts'
+  // facts are what the walk reads, and a page the walk puts behind either part
+  // stands behind the group, which is the star (SAK-491, SAK-493)
+  const facts = starIds.flatMap((id): FactId[] => { const e = libEntry(id as Parameters<typeof libEntry>[0]); return e ? [...knownFactsOf(e)] : oneCardParts(id) ? pickFacts([id]) : []; });
   const pages: LessonPage[] = [];
   let pending: Omit<LessonPage, "before">[] = [];
   // Each page says which of the two it is and nothing else. It used to carry a

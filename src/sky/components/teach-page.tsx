@@ -4,7 +4,7 @@
 // Atlas shows the same pages as reference. One renderer, so the two can
 // never drift.
 
-import { Fragment } from "react";
+import { Fragment, type ReactNode } from "react";
 import { SkyChip, SkyTextButton } from "@/sky/components/sky-button";
 import { Eyebrow } from "@/sky/components/sky-card";
 import { Mixed } from "@/sky/components/mixed-text";
@@ -214,11 +214,15 @@ export function Table({ table, onOpen }: { table: TeachTable; onOpen?: (id: stri
 // space"). The title, the lead and the paragraphs used to stop at 30ch and
 // 64ch, so a panel dragged wide showed a narrow column beside an empty half.
 // The panel's own width is the measure now: the learner chose it.
-export function TeachPageView({ page, alone = false, onOpen }: { page: TeachPage; alone?: boolean; onOpen?: (id: string) => void }) {
+export function TeachPageView({ page, alone = false, onOpen, titleAside }: { page: TeachPage; alone?: boolean; onOpen?: (id: string) => void; titleAside?: ReactNode }) {
+  const title = page.title && <h3 className="font-sky-display text-[20px] leading-tight"><Mixed text={page.title} /></h3>;
   return (
     <div className={alone ? "" : "mt-4 border-t border-sky-line pt-4"}>
       {page.eyebrow && <Eyebrow>{page.eyebrow}</Eyebrow>}
-      {page.title && <h3 className="font-sky-display text-[20px] leading-tight"><Mixed text={page.title} /></h3>}
+      {/* what the card puts beside the title, a word page's reading and hear
+          button (SAK-493), in one row with it, the way a word card's head
+          row holds the word and its button */}
+      {titleAside ? <div className="flex flex-wrap items-center gap-x-4 gap-y-1">{title}{titleAside}</div> : title}
       {page.lead && <p className="mt-2 text-[15.5px] font-semibold leading-relaxed">{page.lead}</p>}
       {page.hook && <p className="mt-2 text-[13px] font-semibold text-sky-accent">{page.hook}</p>}
       <div className="mt-3 flex flex-col gap-2 text-[14.5px] leading-relaxed">

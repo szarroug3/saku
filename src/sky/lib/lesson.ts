@@ -149,6 +149,10 @@ export interface TeachPage {
   examples?: readonly TeachExample[];
   /** Somewhere to read more. */
   link?: { href: string; label: string };
+  /** The word a page is about, for a card that teaches two words on one card
+   * (はい vs うん, SAK-493): the page's title row gets the word's reading and
+   * hear button, the way a word card's head row has them. */
+  say?: { word: string; reading: string; pitch?: number | null };
 }
 
 /** `runs` replaces `text` for a line with several parts to color (a hook

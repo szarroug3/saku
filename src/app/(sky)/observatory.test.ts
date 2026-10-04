@@ -338,9 +338,11 @@ describe("the Grammar row, and the Sentences row behind it", () => {
 describe("a met item that has slipped", () => {
   const DAY = 24 * 60 * 60 * 1000;
 
-  /** The first word a new learner is offered: a real pick, at the front of
-   * the words section, so its absence later means something. */
-  const firstOffered = (): string => offerings(emptyHistory(), NOW).sections.find((s) => s.id === "words")!.items[0];
+  /** The first word a new learner is offered on its own: a real pick, near
+   * the front of the words section, so its absence later means something.
+   * The tiles before it are word pairs (はい vs うん, SAK-493), which are not
+   * one entry. */
+  const firstOffered = (): string => offerings(emptyHistory(), NOW).sections.find((s) => s.id === "words")!.items.find((id) => !!libEntry(id as Parameters<typeof libEntry>[0]))!;
 
   const entryOfId = (id: string): LibEntry => {
     const entry = libEntry(id as Parameters<typeof libEntry>[0]);

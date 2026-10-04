@@ -49,7 +49,8 @@ import type { FactId } from "@/types/facts";
 import type { HistoryFile } from "@/types/store";
 
 import { componentEntry, groupStandingFor, skyAdder, skyItems, standingFor, type SkyItems } from "./learner";
-import { groupOfPart, PARTICLE_GROUPS, particleGroup, tileOf, type ParticleGroup } from "./particle-groups";
+import { groupOfPart, oneCardParts, PARTICLE_GROUPS, particleGroup, tileOf, type ParticleGroup } from "./particle-groups";
+import { WORD_GROUPS, wordGroup, wordGroupOfPart, type WordGroup } from "./word-groups";
 
 /** How many of a long section to offer; the page lays out fewer. */
 const SHOW = 24;
@@ -68,10 +69,10 @@ function present<T>(x: T | undefined): x is T {
   return !!x;
 }
 
-/** The entries behind a particle group's parts: all of them, or nothing when
- * the library has dropped one, since a group with a part missing cannot be
+/** The entries behind a group's parts: all of them, or nothing when the
+ * library has dropped one, since a group with a part missing cannot be
  * offered, taught or drawn as the group. */
-function partsOf(g: ParticleGroup): LibEntry[] | undefined {
+function partsOf(g: { parts: readonly string[] }): LibEntry[] | undefined {
   const parts = g.parts.map(entryOf).filter(present);
   return parts.length === g.parts.length ? parts : undefined;
 }
@@ -295,12 +296,30 @@ function picker(sky: Pick<SkyItems, "items" | "add">, history: HistoryFile, now:
     return item;
   };
 
+  // two words that gloss the same, taught as one item (SAK-493): the same
+  // shape as a particle group, a word star over its two words
+  const offerWordGroup = (g: WordGroup): SkyItem | undefined => {
+    const parts = partsOf(g);
+    if (!parts) return undefined;
+    for (const p of parts) offerPick(p.id);
+    const item: SkyItem = {
+      id: g.id, kind: "word", glyph: g.glyph, english: g.english,
+      standing: groupStandingFor(parts, history, now).standing,
+      group: true, oneCard: true, listsParts: true,
+      components: parts.map((p) => p.id),
+    };
+    items.set(g.id, item);
+    return item;
+  };
+
   /** Any pick by id, built the way its section would build it. */
   const offerPick = (id: string): SkyItem | undefined => {
     const have = items.get(id);
     if (have) return have;
     const group = particleGroup(id);
     if (group) return offerGroup(group);
+    const words = wordGroup(id);
+    if (words) return offerWordGroup(words);
     const entry = entryOf(id);
     if (!entry) return undefined;
     switch (entry.kind) {
@@ -384,7 +403,8 @@ export function offerings(history: HistoryFile, now = Date.now()): Offerings {
   // sentence type that needs it is open and the group itself is off the page;
   // a pattern of it already met is learned too, so the group costs only the
   // other one
-  for (const g of PARTICLE_GROUPS) {
+  // and the same for a word group (SAK-493)
+  for (const g of [...PARTICLE_GROUPS, ...WORD_GROUPS]) {
     const parts = g.parts.map(entryOf).filter(present);
     for (const p of parts) if (standingFor(p, history, now).met) learned.add(p.id);
     if (parts.length === g.parts.length && groupStandingFor(parts, history, now).met) learned.add(g.id);
@@ -426,10 +446,27 @@ export function offerings(history: HistoryFile, now = Date.now()): Offerings {
   // at all: no heading, and nothing saying what would open it (SAK-464)
   const afterKana = kanaMet < kanaTotal;
 
-  // words: the curriculum's order, next ones first
+  // words: the curriculum's order, next ones first. Two words taught together
+  // are one tile (SAK-493), at whichever of them the curriculum has first,
+  // for as long as either is left to learn, and neither is offered alone.
   const allWords = CURRICULUM_KEBS_ORDERED.map(wordEntry).filter(present);
   const words = allWords.filter((e) => !standingFor(e, history, now).met);
-  sections.push({ id: "words", title: "Words", ...COPY.words, items: words.slice(0, SHOW).map((e) => offer(e, "word").id), shut: afterKana, started: words.length < allWords.length, complete: words.length === 0 });
+  const wordTiles: string[] = [];
+  const wordGroupsPlaced = new Set<string>();
+  for (const e of allWords) {
+    if (wordTiles.length >= SHOW) break;
+    const group = wordGroupOfPart(e.id);
+    if (!group) {
+      if (!standingFor(e, history, now).met) wordTiles.push(offer(e, "word").id);
+      continue;
+    }
+    if (wordGroupsPlaced.has(group.id)) continue;
+    wordGroupsPlaced.add(group.id);
+    if (learned.has(group.id)) continue;
+    const item = offerPick(group.id);
+    if (item) wordTiles.push(item.id);
+  }
+  sections.push({ id: "words", title: "Words", ...COPY.words, items: wordTiles, shut: afterKana, started: words.length < allWords.length, complete: words.length === 0 });
 
   // counting: the track's own order. The native numbers are one rule, not
   // ten picks (Sam, 2026-09-05): a pick with the ten forms under it
@@ -571,7 +608,8 @@ export function offerings(history: HistoryFile, now = Date.now()): Offerings {
  * nothing else, so a learner saw no planet or asteroid until they had
  * learned one, while the legend counted all of them as undiscovered. Words
  * stay out of the firmament, as they always have: twelve thousand of them
- * would be the whole sky. */
+ * would be the whole sky. The one thing about words here is the pairs taught
+ * together (SAK-493): each is one star in place of its two words. */
 export function beyondWords(history: HistoryFile, now = Date.now()): { items: SkyItem[]; met: string[]; firmament: string[] } {
   // only these picks and what is under them are wanted, so the sky is not
   // built first (it was, and was half the home's payload time, SAK-382)
@@ -593,6 +631,13 @@ export function beyondWords(history: HistoryFile, now = Date.now()): { items: Sk
       (standingFor(entry, history, now).met ? met : firmament).push(entry.id);
     }
   }
+  // two words taught together are one star (SAK-493), put here in place of
+  // the two, which the learner's own sky leaves out of the firmament
+  for (const group of WORD_GROUPS) {
+    if (!o.offerPick(group.id)) continue;
+    const parts = group.parts.map(entryOf).filter(present);
+    (parts.some((e) => standingFor(e, history, now).met) ? met : firmament).push(group.id);
+  }
   // the picks and everything under them, so their constellations are whole
   const keep = new Set<string>();
   const walk = (id: string) => { if (keep.has(id)) return; keep.add(id); for (const c of o.items.get(id)?.components ?? []) walk(c); };
@@ -602,14 +647,14 @@ export function beyondWords(history: HistoryFile, now = Date.now()): { items: Sk
 
 /** The facts a set of picks claims when the learner says "I already know
  * these": each pick claims only itself (Sam's rule: a claimed word says
- * nothing about its kanji), a kana row claims its sounds, and a particle
- * group its two patterns (SAK-491). */
+ * nothing about its kanji), a kana row claims its sounds, a particle group its
+ * two patterns (SAK-491) and a word group its two words (SAK-493). */
 export function pickFacts(ids: readonly string[]): FactId[] {
   const out: FactId[] = [];
   for (const id of ids) {
-    const group = particleGroup(id);
+    const group = oneCardParts(id);
     if (group) {
-      for (const p of group.parts) { const e = entryOf(p); if (e) out.push(...knownFactsOf(e)); }
+      for (const p of group) { const e = entryOf(p); if (e) out.push(...knownFactsOf(e)); }
       continue;
     }
     if (id === TSU_RULE) {

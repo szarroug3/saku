@@ -1,7 +1,7 @@
 // Run: node --test src/data/word-contrast-notes.test.ts
 //
-// SAK-229: hand-authored word-nuance contrast notes. One shape so far —
-// WORD_CONTRAST_PAIRS (いいえ/いや) — a shared note that must resolve from
+// SAK-229: hand-authored word-nuance contrast notes. One shape so far:
+// WORD_CONTRAST_PAIRS (いいえ/いや), a shared note that must resolve from
 // EITHER word's side, the same "resolves from either side" shape
 // radical-tips.ts's RADICAL_CONFUSABLE_PAIRS uses for shape pairs.
 
@@ -53,4 +53,32 @@ test("every pair word and every note is non-empty", () => {
     assert.ok(pair.b.length > 0);
     assert.ok(pair.note.length > 0);
   }
+});
+
+// SAK-493: a pair marked `together` is taught as one item. Only the two
+// interjection pairs are, and never a generated ずる/じる pair, which is one
+// verb spelled two ways.
+describe("pairs taught together", () => {
+  test("are はい/うん and いいえ/いや, each with its own meaning line", () => {
+    const together = WORD_CONTRAST_PAIRS.filter((p) => p.together);
+    assert.deepEqual(together.map((p) => [p.a, p.b, p.together!.english]), [
+      ["はい", "うん", "yes, polite and casual"],
+      ["いいえ", "いや", "no, polite and casual"],
+    ]);
+  });
+
+  test("never include a ずる/じる pair", () => {
+    for (const p of WORD_CONTRAST_PAIRS) if (p.b.endsWith("ずる")) assert.equal(p.together, undefined, `${p.a}/${p.b} is taught together`);
+  });
+
+  test("はい and うん resolve to one note that names and glosses both", () => {
+    const note = wordContrastNoteFor("うん");
+    assert.ok(note);
+    assert.equal(note, wordContrastNoteFor("はい"));
+    assert.match(note, /はい \(yes\) and うん \(yes\)/);
+  });
+
+  test("the notes have no dashes in them", () => {
+    for (const p of WORD_CONTRAST_PAIRS) assert.ok(!/[–—]/.test(p.note), `${p.a}/${p.b}'s note has a dash`);
+  });
 });
