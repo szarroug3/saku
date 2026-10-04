@@ -2986,3 +2986,53 @@ test("the 〜てもいい lesson and its Atlas tile say may X, with no do (SAK-5
   await expect(page.getByRole("button").filter({ hasText: "〜てもいい" }).filter({ hasText: "may X" }).first()).toBeVisible();
   await expect(body).not.toContainText("may do X");
 });
+
+test("the readings drill sorts a kanji's readings, shows the right label on a miss, and keeps nothing", async ({ page }) => {
+  // SAK-495. Signed out. The drill's first kanji is 大: おお is its
+  // kun'yomi and たい its on'yomi. Nothing is stored, so the browser's copy
+  // is the same after the drill as before it, and no server action is sent.
+  await page.goto("/practice");
+  const entry = page.getByRole("link", { name: "Sort kanji readings" });
+  await expect(entry).toHaveAttribute("href", "/practice/readings");
+  await entry.click();
+  await expect(page.getByRole("heading", { name: "Kun'yomi or on'yomi?" })).toBeVisible();
+  await expect(page.getByText("大", { exact: true })).toBeVisible();
+  const stored = () => page.evaluate(() => JSON.stringify(Object.entries(localStorage).sort()));
+  const before = await stored();
+  const posts: string[] = [];
+  page.on("request", (r) => { if (r.method() !== "GET") posts.push(r.url()); });
+
+  const row = (reading: string) => page.getByRole("listitem").filter({ has: page.getByText(reading, { exact: true }) });
+  await row("おお").getByRole("button", { name: "kun'yomi" }).click();
+  await expect(row("おお").getByText("kun'yomi", { exact: true })).toBeVisible();
+  await expect(row("おお").getByRole("button")).toHaveCount(0);
+  await row("たい").getByRole("button", { name: "kun'yomi" }).click();
+  await expect(row("たい").getByText("It is on'yomi.")).toBeVisible();
+  await expect(page.getByText("1 of 2 right so far.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Next kanji" })).toBeVisible();
+
+  await page.getByRole("button", { name: "End quiz" }).click();
+  await expect(page.getByRole("heading", { name: "How it went" })).toBeVisible();
+  await expect(page.getByText("You sorted 1 of 2 readings right, over 1 kanji.")).toBeVisible();
+  await expect(page.getByText("Nothing from this drill is saved.")).toBeVisible();
+  expect(await stored()).toBe(before);
+  expect(posts).toEqual([]);
+
+  // and it can start over
+  await page.getByRole("button", { name: "Start over" }).click();
+  await expect(page.getByText("大", { exact: true })).toBeVisible();
+});
+
+test("the readings intro ends on the drill in Practice, and does not run it", async ({ page }) => {
+  // SAK-495, Sam's change of 2026-10-04: the intro says where the drill is
+  // and links to it; no lesson step runs it.
+  await page.goto(`/lesson?picks=${encodeURIComponent("kanji:日")}`);
+  await expect(page.getByText(/^Step \d+ of \d+$/)).toBeVisible();
+  await page.getByRole("button", { name: /Kun’yomi and on’yomi/ }).first().click();
+  await expect(page.getByText("There’s a drill for this in Practice.")).toBeVisible();
+  await expect(page.getByText(/Nothing in it counts toward your progress\./)).toBeVisible();
+  const link = page.getByRole("link", { name: "Sort kanji readings in Practice" });
+  await expect(link).toHaveAttribute("href", "/practice/readings");
+  await expect(link).not.toHaveAttribute("target", "_blank");
+  await expect(page.getByRole("heading", { name: "Kun'yomi or on'yomi?" })).toHaveCount(0);
+});
