@@ -291,7 +291,9 @@ export function TeachPageView({ page, alone = false, onOpen, titleAside, titleWo
           {page.examples.map((ex, i) => <Example key={i} example={ex} n={i + 1} count={page.examples!.length} />)}
         </div>
       )}
-      {page.link && <p className="mt-3 text-[13px]"><a href={page.link.href} target="_blank" rel="noopener" className="text-sky-accent underline">{page.link.label}</a></p>}
+      {/* somewhere else opens beside the page; a page of the app's own (the
+          readings drill, SAK-495) opens in place */}
+      {page.link && <p className="mt-3 text-[13px]"><a href={page.link.href} {...(page.link.href.startsWith("/") ? {} : { target: "_blank", rel: "noopener" })} className="text-sky-accent underline">{page.link.label}</a></p>}
     </div>
   );
 }
