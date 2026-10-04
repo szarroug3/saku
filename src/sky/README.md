@@ -7605,3 +7605,22 @@ The quiz's ordering card passes the item's id when it is above zero. The curated
 The quiz deals 648 sentences: 604 from the corpus and 44 curated. Four of them are also on a pattern page (4713, 4812, 4877, 5098), and only 5098 has a row. Its card now says 鞍 "saddle" and 淋しい "lonely", where those pieces had no meaning before. The other sentences have no row and keep the rules' pick. The おかげで sentence is not one of the quiz's sentences, so its fix shows only on the page. なる inside なければなりません and the like still reads "to bear fruit" on the quiz.
 
 **Tests.** `src/app/(sky)/word-meaning.test.ts`: with the おかげで sentence's id, なる is "to become" and has its vocabulary entry; without the id the rules give "to bear fruit"; 馬鹿 gets the row with its reading ばか. `src/app/(sky)/quiz.test.ts`: the ordering card for sentence 5098 glosses 鞍が "saddle" and 淋しい "lonely".
+
+## A kana word read as several words, and the ending of なければならない (SAK-519)
+
+The sentence quiz said なる meant "to bear fruit" on 31 of the corpus sentences it can deal: every なければならない one, 猫になりたい, 雨になると思う and a few more. The vocabulary's word なる is written in kana, and its own meaning is 生る "to bear fruit". The same row holds the senses of 成る "to become" further down, and none of these sentences' English names one, so the rules fell back on the row's own meaning. いる had the same fault: its own meaning is 要る "to be needed", and 居る "to be" sits under it.
+
+CEJC counts how often each vocabulary word is heard, but it has no count for the dictionary words inside one row. So `wordInSentence` in `src/app/(sky)/word-meaning.ts` has two new rules.
+
+- **Which word a kana lemma is.** When more than one vocabulary word reads as the lemma, the words are tried in order of how often CEJC hears each one read that way, and the first whose sense the English names is the word. With none named, it is the word written in kana, as before. A lemma with no kana word and nothing named still gets nothing: いく in いくつ is not 行く.
+- **Which sense a kana verb means first.** A verb in kana whose own meaning is a one-sense word, where another dictionary word under the same kana is a verb of its own and a helper verb too, means that other word first. That is 成る for なる and 居る for いる, and no other word in the vocabulary. The English can still pick the old meaning: 鉛筆がいるなら, "If you want a pencil", is いる "to want".
+
+Over the 648 quiz sentences and the pattern pages' sentences, this changed なる "to bear fruit" to "to become" on 31 quiz sentences. いる went from "to be needed" or "to need" to "to be", "to exist" or "to stay" on 10. やむ is 止む "to stop" on 2, and よい is 良い "good" on 2 whose English says good; those 4 had no meaning before. Nothing on a pattern page changed. A rule that took the most heard word even when the English named none was tried and dropped: it made すみません 済む "to finish" and いくつ 行く "to go". So was the plan of ranking by `beginnerRank`. That number puts 鳴る "to sound" ahead of なる and 射る "to shoot" ahead of いる, since the helper verbs rank in the grammar tail.
+
+**The ending of なければならない.** On the quiz, the ならない, なりません or ならなかった piece after a なければ, なきゃ, ねば, なくては, なくちゃ or ないと piece has no meaning under it now (`mustEnding` in `quiz.ts`). It is the pattern's own ending, which the lesson teaches, as the words line under a pattern's sentence leaves it off. That is 23 corpus sentences. The いけない of なければいけない never had a meaning, since the vocabulary has no いける.
+
+**One lookup for the page and the quiz.** `SentenceExample` carries the corpus sentence's `id` now, in place of `wordMeanings`. `sentenceWords` in `teach.ts` passes it to `wordInSentence`, which reads the per-sentence table and returns the row's reading for the furigana. The page's own path to the table is gone.
+
+**The per-sentence table.** One row came out of `src/data/grammar/sentence-word-meanings.ts`: なる "to become" on the おかげで sentence (5138), which the rule now gets on its own. The other rows still say something the rules would not.
+
+**Tests.** `src/app/(sky)/word-meaning.test.ts`: 猫になりたい and 雨になると思う gloss なる "to become", 相手になろう is still "to play", いる is "to be" in 彼らならここにいるよ and "to want" with a pencil, やむ is 止む, せい is "blame", and いくつ's いく gets nothing. The SAK-516 test that used なる on 5138 uses ため on 4787 now. `src/app/(sky)/quiz.test.ts`: the obligation card for 4814 has no meaning under なりません, and the card for 12057976 says なると "to become". `sentence-word-meanings.test.ts` checks that each pattern page's sentence carries its id and that the lookup by it returns the row.
