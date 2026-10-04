@@ -114,6 +114,10 @@ describe("a production fact per HOST, where the hosts are different rules", () =
     // scores nothing of its own
     assert.deepEqual(productionHosts(byId("te-permission")), ["adj-i", "adj-na"]);
     assert.deepEqual(productionHosts(byId("te-mo")), ["adj-i"]);
+    // the same for 〜てはいけない and 〜なくてもいい: both adjectives score,
+    // the noun row does not (SAK-505)
+    assert.deepEqual(productionHosts(byId("te-prohibition")), ["adj-i", "adj-na"]);
+    assert.deepEqual(productionHosts(byId("nakute-mo-ii")), ["adj-i", "adj-na"]);
   });
 
   test("た/たら split the VERB by ending but keep their adjective conditional", () => {

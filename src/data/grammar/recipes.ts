@@ -506,7 +506,19 @@ export const RECIPES: readonly Recipe[] = [
     pattern: "〜てはいけない",
     gloss: "must not do X",
     level: "N5",
-    attach: [{ host: "verb", form: "te", add: "はいけない" }],
+    attach: [
+      { host: "verb", form: "te", add: "はいけない" },
+      { host: "adj-i", form: "te", add: "はいけない", meaning: "it must not be X" },
+      // the て-form of a な-adjective is で (静かで), so this reads 静かではいけない
+      { host: "adj-na", form: "te", add: "はいけない", meaning: "it must not be X" },
+      // a noun takes no form; it takes ではいけない whole (学生ではいけない)
+      { host: "noun", form: null, add: "ではいけない", meaning: "it must not be X" },
+    ],
+    note:
+      "高くてはいけない and 静かではいけない are tracked separately as their " +
+      "adjective rules. The noun row (学生ではいけない) adds a fixed string to the " +
+      "bare noun, so it is taught on the page and carries no production fact of " +
+      "its own (SAK-505).",
   },
   {
     id: "te-kara",
@@ -898,7 +910,27 @@ export const RECIPES: readonly Recipe[] = [
     pattern: "〜なくてもいい",
     gloss: "don't have to do X",
     level: "N5",
-    attach: [{ host: "verb", form: "nai", trim: "い", add: "くてもいい" }],
+    attach: [
+      { host: "verb", form: "nai", trim: "い", add: "くてもいい" },
+      { host: "adj-i", form: "nai", trim: "い", add: "くてもいい", meaning: "it doesn't have to be X" },
+      // a な-adjective's ない-form is ではない (静かではない), so this reads
+      // 静かではなくてもいい. では and not じゃ, the same as every other
+      // な-adjective negative in Saku.
+      {
+        host: "adj-na",
+        form: "nai",
+        trim: "い",
+        add: "くてもいい",
+        meaning: "it doesn't have to be X",
+      },
+      // a noun takes no form; it takes ではなくてもいい whole (学生ではなくてもいい)
+      { host: "noun", form: null, add: "ではなくてもいい", meaning: "it doesn't have to be X" },
+    ],
+    note:
+      "高くなくてもいい and 静かではなくてもいい are tracked separately as their " +
+      "adjective rules. The noun row (学生ではなくてもいい) adds a fixed string to " +
+      "the bare noun, so it is taught on the page and carries no production fact " +
+      "of its own (SAK-505).",
   },
   {
     id: "nakereba-naranai",

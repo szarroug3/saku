@@ -169,6 +169,70 @@ describe("deriveProduction: 〜てもいい on a な-adjective and a noun (SAK-4
   });
 });
 
+describe("deriveProduction: 〜なくてもいい and 〜てはいけない on adjectives and a noun (SAK-505)", () => {
+  const nakute = byId("nakute-mo-ii");
+  const prohibition = byId("te-prohibition");
+
+  test("たかい: たかくない, then drop い and add くてもいい", () => {
+    const d = deriveProduction(nakute, "adj-i", "たかい", "adj-i");
+    assert.ok(d);
+    assert.equal(d.answer, "たかくなくてもいい");
+    assert.equal(d.step1?.to, "たかくない");
+    assert.equal(d.step2?.trim, "い");
+    assert.equal(d.step2?.add, "くてもいい");
+    assert.equal(d.title, "い-adjective");
+  });
+
+  test("しずか: the ない-form is しずかではない, then drop い and add くてもいい", () => {
+    const d = deriveProduction(nakute, "adj-na", "しずか", "adj-na");
+    assert.ok(d);
+    assert.equal(d.answer, "しずかではなくてもいい");
+    assert.equal(d.step1?.add, "ではない");
+    assert.equal(d.step1?.to, "しずかではない");
+    assert.equal(d.step2?.from, "しずかではない");
+    assert.equal(d.step2?.trim, "い");
+    assert.equal(d.step2?.add, "くてもいい");
+    assert.equal(d.title, "な-adjective");
+  });
+
+  test("学生: no form to build, ではなくてもいい goes on the bare noun", () => {
+    const d = deriveProduction(nakute, "noun", "学生", null);
+    assert.ok(d);
+    assert.equal(d.answer, "学生ではなくてもいい");
+    assert.equal(d.step1, undefined);
+    assert.equal(d.step2?.add, "ではなくてもいい");
+    assert.equal(d.title, undefined);
+  });
+
+  test("たかい: the て-form たかくて, then はいけない", () => {
+    const d = deriveProduction(prohibition, "adj-i", "たかい", "adj-i");
+    assert.ok(d);
+    assert.equal(d.answer, "たかくてはいけない");
+    assert.equal(d.step1?.to, "たかくて");
+    assert.equal(d.step2?.add, "はいけない");
+    assert.equal(d.title, "い-adjective");
+  });
+
+  test("しずか: the て-form adds で, then はいけない", () => {
+    const d = deriveProduction(prohibition, "adj-na", "しずか", "adj-na");
+    assert.ok(d);
+    assert.equal(d.answer, "しずかではいけない");
+    assert.equal(d.step1?.add, "で");
+    assert.equal(d.step1?.to, "しずかで");
+    assert.equal(d.step2?.add, "はいけない");
+    assert.equal(d.title, "な-adjective");
+  });
+
+  test("学生: no form to build, ではいけない goes on the bare noun", () => {
+    const d = deriveProduction(prohibition, "noun", "学生", null);
+    assert.ok(d);
+    assert.equal(d.answer, "学生ではいけない");
+    assert.equal(d.step1, undefined);
+    assert.equal(d.step2?.add, "ではいけない");
+    assert.equal(d.title, undefined);
+  });
+});
+
 describe("deriveProduction — no BASE→FORM step: single-equation fallback", () => {
   test("a noun attachment (dake, form: null) has no step 1, and no title", () => {
     const d = deriveProduction(byId("dake"), "noun", "本", null);

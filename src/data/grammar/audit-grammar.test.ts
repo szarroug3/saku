@@ -284,10 +284,18 @@ const RECIPE_CASES: readonly RecipeCase[] = [
   { id: "te-permission", word: "しずか", cls: "adj-na", expected: "しずかでもいい" },
   { id: "te-permission", word: "学生", cls: null, expected: "学生でもいい" },
   { id: "te-mo", word: "泳ぐ", cls: "v5g", expected: "泳いでも" },
+  // 〜てはいけない on both adjectives and a noun (SAK-505)
+  { id: "te-prohibition", word: "たかい", cls: "adj-i", expected: "たかくてはいけない" },
+  { id: "te-prohibition", word: "しずか", cls: "adj-na", expected: "しずかではいけない" },
+  { id: "te-prohibition", word: "学生", cls: null, expected: "学生ではいけない" },
 
   // ない-series, including the trim-い rows.
   { id: "nai-request", word: "する", cls: "vs-i", expected: "しないでください" },
   { id: "nakute-mo-ii", word: "食べる", cls: "v1", expected: "食べなくてもいい" },
+  // 〜なくてもいい on both adjectives and a noun, with では as in しずかではない (SAK-505)
+  { id: "nakute-mo-ii", word: "たかい", cls: "adj-i", expected: "たかくなくてもいい" },
+  { id: "nakute-mo-ii", word: "しずか", cls: "adj-na", expected: "しずかではなくてもいい" },
+  { id: "nakute-mo-ii", word: "学生", cls: null, expected: "学生ではなくてもいい" },
   { id: "nakereba-naranai", word: "買う", cls: "v5u", expected: "買わなければならない" },
   { id: "nakute-wa-ikenai", word: "書く", cls: "v5k", expected: "書かなくてはいけない" },
   { id: "nakya", word: "行く", cls: "v5k-s", expected: "行かなきゃ" },
