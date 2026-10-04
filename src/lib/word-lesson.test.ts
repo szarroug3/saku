@@ -186,7 +186,8 @@ describe("the word total is the material, and does not move", () => {
     // cut for. A prior version of that comment claimed these four "were never
     // in CURRICULUM_WORDS' teaching spine to begin with" — that was wrong; they
     // shipped at curriculum-sequence.json positions 13976/13978/13980/13981.
-    assert.equal(WORDS_CURRICULUM_TOTAL, 12429);
+    // Plus 1 with SAK-515: 日本語 joined vocab-build.ts's SUPPLEMENT.
+    assert.equal(WORDS_CURRICULUM_TOTAL, 12430);
   });
 });
 

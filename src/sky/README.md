@@ -7605,3 +7605,17 @@ The quiz's ordering card passes the item's id when it is above zero. The curated
 The quiz deals 648 sentences: 604 from the corpus and 44 curated. Four of them are also on a pattern page (4713, 4812, 4877, 5098), and only 5098 has a row. Its card now says 鞍 "saddle" and 淋しい "lonely", where those pieces had no meaning before. The other sentences have no row and keep the rules' pick. The おかげで sentence is not one of the quiz's sentences, so its fix shows only on the page. なる inside なければなりません and the like still reads "to bear fruit" on the quiz.
 
 **Tests.** `src/app/(sky)/word-meaning.test.ts`: with the おかげで sentence's id, なる is "to become" and has its vocabulary entry; without the id the rules give "to bear fruit"; 馬鹿 gets the row with its reading ばか. `src/app/(sky)/quiz.test.ts`: the ordering card for sentence 5098 glosses 鞍が "saddle" and 淋しい "lonely".
+
+## 日本語 is a vocabulary word (SAK-515)
+
+SAK-508 found two everyday words on pattern page sentences that the vocabulary did not have, 日本語 and クラスメート, and wrote their meanings per sentence. Sam asked for both to be taught.
+
+**日本語.** It is now in `SUPPLEMENT` in `src/data/vocab-build.ts`, read にほんご, with the meaning "Japanese (language)". The JMdict cut has 日本 but not 日本語. The conversation frequency table only covers words Saku already had, so it has no rank for 日本語, and the word goes at the end of the Words track like the other supplement words: 12,430th of 12,430. The vocabulary, the curriculum, the indexes and the catalogues were rebuilt. Its row came out of `src/data/grammar/sentence-word-meanings.ts`, and the 〜ます page's words line now reads "日本語 Japanese" from the vocabulary, with にほんご over it.
+
+**クラスメート.** The vocabulary already has this word under the spelling クラスメイト, 11,470th in the Words track. Adding クラスメート as well would put the same word in the Words track twice, and a learner asked for "classmate" would have two right answers. So no entry was added, and its row in the per-sentence table stays, with a note that the vocabulary spells it クラスメイト. The と page's words line still reads "クラスメート classmate".
+
+**Voice clips.** 日本語 needs one clip per roster voice, にほんご, which the words and word-readings sets share. `scripts/seed-voice-audio.mjs` makes clips on the local VOICEVOX but uploads them to the voice bucket in the hosted Supabase project, so they were not seeded on this card. `scripts/audit-voice-clips.mjs` lists にほんご as missing for every voice until they are.
+
+**Where the two sentences show.** Neither showed in a lesson on the built server. 〜ます has its own written Library pages, so its lesson uses those and never reaches the generated page with 毎日、日本語を勉強します。 A lesson for the と of "and" (grammar:to-and) says there is nothing to teach, and the 〜と lesson (grammar:to-conditional) does not have the sentence. So the words lines are checked on the generated pages in unit tests, and there is no browser test.
+
+**Tests.** `teach.test.ts`: the per-sentence table has no 日本語 row, 日本語 is in the Words track, the generated 〜ます page lists 日本語 with にほんご and "Japanese", and the generated と page lists クラスメート "classmate". The pinned counts went up by one: the supplement words in `source-pins.test.ts`, the word total in `curriculum-lesson.test.ts` (12,541) and in `word-lesson.test.ts` (12,430).

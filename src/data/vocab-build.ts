@@ -2,7 +2,7 @@
 // writes src/data/generated/vocab-runtime.json, which vocab.ts reads. Every
 // line here used to run on every cold start of the app (SAK-399).
 //
-// Inputs: vocab.json (JMdict, ranked), the two words this table lacks, the
+// Inputs: vocab.json (JMdict, ranked), the few words this table lacks, the
 // CEJC conversation-frequency tables (which order the words and choose the
 // reading to teach), the shipped senses, and the dictionary's definitions.
 
@@ -42,6 +42,17 @@ const SUPPLEMENT: readonly JsonVocabRow[] = [
     newspaperBand: null,
     align: null,
     beginnerRank: (vocabJson as readonly JsonVocabRow[]).length + 2,
+  },
+  // A pattern page's sentence uses it, and the dictionary cut has 日本 but
+  // not 日本語 (SAK-515).
+  {
+    keb: "日本語",
+    reb: "にほんご",
+    glosses: ["Japanese (language)"],
+    pos: ["noun (common) (futsuumeishi)"],
+    newspaperBand: null,
+    align: null,
+    beginnerRank: (vocabJson as readonly JsonVocabRow[]).length + 3,
   },
 ];
 
