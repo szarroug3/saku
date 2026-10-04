@@ -155,6 +155,15 @@ describe("a sentence type's orderings (2026-09-28)", () => {
     assert.equal(met.order!.glosses, undefined, "every word met, nothing to say");
   });
 
+  it("says a word's meaning as written for its corpus sentence (SAK-516)", () => {
+    // 鞍 and 淋しい are not in the vocabulary, so the rules have nothing for them
+    const [card] = cardsFor(emptyHistory(), [`${sentenceTierMarkerFact("sequential")}#5098`], NOW);
+    assert.equal(card.meta?.assembly, "5098");
+    const gloss = (piece: string) => card.order!.glosses?.[card.order!.pieces.indexOf(piece)];
+    assert.equal(gloss("鞍が"), "saddle");
+    assert.equal(gloss("淋しい"), "lonely");
+  });
+
   it("deals the た-form sentences once the た-form is known", () => {
     const later = knowsPatterns("wa", "ga", "wo", "ni", "de", "ta-form");
     const pool = sentencesToBuild("simple", later, [], Infinity).map((it) => it.id);

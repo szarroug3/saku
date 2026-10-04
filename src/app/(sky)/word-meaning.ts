@@ -15,11 +15,19 @@
 // - The sense is the first one the sentence's English says, then the first
 //   the pattern's gloss says, then the word's first. 休みたい is "I want
 //   to rest", so 休む is "to rest", where its first sense is "to be absent".
+//
+// Before any of that, the lookup takes a meaning written for the word in
+// this very sentence (SAK-516). The table is src/data/grammar/sentence-word-meanings.ts,
+// keyed by the corpus sentence's id: なる is "to become" in
+// コンピューターのおかげで人間は馬鹿になる, where the rules say "to bear
+// fruit". A caller that names the sentence by its id gets the row, so the
+// quiz and the pattern page's words line say the same thing.
 
 import { conjugate } from "@/lib/conjugate";
 import { entryForGlyph, libEntry, type LibEntry } from "@/lib/library/entries";
 import { wordClassOf } from "@/lib/word-forms";
 import { readingDefinitions, VOCAB_SUBJECT, vocabRow, vocabRowsBySpelling, type VocabRow } from "@/data/vocab";
+import { SENTENCE_WORD_MEANINGS } from "@/data/grammar/sentence-word-meanings";
 
 /** The vocabulary's entry for a word as written, or nothing when the
  * vocabulary does not have it. */
@@ -34,26 +42,37 @@ function shortMeaning(meaning: string | undefined): string | undefined {
   return meaning?.replace(/\s*\([^)]*\)/g, "").split(";")[0].trim() || undefined;
 }
 
-/** The sentence a word is read in: its Japanese, its English, and the gloss
- * of the pattern it is shown for ("thanks to X"), when there is one. */
+/** The sentence a word is read in: its id in the grammar corpus when it is
+ * one of its sentences, its Japanese, its English, and the gloss of the
+ * pattern it is shown for ("thanks to X"), when there is one. */
 interface SentenceContext {
+  readonly id?: number;
   readonly jp: string;
   readonly en: string;
   readonly gloss?: string;
 }
 
-/** A sentence's word as the vocabulary has it: the word to print (泳ぐ for
- * the 泳げる of 泳げない), its entry, and the meaning it has in the sentence. */
+/** A sentence's word: the word to print (泳ぐ for the 泳げる of 泳げない),
+ * its vocabulary entry, and the meaning it has in the sentence. A word with a
+ * meaning written for its sentence may have no entry (鞍), and has the
+ * row's reading for its furigana when it has kanji. */
 interface WordInSentence {
   readonly word: string;
-  readonly entry: LibEntry;
+  readonly entry?: LibEntry;
+  readonly reading?: string;
   readonly meaning: string;
 }
 
 /** The vocabulary's word for a lemma in a sentence, and what it means there.
- * Nothing when the vocabulary has no word for it, or files it only as a
+ * A meaning written for the word in this sentence comes first. Otherwise,
+ * nothing when the vocabulary has no word for it, or files it only as a
  * particle (もの). */
 export function wordInSentence(lemma: string, sentence: SentenceContext): WordInSentence | undefined {
+  const own = sentence.id === undefined ? undefined : SENTENCE_WORD_MEANINGS[String(sentence.id)]?.[lemma];
+  if (own) {
+    const entry = vocabEntryOf(lemma);
+    return { word: lemma, ...(entry ? { entry } : {}), ...(own.reading ? { reading: own.reading } : {}), meaning: own.meaning };
+  }
   const found = headwordOf(lemma, sentence.jp);
   if (!found) return undefined;
   const entry = vocabEntryOf(found.row.keb);

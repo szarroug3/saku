@@ -7578,3 +7578,15 @@ On the Atlas Terms shelf, the tile for "Keiyōshi/keiyōdōshi" read "Keiyōshi/
 "Keiyōshi/keiyōdōshi" now reads "Keiyōshi/" on the first line and "keiyōdōshi" on the second. "Godan/ichidan" fits on one line and is unchanged. "Kun’yomi and on’yomi" wraps at its spaces as before.
 
 **Tests.** `e2e/sky.spec.ts`, "a term's name with a slash wraps on its Atlas tile instead of running off the edge (SAK-504)": at 1440px and at 390px, on the Terms shelf, the label on the Keiyōshi/keiyōdōshi, Godan/ichidan and Kun’yomi and on’yomi tiles reads the whole name, is no wider than its tile, and is no taller than its two lines.
+
+## The sentence quiz reads the per-sentence meanings too (SAK-516)
+
+SAK-508 wrote meanings for single words of single sentences in `src/data/grammar/sentence-word-meanings.ts`, keyed by the corpus sentence's id. The pattern page's words line used them. The sentence quiz did not, so a quiz piece on one of those sentences still had the rules' sense, or no meaning at all for a word the vocabulary lacks.
+
+`wordInSentence` in `src/app/(sky)/word-meaning.ts` now takes the sentence's corpus id as `id`. When the table has a row for that sentence and lemma, the row's meaning is the answer, before any rule runs. The result then has the row's reading, and the vocabulary's entry only when the vocabulary has the word. Without an id, or with no row, the rules pick as before.
+
+The quiz's ordering card passes the item's id when it is above zero. The curated sentences in `assembly.ts` have ids below zero of their own, and those are not the corpus's (authored.ts uses ids below zero too, for other sentences), so they are never looked up. A piece whose word has no vocabulary entry cannot have been met, so its meaning always shows.
+
+The quiz deals 648 sentences: 604 from the corpus and 44 curated. Four of them are also on a pattern page (4713, 4812, 4877, 5098), and only 5098 has a row. Its card now says 鞍 "saddle" and 淋しい "lonely", where those pieces had no meaning before. The other sentences have no row and keep the rules' pick. The おかげで sentence is not one of the quiz's sentences, so its fix shows only on the page. なる inside なければなりません and the like still reads "to bear fruit" on the quiz.
+
+**Tests.** `src/app/(sky)/word-meaning.test.ts`: with the おかげで sentence's id, なる is "to become" and has its vocabulary entry; without the id the rules give "to bear fruit"; 馬鹿 gets the row with its reading ばか. `src/app/(sky)/quiz.test.ts`: the ordering card for sentence 5098 glosses 鞍が "saddle" and 淋しい "lonely".

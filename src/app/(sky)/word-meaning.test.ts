@@ -64,3 +64,22 @@ describe("the sense a sentence uses (SAK-508)", () => {
     assert.equal(said("鞍", "鞍が淋しい。", "It's lonely in the saddle."), undefined);
   });
 });
+
+describe("a meaning written for the word in its sentence (SAK-516)", () => {
+  const okageDe = { jp: "コンピューターのおかげで人間は馬鹿になる。", en: "Computers make people stupid." };
+
+  it("a quiz item on the おかげで sentence glosses なる as to become", () => {
+    const w = wordInSentence("なる", { id: 5138, ...okageDe });
+    assert.equal(w?.meaning, "to become");
+    assert.ok(w?.entry, "なる is a vocabulary word, so the quiz can tell whether it was met");
+  });
+
+  it("without the sentence's id the rules pick as before", () => {
+    assert.equal(wordInSentence("なる", okageDe)?.meaning, "to bear fruit");
+  });
+
+  it("a word the vocabulary does not have gets the row, with its reading", () => {
+    const w = wordInSentence("馬鹿", { id: 5138, ...okageDe });
+    assert.deepEqual({ ...w }, { word: "馬鹿", reading: "ばか", meaning: "stupid" });
+  });
+});

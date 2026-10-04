@@ -662,10 +662,14 @@ function orderCard(history: HistoryFile, marker: FactId, item: AssemblyItem, pic
   // 2026-09-28: "if the user doesn't know a word, they need the definition"):
   // the sense the sentence uses, without the dictionary's asides, since it
   // sits under a piece ("water", not "water (esp. cool or cold)"). A verb in
-  // potential form is its dictionary verb's (泳げる is 泳ぐ, SAK-514).
+  // potential form is its dictionary verb's (泳げる is 泳ぐ, SAK-514). A
+  // word with a meaning written for its corpus sentence says that one
+  // (SAK-516). The curated sentences' ids are below zero and are assembly.ts's
+  // own, not the corpus's, so only a corpus sentence is named by its id. A
+  // word the vocabulary does not have cannot have been met.
   const glossOf = (head: string | null): string | undefined => {
-    const w = head ? wordInSentence(head, { jp: item.jp, en: item.en }) : undefined;
-    return w && !standingFor(w.entry, history, now).met ? w.meaning : undefined;
+    const w = head ? wordInSentence(head, { ...(item.id > 0 ? { id: item.id } : {}), jp: item.jp, en: item.en }) : undefined;
+    return w && !(w.entry && standingFor(w.entry, history, now).met) ? w.meaning : undefined;
   };
   const glosses = deal.map((d) => glossOf(item.pieces[d].h));
   const agg = history.facts?.[marker];
