@@ -37,14 +37,14 @@ const RECIPE_OF_ENTRY: ReadonlyMap<string, string> = new Map(RECIPES.map((r) => 
 
 /** The patterns a pick teaches: a pattern its own, a particle group its
  * two; anything else (a word, a sentence type) none. */
-export function recipesOfPick(id: string): readonly string[] {
+function recipesOfPick(id: string): readonly string[] {
   const own = RECIPE_OF_ENTRY.get(id);
   if (own) return [own];
   return particleGroup(id)?.recipes ?? [];
 }
 
 /** Every pattern the learner knows: met in their history, or picked tonight. */
-export function knownRecipes(history: HistoryFile, picks: readonly string[] = []): Set<string> {
+function knownRecipes(history: HistoryFile, picks: readonly string[] = []): Set<string> {
   const known = new Set(picks.flatMap(recipesOfPick));
   for (const r of RECIPES) if (isFactMet(history, patternMeaningFactId(r.id))) known.add(r.id);
   return known;
@@ -93,7 +93,7 @@ function inKnownForm(piece: AssemblyItem["pieces"][number], item: AssemblyItem, 
 
 /** Whether the learner can be asked to build this sentence: every pattern
  * it turns on is known, and every word stands in a form they know. */
-export function withinReach(item: AssemblyItem, known: ReadonlySet<string>): boolean {
+function withinReach(item: AssemblyItem, known: ReadonlySet<string>): boolean {
   return item.p.every((p) => known.has(p)) && item.pieces.every((piece) => inKnownForm(piece, item, known));
 }
 
@@ -105,7 +105,7 @@ function shuffled<T>(items: readonly T[], rng: Rng): T[] {
 
 /** How many sentences a type is drilled on in one quiz (Sam, 2026-09-28:
  * "Let's make it 5 per sentence rule"). */
-export const SENTENCES_PER_RULE = 5;
+const SENTENCES_PER_RULE = 5;
 
 /** One of a type's sentences by its id, for a card dealt again by name (a
  * resumed deck, a rerun), whatever is within reach tonight. */

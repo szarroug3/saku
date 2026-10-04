@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import {
-  hasPlace,
   lessonAt,
   lessonFor,
   newestPlace,
@@ -10,7 +9,7 @@ import {
   placeDoc,
   placeEntries,
   placeLabel,
-  placeNote,
+  placeToUse,
   readPlace,
   withMarks,
   type LessonPart,
@@ -194,7 +193,7 @@ describe("what Continue offers", () => {
   });
 
   it("counts a lesson's step from one, the way the lesson itself does", () => {
-    assert.equal(placeNote({ kind: "lesson", lesson: lesson() }, NOW), "step 3 of 7");
+    assert.equal(placeLabel({ kind: "lesson", lesson: lesson() }, NOW), "Continue your lesson (step 3 of 7)");
   });
 
   it("says which round and which card, for a lesson left in its drill", () => {
@@ -209,7 +208,7 @@ describe("what Continue offers", () => {
 
   it("rounds the last of a break up, because a clock still running never says zero", () => {
     const entry = { kind: "lesson", lesson: lesson({ kind: "break", round: 1, startedAt: NOW, until: NOW + 1_000 }) } as const;
-    assert.equal(placeNote(entry, NOW), "break before round 2 of 3, 1 min left");
+    assert.equal(placeLabel(entry, NOW), "Continue your lesson (break before round 2 of 3, 1 min left)");
   });
 
   it("says the round itself once the break is over", () => {
@@ -219,7 +218,7 @@ describe("what Continue offers", () => {
 
   it("names the break without a clock while there is no browser to read one", () => {
     const entry = { kind: "lesson", lesson: lesson({ kind: "break", round: 1, startedAt: 0, until: NOW }) } as const;
-    assert.equal(placeNote(entry, null), "break before round 2 of 3");
+    assert.equal(placeLabel(entry, null), "Continue your lesson (break before round 2 of 3)");
   });
 
   it("lists both, newest first, for the page that shows what is not on the button", () => {
@@ -227,9 +226,12 @@ describe("what Continue offers", () => {
     assert.deepEqual(rows.map((r) => r.kind), ["quiz", "lesson"]);
   });
 
-  it("knows whether anything was left at all", () => {
-    assert.equal(hasPlace(NO_PLACE), false);
-    assert.equal(hasPlace({ quiz: null, lesson: lesson() }), true);
-    assert.equal(hasPlace({ quiz: run(), lesson: null }), true);
+  it("reads the browser's place when it holds anything, and the account's when it holds nothing", () => {
+    const account: SavedPlace = { quiz: run({ leftAt: 99 }), lesson: null };
+    const withLesson: SavedPlace = { quiz: null, lesson: lesson() };
+    const withQuiz: SavedPlace = { quiz: run(), lesson: null };
+    assert.equal(placeToUse(NO_PLACE, account), account);
+    assert.equal(placeToUse(withLesson, account), withLesson);
+    assert.equal(placeToUse(withQuiz, account), withQuiz);
   });
 });

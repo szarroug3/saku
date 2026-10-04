@@ -217,7 +217,7 @@ export function withMarks(next: SavedLesson | null, ...kept: readonly (SavedLess
 /** Whether two lists of picks are the same lesson: the same ids in the same
  * order, which is how a lesson recognizes its own place, the way a run
  * recognizes its own source. */
-export function samePicks(a: readonly string[], b: readonly string[]): boolean {
+function samePicks(a: readonly string[], b: readonly string[]): boolean {
   return a.length === b.length && a.every((id, i) => id === b[i]);
 }
 
@@ -228,7 +228,7 @@ export function lessonFor(place: SavedPlace, picks: readonly string[]): SavedLes
 }
 
 /** Whether anything at all was left part way through. */
-export function hasPlace(place: SavedPlace): boolean {
+function hasPlace(place: SavedPlace): boolean {
   return !!(place.quiz || place.lesson);
 }
 
@@ -243,9 +243,6 @@ export function placeToUse(local: SavedPlace, account: SavedPlace): SavedPlace {
 export type PlaceEntry =
   | { kind: "quiz"; run: SavedRun }
   | { kind: "lesson"; lesson: SavedLesson };
-
-/** The word for each kind, for a row that has to say which it is. */
-export const PLACE_KIND: Record<PlaceEntry["kind"], string> = { quiz: "Quiz", lesson: "Lesson" };
 
 /** Everything left part way through, newest first. */
 export function placeEntries(place: SavedPlace): PlaceEntry[] {
@@ -281,7 +278,7 @@ function minutesLeft(until: number, now: number): number {
  * the break says which break it is until the page is mounted, and gains the
  * minutes after. The same trade the sessions list makes for its timestamps.
  */
-export function placeNote(entry: PlaceEntry, now: number | null): string {
+function placeNote(entry: PlaceEntry, now: number | null): string {
   if (entry.kind === "quiz") return runNote(entry.run);
   const part = entry.lesson.part;
   if (part.kind === "steps") return `step ${part.at + 1} of ${part.steps}`;
