@@ -427,7 +427,7 @@ HARSH_EN = frozenset(
 
 # The same two, in Japanese, for the sentence whose English says it gently.
 # Substrings, so 銃 catches 拳銃 and 殺 catches 殺人.
-PROFANITY_JA = ("強姦", "レイプ", "売春", "痴漢", "セックス", "くそ", "糞")
+PROFANITY_JA = ("強姦", "レイプ", "売春", "痴漢", "セックス", "くそ", "糞", "屍姦")
 
 # Each Japanese marker carries the English it means, because the exception
 # above is written in English: 殺す's own page may show a sentence about
