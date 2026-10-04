@@ -7,7 +7,7 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
 import { seeded } from "./random";
-import { answerLine, maxTriesFor, shuffleDeck, triedBefore, triesNote, type QuizAnswer, type QuizCard, type QuizOption } from "./quiz";
+import { answerLine, answerPlaceholder, maxTriesFor, shuffleDeck, triedBefore, triesNote, type QuizAnswer, type QuizCard, type QuizOption } from "./quiz";
 import type { SkyItem } from "./types";
 
 const item = (id: string): SkyItem => ({ id, kind: "word", glyph: id, english: id } as SkyItem);
@@ -226,5 +226,28 @@ describe("which spelling the reveal draws large (SAK-440)", () => {
   it("reads the last attempt, not the first: a retry ends on what counted", () => {
     const line = answerLine(asked({ answer: "a" }), gave(["e", "ah"], { grade: "help", tries: 2 }));
     assert.equal(line.said, "ah");
+  });
+});
+
+describe("what the typed box says before anything is typed (SAK-513)", () => {
+  it("asks a grammar production card for the form", () => {
+    // げんきでもいい is げんき built into 〜てもいい, not how げんき is read
+    assert.equal(answerPlaceholder({ answerIs: "form", answerInKana: "hiragana" }), "The form");
+  });
+
+  it("asks a word or kanji card for the reading", () => {
+    assert.equal(answerPlaceholder({ answerIs: "reading", answerInKana: "hiragana" }), "The reading");
+  });
+
+  it("asks a kana card for romaji", () => {
+    assert.equal(answerPlaceholder({ answerIs: "reading" }), "In romaji, or how it sounds");
+  });
+
+  it("asks a meaning card for English", () => {
+    assert.equal(answerPlaceholder({ answerIs: "meaning" }), "The meaning, in English");
+  });
+
+  it("falls back to a plain prompt for anything else", () => {
+    assert.equal(answerPlaceholder({ answerIs: "other" }), "Your answer");
   });
 });
