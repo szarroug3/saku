@@ -2988,26 +2988,26 @@ test("the 〜てもいい lesson and its Atlas tile say may X, with no do (SAK-5
 });
 
 test("the readings drill sorts a kanji's readings, shows the right label on a miss, and keeps nothing", async ({ page }) => {
-  // SAK-495. Signed out. The drill's first kanji is 大: おお is its
-  // kun'yomi and たい its on'yomi. Nothing is stored, so the browser's copy
+  // SAK-495. Signed out. The drill's first kanji is 山: やま is its
+  // kun'yomi and さん its on'yomi. Nothing is stored, so the browser's copy
   // is the same after the drill as before it, and no server action is sent.
   await page.goto("/practice");
   const entry = page.getByRole("link", { name: "Sort kanji readings" });
   await expect(entry).toHaveAttribute("href", "/practice/readings");
   await entry.click();
   await expect(page.getByRole("heading", { name: "Kun'yomi or on'yomi?" })).toBeVisible();
-  await expect(page.getByText("大", { exact: true })).toBeVisible();
+  await expect(page.getByText("山", { exact: true })).toBeVisible();
   const stored = () => page.evaluate(() => JSON.stringify(Object.entries(localStorage).sort()));
   const before = await stored();
   const posts: string[] = [];
   page.on("request", (r) => { if (r.method() !== "GET") posts.push(r.url()); });
 
   const row = (reading: string) => page.getByRole("listitem").filter({ has: page.getByText(reading, { exact: true }) });
-  await row("おお").getByRole("button", { name: "kun'yomi" }).click();
-  await expect(row("おお").getByText("kun'yomi", { exact: true })).toBeVisible();
-  await expect(row("おお").getByRole("button")).toHaveCount(0);
-  await row("たい").getByRole("button", { name: "kun'yomi" }).click();
-  await expect(row("たい").getByText("It is on'yomi.")).toBeVisible();
+  await row("やま").getByRole("button", { name: "kun'yomi" }).click();
+  await expect(row("やま").getByText("kun'yomi", { exact: true })).toBeVisible();
+  await expect(row("やま").getByRole("button")).toHaveCount(0);
+  await row("さん").getByRole("button", { name: "kun'yomi" }).click();
+  await expect(row("さん").getByText("It is on'yomi.")).toBeVisible();
   await expect(page.getByText("1 of 2 right so far.")).toBeVisible();
   await expect(page.getByRole("button", { name: "Next kanji" })).toBeVisible();
 
@@ -3020,7 +3020,7 @@ test("the readings drill sorts a kanji's readings, shows the right label on a mi
 
   // and it can start over
   await page.getByRole("button", { name: "Start over" }).click();
-  await expect(page.getByText("大", { exact: true })).toBeVisible();
+  await expect(page.getByText("山", { exact: true })).toBeVisible();
 });
 
 test("the readings intro ends on the drill in Practice, and does not run it", async ({ page }) => {
