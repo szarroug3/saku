@@ -250,6 +250,7 @@ describe("the SAK-501 rules drop the wrong sense and keep the right one", () => 
       drop: [
         example("下がっていろ！", "te-iru", "下がっていろ", "Back off!"),
         example("黙っていなさい。", "te-iru", "黙ってい", "Be quiet."),
+        example("黙っていなさい。", "te-iru", "黙っていなさい", "Be quiet."),
       ],
       keep: [example("疲れているんだ。", "te-iru", "疲れている", "I'm tired.")],
     },
