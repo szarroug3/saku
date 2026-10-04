@@ -7264,3 +7264,19 @@ Sam, 2026-10-02, on the 〜な form lesson ("Adjectives before nouns"): it teach
 **Screenshots.** In `saku-tasks/screenshots/sak-494/`: `na-form-opens.png`, `na-form-keiyoshi.png`, `te-form-godan-ichidan.png` and `atlas-keiyoshi-term.png`.
 
 **Not changed.** On the Atlas Terms shelf the tile "Keiyōshi/keiyōdōshi" is cut off at the right edge, because the name has no space to wrap at. The concept's tile did the same before this card.
+
+## The words under a grammar page's sentence (SAK-506)
+
+Sam, 2026-10-03, on the 〜てもいい lesson's "In a sentence" block (話してもいいですか): "in the in a sentence, i don't see the highlighted word's meaning at all actually."
+
+**What it shows.** Under the Japanese, the block now has one small muted line of the sentence's content words and what they mean: 話す to speak. It is the line a particle page draws under its sentences (SAK-488), and the same component draws it (`ExampleWords` in `components/teach-page.tsx`). `TeachExample` has an optional `words`, typed `ExampleWord` in `lib/lesson.ts`, which the particle pages' examples now use too. The Atlas page for a pattern shows the same line, since it is built from the same page.
+
+**Where the words come from.** The sentence is a Tatoeba sentence from the grammar corpus, and each one lists its content lemmas (`v`). `sentenceExampleFor` in `src/data/grammar/auto-page.ts` hands them on as `SentenceExample.words`, in the order the sentence says them. It leaves two kinds off. A lemma the pattern's written form contains is part of the pattern the page teaches (いい in てもいい). A lemma that falls inside any pattern the sentence uses, and is not the word that pattern is built on, belongs to that pattern: the いる in 欠けていた, the なる in ならない. The word the pattern is built on is always kept.
+
+**The meanings.** `pageFromIntro` in `src/app/(sky)/teach.ts` looks each lemma up in the vocabulary and shortens the meaning the way the sentence quiz does. That code moved into `src/app/(sky)/word-meaning.ts` (`vocabEntryOf`, `shortMeaning`), and the quiz calls it from there. Where a word has several senses, the line takes the first one the English translation uses: 話す is "to talk" first, and "May I speak to you?" uses "to speak". When the English uses none of them, it takes the first. A word the vocabulary does not have is left off, and so is one it files as a particle (もの). Every content word is listed, met or not, since the Atlas shows the page long after the words are learned. The sky component gets the words as data and imports nothing from the app.
+
+**Counts.** 91 pattern pages have a sentence and every one has a words line. Across those sentences, 38 distinct lemmas have no vocabulary entry and are left off (フォント, 鞍, 七時, パリ, 事, 日本語 and others). Across the whole corpus, 1,730 of 4,727 lemmas have none.
+
+**Tests.** `teach.test.ts`: the 〜てもいい page lists 話す with はな over 話 and "to speak", and nothing else; the Atlas page for it carries the same word; いい and the すぎる sentence's なる are left off; every pattern page with a sentence has a words line with short meanings. `e2e/sky.spec.ts`, "the 〜てもいい lesson's In a sentence block says what 話す means (SAK-506)": signed out, the block's words line reads 話す to speak, with はな over 話.
+
+**Not changed.** Some first senses are the wrong one for their sentence, and the English does not name a better one: なる "to bear fruit" under 〜おかげで (馬鹿になる), ため "good" under 〜なければならない (するためには), かく "to scratch" under 〜にくい (いびきをかく), 休む "to be absent" under the 〜な form (休みたい). The vocabulary's entry for the kana なる and ため is a different word from the one the sentence uses. Fixing that is a vocabulary change, outside this card.

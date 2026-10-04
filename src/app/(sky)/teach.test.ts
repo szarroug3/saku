@@ -1032,6 +1032,47 @@ describe("the In a sentence block prints furigana over its kanji", () => {
   });
 });
 
+// SAK-506, Sam, on 話してもいいですか: "in the in a sentence, i don't see the
+// highlighted word's meaning at all actually." The block lists its sentence's
+// content words with their meanings, the way a particle page does.
+describe("the In a sentence block says what its words mean", () => {
+  const wordsOf = (id: string) => {
+    const r = recipeById(id);
+    assert.ok(r, `no recipe ${id}`);
+    return (pageFromIntro(autoPatternPage(r)).examples?.[0]?.words ?? []).map((w) => ({ word: w.word.map((run) => run.text).join(""), ruby: w.word.filter((run) => run.ruby).map((run) => run.ruby).join(""), meaning: w.meaning }));
+  };
+
+  it("lists 話す, to speak, under the 〜てもいい sentence, with はな over 話", () => {
+    assert.deepEqual(wordsOf("te-permission"), [{ word: "話す", ruby: "はな", meaning: "to speak" }]);
+  });
+
+  it("shows the same line on the Atlas page for 〜てもいい", () => {
+    const pages = atlasEntryFromHistory(emptyHistory(), patternEntry("te-permission"), NOW)?.teach?.pages ?? [];
+    const words = pages.flatMap((p) => p.examples ?? []).flatMap((ex) => ex.words ?? []);
+    assert.ok(words.some((w) => w.word.map((run) => run.text).join("") === "話す" && w.meaning === "to speak"), "no 話す on the Atlas page");
+  });
+
+  it("leaves off the pattern's own words and the grammar inside other patterns", () => {
+    // てもいい's いい, and なければならない's なる in the すぎる sentence
+    assert.ok(!wordsOf("te-permission").some((w) => w.word === "いい"));
+    const sugiru = wordsOf("sugiru").map((w) => w.word);
+    assert.ok(!sugiru.includes("なる"), sugiru.join(" "));
+  });
+
+  it("gives every pattern page with a sentence a words line, each meaning short and plain", () => {
+    for (const r of RECIPES) {
+      const ex = pageFromIntro(autoPatternPage(r)).examples?.[0];
+      if (!ex) continue;
+      const jp = ex.japanese.map((run) => run.text).join("");
+      assert.ok(ex.words?.length, `${r.id}: ${jp} has no words line`);
+      for (const w of ex.words) {
+        assert.ok(w.meaning && !/[;()]/.test(w.meaning), `${r.id}: ${w.meaning}`);
+        assert.ok(!w.meaning.includes("\u2014"), `${r.id}: em dash in ${w.meaning}`);
+      }
+    }
+  });
+});
+
 // ===========================================================================
 // SAK-483: a verb or adjective card's forms tables have furigana.
 //

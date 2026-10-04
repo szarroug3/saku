@@ -10,7 +10,7 @@ import { Eyebrow } from "@/sky/components/sky-card";
 import { Mixed } from "@/sky/components/mixed-text";
 import { SkyBox } from "@/sky/components/sky-panel";
 import { japaneseFont } from "@/sky/lib/japanese";
-import type { PartedSentence, SoundLine, TeachExample, TeachFormula, TeachPage, TeachParagraph, TeachTable } from "@/sky/lib/lesson";
+import type { ExampleWord, PartedSentence, SoundLine, TeachExample, TeachFormula, TeachPage, TeachParagraph, TeachTable } from "@/sky/lib/lesson";
 
 /** Prose with the runs spoken as the sound in the accent.
  *
@@ -82,6 +82,7 @@ function Example({ example, n, count }: { example: TeachExample; n: number; coun
       {block("Natural English", example.natural)}
       {example.ordered && block("English in Japanese order", example.ordered)}
       {block("Japanese", example.japanese, true)}
+      {example.words && example.words.length > 0 && <ExampleWords words={example.words} />}
     </SkyBox>
   );
 }
@@ -91,7 +92,7 @@ function Example({ example, n, count }: { example: TeachExample; n: number; coun
  * Japanese is drawn a step larger than the meanings, at the size where the
  * reading over it is still one a reader can make out. A word and its meaning
  * stay together when the line wraps. */
-function ExampleWords({ words }: { words: NonNullable<NonNullable<TeachParagraph["examples"]>[number]["words"]> }) {
+function ExampleWords({ words }: { words: readonly ExampleWord[] }) {
   return (
     <p className="mt-1 text-[12.5px] leading-[2] text-sky-muted">
       {words.map((w, i) => (

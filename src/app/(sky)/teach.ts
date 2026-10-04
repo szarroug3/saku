@@ -27,7 +27,7 @@ import { formLibraryPages } from "@/data/grammar/lessons";
 import { kanjiRuns, PARTICLE_NOTES, type ParticleNoteExample, type ParticleNotePara, type ParticleNoteWord } from "@/data/grammar/particle-notes";
 import { PARTICLE_ROWS } from "@/data/grammar/particles";
 import { primaryPatternRecipe, RECIPES, type Recipe } from "@/data/grammar/recipes";
-import { PARTICLE_RULE, type BuildHeads, type CountBuildPiece, type IntroBuildRule, type IntroCountGroup, type IntroDeriveRow, type IntroPara, type PhaseIntro } from "@/data/phase-intros";
+import { PARTICLE_RULE, type BuildHeads, type SentenceExample, type CountBuildPiece, type IntroBuildRule, type IntroCountGroup, type IntroDeriveRow, type IntroPara, type PhaseIntro } from "@/data/phase-intros";
 import { buildRow } from "@/lib/grammar/build";
 import { CHUNK_ROLE_LABELS, SENTENCE_ORDERING_GUIDES, type SentenceOrderingTierId } from "@/data/sentence-ordering-guides";
 import { contextPronunciation } from "@/data/kana-context";
@@ -48,8 +48,9 @@ import { libEntry } from "@/lib/library/entries";
 import { standingFor } from "./learner";
 import { authoredReader, proseReader, proseSound, wordSound, type RunReader } from "./prose-sound";
 import { TSU_RULE } from "./observatory";
+import { shortMeaning, vocabEntryOf } from "./word-meaning";
 import { particleGroup, tileOf, type ParticleGroup } from "./particle-groups";
-import { type LessonTeach, type PartedSentence, type SoundLine as SkySoundLine, type TeachForm, type TeachPage, type TeachParagraph, type TeachTable } from "@/sky/lib/lesson";
+import { type ExampleWord, type LessonTeach, type PartedSentence, type SoundLine as SkySoundLine, type TeachForm, type TeachPage, type TeachParagraph, type TeachTable } from "@/sky/lib/lesson";
 import { cutLine, rubyFromReading } from "@/sky/lib/sound-line";
 import type { SkyItem } from "@/sky/lib/types";
 
@@ -57,6 +58,34 @@ import type { EntryId } from "@/types/facts";
 import type { HistoryFile } from "@/types/store";
 
 const spans = (line: SoundLine) => line.map((s) => ({ text: s.text, ...(s.accent ? { accent: true } : {}) }));
+
+/** The words line under a grammar page's sentence (SAK-506): each content
+ * word in its dictionary form, with its furigana, and its meaning cut short
+ * the way the sentence quiz cuts it. Every word is listed, met or not, since
+ * the page is read again from the Atlas long after the words are learned. A
+ * word the vocabulary does not have is left off, and so is one the vocabulary
+ * files as a particle (もの in ものに違いない). */
+function sentenceWords(ex: SentenceExample): ExampleWord[] {
+  return (ex.words ?? []).flatMap((lemma) => {
+    const entry = vocabEntryOf(lemma);
+    const row = vocabRow(lemma);
+    if (!entry || row?.pos.every((p) => p === "particle")) return [];
+    const meaning = meaningIn([...entry.meanings, ...(row?.senses.flatMap((s) => s.glosses) ?? [])], ex.en);
+    return meaning ? [{ word: wordSound(lemma), meaning }] : [];
+  });
+}
+
+/** Which of a word's senses the sentence uses, as far as its English shows
+ * it: the first sense whose words are in the translation (話す is "to talk"
+ * first, but "May I speak to you?" uses "to speak"), else the first sense. */
+function meaningIn(meanings: readonly string[], en: string): string | undefined {
+  const short = meanings.map(shortMeaning).filter((m): m is string => !!m);
+  const said = (m: string) => {
+    const core = m.replace(/^to /, "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    return new RegExp(`\\b${core}\\b`, "i").test(en);
+  };
+  return short.find(said) ?? short[0];
+}
 
 /** The keigo registers, in the learner's terms, as the app's keigo page has them. */
 const REGISTER: Record<string, { label: string; desc: string }> = {
@@ -983,7 +1012,8 @@ export function pageFromIntro(intro: PhaseIntro, mark?: string, prose?: RunReade
     });
   }
   const ex = intro.sentenceExample;
-  const examples = ex ? [{ natural: [{ text: ex.en }], japanese: withFurigana(ex.jp, [{ text: ex.jp.slice(0, ex.span[0]) }, { text: ex.jp.slice(ex.span[0], ex.span[1]), label: "Pattern", active: true }, { text: ex.jp.slice(ex.span[1]) }].filter((r) => r.text)) }] : undefined;
+  const words = ex ? sentenceWords(ex) : [];
+  const examples = ex ? [{ natural: [{ text: ex.en }], japanese: withFurigana(ex.jp, [{ text: ex.jp.slice(0, ex.span[0]) }, { text: ex.jp.slice(ex.span[0], ex.span[1]), label: "Pattern", active: true }, { text: ex.jp.slice(ex.span[1]) }].filter((r) => r.text)), ...(words.length ? { words } : {}) }] : undefined;
   return {
     // the page's own name on the pager pill (〜ので, "The て/で-form"); the
     // app's eyebrow is the same "Grammar" on every generated page

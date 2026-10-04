@@ -645,6 +645,12 @@ export interface SentenceExample {
   /** The `[start, end)` span of `jp` this pattern actually built — the part to
    * highlight, not the whole sentence. */
   readonly span: readonly [number, number];
+  /** The sentence's content words in their dictionary form, in the order the
+   * sentence says them: the word the pattern is built on, and the others a
+   * reader needs (SAK-506). The pattern's own fixed words (いい in てもいい)
+   * are left out, since the page above teaches them. Absent on a sentence
+   * written by hand rather than drawn from the corpus. */
+  readonly words?: readonly string[];
 }
 
 // THE CARDS ARE EXPORTED, ONE BY ONE, AND THAT IS NEW

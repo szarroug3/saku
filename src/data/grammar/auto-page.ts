@@ -16,7 +16,7 @@ import { primaryHost } from "@/lib/grammar/example";
 import { FORM_LABEL, HOST_ARTICLE } from "@/lib/grammar/formula";
 import { dropDoScaffold } from "@/lib/grammar/gloss";
 import { recipeAllows } from "@/lib/grammar/vehicles";
-import { examplesFor } from "@/data/grammar/corpus";
+import { examplesFor, type Example } from "@/data/grammar/corpus";
 import { patternLabel, type Host, type Recipe } from "@/data/grammar/recipes";
 import type { BuildHeads, IntroBuildRule, IntroDeriveRow, PhaseIntro, SentenceExample } from "@/data/phase-intros";
 
@@ -44,7 +44,39 @@ export function sentenceExampleFor(r: Recipe): SentenceExample | undefined {
   const written = r.pattern.replace(/^〜/, "");
   const example = candidates.find((ex) => ex.jp.includes(written)) ?? candidates[0];
   const span = example.sp[r.id]!;
-  return { jp: example.jp, en: example.en, span: [span[0], span[1]] };
+  return { jp: example.jp, en: example.en, span: [span[0], span[1]], words: sentenceWords(example, r.id, written) };
+}
+
+/** A sentence's content lemmas for the words line under it (SAK-506), in the
+ * order the sentence says them. The corpus lists them without positions, so a
+ * lemma is found by itself, then by its stem (話す by 話, since the sentence
+ * has 話して), and one the sentence never spells that way goes last. The word
+ * the pattern is built on stands where the pattern does.
+ *
+ * Grammar is left off. A lemma the pattern's written form contains (いい in
+ * てもいい, みる in てみる) is taught by the page above it. A lemma that falls
+ * inside any pattern the sentence uses and is not the word that pattern is
+ * built on is that pattern's own piece: the いる of 欠けていた, the なる of
+ * ならない. The corpus counts those as content words, and the vocabulary's
+ * first sense for them is the wrong one (なる "to bear fruit"). */
+function sentenceWords(example: Example, recipe: string, written: string): string[] {
+  const spans = Object.values(example.sp);
+  const hosts = new Set(spans.map((sp) => sp[2]).filter((h): h is string => !!h));
+  const own = example.sp[recipe]!;
+  const at = (lemma: string): number => {
+    if (lemma === own[2]) return own[0];
+    for (const probe of [lemma, lemma.slice(0, -1), lemma.slice(0, 1)]) {
+      const i = probe ? example.jp.indexOf(probe) : -1;
+      if (i >= 0) return i;
+    }
+    return example.jp.length;
+  };
+  const piece = (lemma: string, i: number) => !hosts.has(lemma) && (written.includes(lemma) || spans.some(([a, b]) => i >= a && i < b));
+  return example.v
+    .map((lemma, n) => ({ lemma, i: at(lemma), n }))
+    .filter((w) => !piece(w.lemma, w.i))
+    .sort((a, b) => a.i - b.i || a.n - b.n)
+    .map((w) => w.lemma);
 }
 
 /** One example word for the build table: the kana form, its class (null for a
