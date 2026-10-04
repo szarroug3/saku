@@ -2887,3 +2887,17 @@ test("a word written only in kana carries its pitch, drawn over the word itself 
   await expect(page.getByRole("heading", { name: "What would you like to know?" })).toBeVisible();
   await expect(page.getByLabel(/^ええ, pitch accent/)).toHaveCount(0);
 });
+
+test("the box on a 〜てもいい adjective card asks for the form, and a word card's for the reading (SAK-513)", async ({ page }) => {
+  // The answer on げんき is げんきでもいい, the word built into the pattern,
+  // and the box said "The reading". A word's reading card keeps that.
+  for (const host of ["adj-i", "adj-na"]) {
+    await page.goto(`/quiz?sample&cards=${encodeURIComponent(`grammar:te-permission/production@${host}`)}`);
+    await expect(page.getByText(/you say "it's okay even if it's [^"]+"/)).toBeVisible();
+    await expect(page.getByPlaceholder("The form", { exact: true })).toBeVisible();
+    await expect(page.getByPlaceholder("The reading", { exact: true })).toHaveCount(0);
+  }
+  await page.goto(`/quiz?sample&cards=${encodeURIComponent("word:明白/reading")}`);
+  await expect(page.getByRole("button", { name: "End the quiz" })).toBeVisible();
+  await expect(page.getByPlaceholder("The reading", { exact: true })).toBeVisible();
+});
