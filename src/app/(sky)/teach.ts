@@ -962,7 +962,9 @@ const text = (s: string, accent = false): SkySoundLine[number] => (accent ? { te
 /** A build rule as a row: ending · verb · change · result, with the added
  * piece in the accent, plus a meaning and a note when any row has them. */
 function ruleRow(r: IntroBuildRule, cols: RuleColumns): SkySoundLine[] {
-  const change: SkySoundLine = r.to ? [] : [...(r.drop ? [text(`− ${r.drop}`)] : []), ...(r.add ? [text(r.drop ? " + " : "+ "), text(r.add, true)] : [])];
+  // each sign is held to its kana by a no-break space, so a change that has to
+  // wrap in the narrow Atlas panel (SAK-509) breaks between − る and + させる
+  const change: SkySoundLine = r.to ? [] : [...(r.drop ? [text(`−\u00a0${r.drop}`)] : []), ...(r.add ? [text(r.drop ? " +\u00a0" : "+\u00a0"), text(r.add, true)] : [])];
   let result: SkySoundLine;
   if (r.to) {
     const at = r.accent === false ? -1 : typeof r.accent === "string" ? r.to.indexOf(r.accent) : -1;
@@ -1004,7 +1006,11 @@ function ruleTable(rules: readonly IntroBuildRule[], heads?: BuildHeads, title?:
     ...(cols.gloss ? [heads?.gloss ?? "Meaning"] : []),
     ...(cols.note ? [heads?.note ?? "Note"] : []),
   ];
-  return { ...(title ? { title } : {}), heads: head, rows: rules.map((r) => ruleRow(r, cols)), ...extra };
+  // the English columns drop under their row in the narrow Atlas panel
+  // (SAK-509): they are last, Meaning then Note
+  const english = Number(cols.gloss) + Number(cols.note);
+  const under = Array.from({ length: english }, (_, i) => head.length - english + i);
+  return { ...(title ? { title } : {}), heads: head, rows: rules.map((r) => ruleRow(r, cols)), ...(under.length ? { under } : {}), ...extra };
 }
 
 /** A derivation as a row: verb · form · pattern · meaning, the pattern's
@@ -1013,10 +1019,22 @@ function deriveTable(rules: readonly IntroDeriveRow[], heads?: { verb?: string; 
   const form = rules.some((r) => r.form), gloss = rules.some((r) => r.gloss), cls = rules.some((r) => r.classLabel);
   const rows = rules.map((r) => {
     const base = r.form ?? r.verb;
-    const result: SkySoundLine = r.result.startsWith(base) ? [text(base), text(r.result.slice(base.length), true)] : [text(r.result)];
+    // the pattern's ending may start a new line in the narrow Atlas panel
+    // (SAK-509): after the form (たべて, もいい), or where the form's last kana
+    // gives way to it (しずかではな, くてもいい), the same drop and add a
+    // build rule writes as − い + くて
+    const rest = r.result.startsWith(base) ? r.result.slice(base.length) : "";
+    const stem = base.slice(0, -1);
+    const result: SkySoundLine = rest
+      ? [text(base), { ...text(rest, true), wrap: true }]
+      : stem && r.result.startsWith(stem) && r.result.length > stem.length ? [text(stem), { text: r.result.slice(stem.length), wrap: true }] : [text(r.result)];
     return [[text(r.verb)], ...(form ? [[text(r.form ?? "")]] : []), result, ...(gloss ? [[text(r.gloss ?? "")]] : []), ...(cls ? [[text(r.classLabel ?? "")]] : [])];
   });
-  return { ...(title ? { title } : {}), heads: [heads?.verb ?? "Verb", ...(form ? [heads?.form ?? "Form"] : []), heads?.pattern ?? "Pattern", ...(gloss ? ["Meaning"] : []), ...(cls ? ["Class"] : [])], rows, ...extra };
+  // the Meaning and Class columns, the English ones, drop under their row in
+  // the narrow Atlas panel (SAK-509)
+  const first = form ? 3 : 2;
+  const under = [...(gloss ? [first] : []), ...(cls ? [first + Number(gloss)] : [])];
+  return { ...(title ? { title } : {}), heads: [heads?.verb ?? "Verb", ...(form ? [heads?.form ?? "Form"] : []), heads?.pattern ?? "Pattern", ...(gloss ? ["Meaning"] : []), ...(cls ? ["Class"] : [])], rows, ...(under.length ? { under } : {}), ...extra };
 }
 
 export /** A count table: each row a count, its word and reading, and the pieces it
