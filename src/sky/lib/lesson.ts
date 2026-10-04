@@ -28,7 +28,10 @@ import type { Learned, PrerequisiteGraph } from "./graph";
  * travels here on the run itself: a run carrying one is a run of kanji and the
  * string is its kana. A run without one is printed as it is, which covers every
  * line that is already kana and every sentence whose readings nothing knows. */
-export type SoundLine = ReadonlyArray<{ text: string; accent?: boolean; ruby?: string }>;
+/** `wrap` marks a run a line may start at, for a cell that has to wrap in a
+ * narrow box: the pattern's ending in a build table's Pattern cell (SAK-509).
+ * Nothing changes where the cell has room. */
+export type SoundLine = ReadonlyArray<{ text: string; accent?: boolean; ruby?: string; wrap?: boolean }>;
 
 /** What the card teaches for one star, in plain data from whatever the
  * route's adapter can find: nothing is required, and a sparse item stays
@@ -198,6 +201,13 @@ export interface TeachTable {
    * on a surface that can open a page; where nothing can (the lesson, the
    * quiz's reveal), the row is the same text and nothing is clickable. */
   opens?: ReadonlyArray<string | undefined>;
+  /** For a build table (SAK-509): the columns, by index, that move to a line
+   * under their row when the box is too narrow for every column, the Atlas
+   * panel at its opening width. These are the Meaning and Note columns, the
+   * only cells written in English, so the Japanese keeps its columns and the
+   * row reads as two lines. A wide box (the lesson card, a widened panel)
+   * shows the table as it always was. */
+  under?: readonly number[];
   /** A closing line: the chain the rows build toward, and its meaning. */
   footer?: string;
   /** A note under the table: how a family's members differ. Runs when the
