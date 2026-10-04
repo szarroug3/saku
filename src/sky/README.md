@@ -7661,3 +7661,17 @@ A reading the dictionary files under both kinds takes either label, and the reve
 **What it skips.** 1,011 of the 2,022 kanji with readings in the table, leaving 1,011 to ask. 845 have no kun'yomi row and 152 no on'yomi row, because the table only keeps a reading an everyday word proves (本 has ほん and nothing else). The other 14 have a single reading filed under both kinds (差, 死, 医), which is nothing to sort. The groups hold 976, 33 and 2 kanji.
 
 **Gates.** `scripts/button-centering.mjs` measures the drill twice: with one reading labeled, and on the score screen.
+
+## The readings drill moved into a Drills panel under the recipe (SAK-520)
+
+Sam found the Sort kanji readings button beside the Practice heading out of place. Of four options she picked a panel of its own. The button and its info mark are gone from the heading row, and the left column now ends in a small panel titled Drills, under the recipe and its "Save this recipe" button. It is a `SkyPanel` like the two beside it.
+
+**One row per drill.** A row shows the drill's name, a line on what it asks, a muted line under that, and a Start button that opens the drill. The readings drill's row reads "Kun'yomi or on'yomi?", "Sort each reading of a kanji as kun'yomi or on'yomi." and "Nothing from it is saved." The name and the two lines are `READINGS_DRILL` in `src/sky/lib/readings-drill.ts`. The drill's own page takes its title from the same constant, so the panel and the page always say the same name. `SkyPractice` takes a `drills` list and `practice-client.tsx` hands it one entry with the drill's URL from `hrefs.ts`. A second drill is a second entry in that list.
+
+**Wide screens.** The recipe fills the column and scrolls inside itself as before. The Drills panel keeps its own height under it, and its bottom lines up with the bottom of "What you would get".
+
+**Phones.** The columns stack: the recipe, then Drills, then "What you would get". Before this card the stack was squeezed into one screen, which worked while there were two panels. With a third, the recipe was left a box about 130px tall and "What you would get" showed its heading and nothing else. So under `lg` the stack itself scrolls (`overflow-y-auto` and `auto-rows-max` on the grid), each panel is its full height, and "What you would get" stops at 80% of the screen so its list scrolls inside it and its Start stays in reach. At `lg` and up nothing changed.
+
+**What stayed.** The readings intro's link to the drill (SAK-495) is unchanged, and so is the drill.
+
+**Tests.** The browser suite checks at 1440 and 390 that the heading row has no link, the Drills panel shows the drill's name, both lines and Start, the panel is under the recipe in the same column, and Start opens `/practice/readings`. At 390 it also checks that the panel is above "What you would get" and that no panel scrolls inside itself except that list. The SAK-495 test now enters the drill from the panel. `scripts/button-centering.mjs` has a "practice, the drills panel" entry, with nothing opened over the page, so the Start button is measured.
