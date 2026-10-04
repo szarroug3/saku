@@ -253,8 +253,16 @@ export function Table({ table, onOpen }: { table: TeachTable; onOpen?: (id: stri
 // space"). The title, the lead and the paragraphs used to stop at 30ch and
 // 64ch, so a panel dragged wide showed a narrow column beside an empty half.
 // The panel's own width is the measure now: the learner chose it.
-export function TeachPageView({ page, alone = false, onOpen, titleAside }: { page: TeachPage; alone?: boolean; onOpen?: (id: string) => void; titleAside?: ReactNode }) {
-  const title = page.title && <h3 className="font-sky-display text-[20px] leading-tight"><Mixed text={page.title} /></h3>;
+//
+// `titleWord` draws the word the title opens with as the card hands it over,
+// and the rest of the title as text: a pair's word page has its pitch line
+// over はい in "はい yes" (SAK-517).
+export function TeachPageView({ page, alone = false, onOpen, titleAside, titleWord }: { page: TeachPage; alone?: boolean; onOpen?: (id: string) => void; titleAside?: ReactNode; titleWord?: { node: ReactNode; rest: string } }) {
+  const title = page.title && (
+    <h3 className="font-sky-display text-[20px] leading-tight">
+      {titleWord ? <>{titleWord.node}<Mixed text={titleWord.rest} /></> : <Mixed text={page.title} />}
+    </h3>
+  );
   return (
     <div className={alone ? "" : "mt-4 border-t border-sky-line pt-4"}>
       {page.eyebrow && <Eyebrow>{page.eyebrow}</Eyebrow>}
