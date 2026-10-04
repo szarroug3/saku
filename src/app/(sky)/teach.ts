@@ -27,7 +27,7 @@ import { formLibraryPages } from "@/data/grammar/lessons";
 import { kanjiRuns, PARTICLE_NOTES, type ParticleNoteExample, type ParticleNotePara, type ParticleNoteWord } from "@/data/grammar/particle-notes";
 import { PARTICLE_ROWS } from "@/data/grammar/particles";
 import { primaryPatternRecipe, RECIPES, type Recipe } from "@/data/grammar/recipes";
-import { PARTICLE_RULE, type BuildHeads, type SentenceExample, type CountBuildPiece, type IntroBuildRule, type IntroCountGroup, type IntroDeriveRow, type IntroPara, type PhaseIntro } from "@/data/phase-intros";
+import { ONYOMI_INTRO, PARTICLE_RULE, type BuildHeads, type SentenceExample, type CountBuildPiece, type IntroBuildRule, type IntroCountGroup, type IntroDeriveRow, type IntroPara, type PhaseIntro } from "@/data/phase-intros";
 import { buildRow } from "@/lib/grammar/build";
 import { dropDoScaffold } from "@/lib/grammar/gloss";
 import { CHUNK_ROLE_LABELS, SENTENCE_ORDERING_GUIDES, type SentenceOrderingTierId } from "@/data/sentence-ordering-guides";
@@ -52,6 +52,7 @@ import { TSU_RULE } from "./observatory";
 import { wordInSentence } from "./word-meaning";
 import { particleGroup, tileOf, type ParticleGroup } from "./particle-groups";
 import { wordGroup, type WordGroup } from "./word-groups";
+import { skyHref } from "./hrefs";
 import { type ExampleWord, type LessonTeach, type PartedSentence, type SoundLine as SkySoundLine, type TeachForm, type TeachPage, type TeachParagraph, type TeachTable } from "@/sky/lib/lesson";
 import { cutLine, rubyFromReading } from "@/sky/lib/sound-line";
 import type { SkyItem } from "@/sky/lib/types";
@@ -1102,5 +1103,14 @@ export function pageFromIntro(intro: PhaseIntro, mark?: string, prose?: RunReade
     ...(tables.length ? { tables } : {}),
     ...(intro.bodyAfterBuild?.length ? { after: paragraphs(intro.bodyAfterBuild) } : {}),
     ...(examples ? { examples } : {}),
+    ...(INTRO_LINKS[intro.id] ? { link: INTRO_LINKS[intro.id] } : {}),
   };
 }
+
+/** A link under an intro's last paragraph, for an intro whose closing note
+ * names somewhere to go. The readings intro ends on the readings drill in
+ * Practice (SAK-495). The URL is built here rather than written into the
+ * card, because the cards are data and every Sky URL is built in hrefs.ts. */
+const INTRO_LINKS: Readonly<Record<string, { href: string; label: string }>> = {
+  [ONYOMI_INTRO.id]: { href: skyHref("/practice/readings"), label: "Sort kanji readings in Practice" },
+};
