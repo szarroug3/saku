@@ -256,6 +256,13 @@ def main():
     seen_pieces = set()  # dedupe identical piece multisets across sentences
 
     for row in corpus:
+        # A sentence the corpus audit took every pattern tag off (SAK-511) stays
+        # in grammar-corpus.json for word examples only. An assembly item
+        # credits its patterns' meaning facts, so with no pattern it has
+        # nothing to teach here.
+        if not row["p"]:
+            drop["no-pattern"] += 1
+            continue
         toks = [tok(w) for w in tagger(row["jp"])]
         pieces = group_pieces(toks)
         if pieces is None:
