@@ -6758,5 +6758,95 @@
     "why": "でしょ (no う), a rhetorical 'right?', not 'probably X'",
     "orphaned": true,
     "removed": false
+  },
+  {
+    "id": 75374,
+    "jp": "彼女の態度は気取りやわざとらしさがない。",
+    "en": "Her nature is neither affected nor pretentious.",
+    "pattern": "rashii",
+    "span": "らし",
+    "why": "らしい straight after a noun or adverb is the 'like a real X' suffix, not 'apparently X'",
+    "orphaned": true,
+    "removed": false
+  },
+  {
+    "id": 118196,
+    "jp": "彼のわざとらしい話し方が嫌いだ。",
+    "en": "I don't like his affected manner of speaking.",
+    "pattern": "rashii",
+    "span": "らしい",
+    "why": "らしい straight after a noun or adverb is the 'like a real X' suffix, not 'apparently X'",
+    "orphaned": false,
+    "removed": false
+  },
+  {
+    "id": 629257,
+    "jp": "それはわざとらしい笑いだった。",
+    "en": "It was a forced smile.",
+    "pattern": "rashii",
+    "span": "らしい",
+    "why": "らしい straight after a noun or adverb is the 'like a real X' suffix, not 'apparently X'",
+    "orphaned": true,
+    "removed": false
+  },
+  {
+    "id": 2248299,
+    "jp": "とても日本語らしい日本語ですね！",
+    "en": "That's very natural-sounding Japanese.",
+    "pattern": "rashii",
+    "span": "らしい",
+    "why": "らしい straight after a noun or adverb is the 'like a real X' suffix, not 'apparently X'",
+    "orphaned": true,
+    "removed": false
+  },
+  {
+    "id": 2366125,
+    "jp": "休みらしい休みは久しく取っていない。",
+    "en": "It's been a long time since I've had a real vacation.",
+    "pattern": "rashii",
+    "span": "らしい",
+    "why": "らしい straight after a noun or adverb is the 'like a real X' suffix, not 'apparently X'",
+    "orphaned": false,
+    "removed": false
+  },
+  {
+    "id": 10587334,
+    "jp": "「女らしさ」って何？そんな言葉、私の辞書にないし。",
+    "en": "What's \"femininity\"? That word's not in my dictionary.",
+    "pattern": "rashii",
+    "span": "らし",
+    "why": "らしい straight after a noun or adverb is the 'like a real X' suffix, not 'apparently X'",
+    "orphaned": true,
+    "removed": false
+  },
+  {
+    "id": 11023123,
+    "jp": "もっともらしい嘘をつきやがって。",
+    "en": "You're spitting out plausible lies.",
+    "pattern": "rashii",
+    "span": "らしい",
+    "why": "らしい straight after a noun or adverb is the 'like a real X' suffix, not 'apparently X'",
+    "orphaned": false,
+    "removed": false
+  },
+  {
+    "id": 11257973,
+    "jp": "あなたにとって、男らしさって何？",
+    "en": "To you, what is masculinity?",
+    "pattern": "rashii",
+    "span": "らし",
+    "why": "らしい straight after a noun or adverb is the 'like a real X' suffix, not 'apparently X'",
+    "orphaned": true,
+    "removed": false
+  },
+  {
+    "id": 11257979,
+    "jp": "男らしさとは、女性と子供を養うことだ。",
+    "en": "Masculinity has to do with supporting women and children.",
+    "pattern": "rashii",
+    "span": "らし",
+    "why": "らしい straight after a noun or adverb is the 'like a real X' suffix, not 'apparently X'",
+    "orphaned": false,
+    "removed": false
   }
 ]
