@@ -7593,3 +7593,15 @@ The raw gloss and `appliedGloss` are as they were. The library entry's `meanings
 The jargon test read an import path as learner copy, and `@/lib/grammar/gloss` tripped its "gloss" rule. It now skips the path of an import or export.
 
 **Tests.** `lesson.test.ts`: "Tonight, in order" lists 〜てもいい may X, 〜なくてもいい don't have to X and 〜てはいけない must not X. `teach.test.ts`: the 〜てもいい card's meaning and item read "may X", and nothing on the card says "do X". In `e2e/sky.spec.ts`, "the 〜てもいい lesson and its Atlas tile say may X, with no do (SAK-512)", signed out at 1440. The comet test finds its 〜てはいけない tile by "must not X" now.
+
+## The sentence quiz reads the per-sentence meanings too (SAK-516)
+
+SAK-508 wrote meanings for single words of single sentences in `src/data/grammar/sentence-word-meanings.ts`, keyed by the corpus sentence's id. The pattern page's words line used them. The sentence quiz did not, so a quiz piece on one of those sentences still had the rules' sense, or no meaning at all for a word the vocabulary lacks.
+
+`wordInSentence` in `src/app/(sky)/word-meaning.ts` now takes the sentence's corpus id as `id`. When the table has a row for that sentence and lemma, the row's meaning is the answer, before any rule runs. The result then has the row's reading, and the vocabulary's entry only when the vocabulary has the word. Without an id, or with no row, the rules pick as before.
+
+The quiz's ordering card passes the item's id when it is above zero. The curated sentences in `assembly.ts` have ids below zero of their own, and those are not the corpus's (authored.ts uses ids below zero too, for other sentences), so they are never looked up. A piece whose word has no vocabulary entry cannot have been met, so its meaning always shows.
+
+The quiz deals 648 sentences: 604 from the corpus and 44 curated. Four of them are also on a pattern page (4713, 4812, 4877, 5098), and only 5098 has a row. Its card now says 鞍 "saddle" and 淋しい "lonely", where those pieces had no meaning before. The other sentences have no row and keep the rules' pick. The おかげで sentence is not one of the quiz's sentences, so its fix shows only on the page. なる inside なければなりません and the like still reads "to bear fruit" on the quiz.
+
+**Tests.** `src/app/(sky)/word-meaning.test.ts`: with the おかげで sentence's id, なる is "to become" and has its vocabulary entry; without the id the rules give "to bear fruit"; 馬鹿 gets the row with its reading ばか. `src/app/(sky)/quiz.test.ts`: the ordering card for sentence 5098 glosses 鞍が "saddle" and 淋しい "lonely".
