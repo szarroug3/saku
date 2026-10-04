@@ -1506,6 +1506,19 @@ export const ONYOMI_INTRO: PhaseIntro = {
       lead: "Use that pattern as a clue.",
       text: "Japanese has many exceptions and mixed-reading words, so the word's own reading is what counts. Each kanji page places its kun’yomi and on’yomi side by side, with an everyday word showing where each reading is used.",
     },
+    // The closing note on the readings drill (SAK-495, Sam 2026-10-04): it is
+    // offered here and never run, so the card says where it is, that it is
+    // optional, and what it is for. 火 is checked against kanji.json: on か,
+    // kun ひ (び and ほ are its other kun forms). The link to the drill is
+    // added where the card becomes a page (INTRO_LINKS in app/(sky)/teach.ts).
+    {
+      lead: "Telling them apart makes new words easier to read.",
+      text: "On its own, 火 (fire) is read ひ, its kun’yomi. 火曜日 (Tuesday) uses its on’yomi, か, instead. How long a reading is won’t tell you its kind: ひ and か are both one kana long. You get a feel for it by seeing a lot of them.",
+    },
+    {
+      lead: "There’s a drill for this in Practice.",
+      text: "It shows a kanji’s readings with no labels, and you sort each one as kun’yomi or on’yomi. It’s there to give you a feel for where the sounds come from. You don’t have to do it. Nothing in it counts toward your progress.",
+    },
   ],
   // 人 and 車 on their own carry their kun'yomi, the native word the first
   // paragraph matches them to; the words carry the on'yomi the second names.
@@ -1514,6 +1527,8 @@ export const ONYOMI_INTRO: PhaseIntro = {
     "車": "くるま",
     "外国人": "がいこくじん",
     "電車": "でんしゃ",
+    "火": "ひ",
+    "火曜日": "かようび",
   },
 };
 
