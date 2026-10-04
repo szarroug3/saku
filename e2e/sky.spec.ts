@@ -3036,3 +3036,69 @@ test("the readings intro ends on the drill in Practice, and does not run it", as
   await expect(link).not.toHaveAttribute("target", "_blank");
   await expect(page.getByRole("heading", { name: "Kun'yomi or on'yomi?" })).toHaveCount(0);
 });
+
+test("every column of a table is the same width, so stacked build tables line up (SAK-518)", async ({ page }) => {
+  // Sam, 2026-10-04, on 〜てもいい: the four build tables each sized their own
+  // columns, so Pattern and Meaning started in a different place in each. Every
+  // column is now an equal share of its table. Signed out.
+  /** Each visible heading's left edge from the table's left, and its width. */
+  const columns = (table: Locator) => table.evaluate((t) => {
+    const left = t.getBoundingClientRect().left;
+    return [...t.querySelectorAll("thead th")].filter((th) => getComputedStyle(th).display !== "none").map((th) => {
+      const r = th.getBoundingClientRect();
+      return { left: r.left - left, width: r.width };
+    });
+  });
+  const equal = (cols: { width: number }[], what: string) => {
+    for (const c of cols) expect(Math.abs(c.width - cols[0].width), what).toBeLessThanOrEqual(1);
+  };
+
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto(`/lesson?picks=${encodeURIComponent("grammar:te-permission")}`);
+  const built: Record<string, string> = { Verbs: "たべてもいい", "い-adjectives": "たかくてもいい", "な-adjectives": "しずかでもいい", Nouns: "ほんでもいい" };
+  const edges: Record<string, number[]> = {};
+  for (const [title, row] of Object.entries(built)) {
+    const table = page.locator("table").filter({ hasText: row });
+    await expect(table, title).toHaveCount(1);
+    const cols = await columns(table);
+    expect(cols.length, title).toBe(title === "Nouns" ? 3 : 4);
+    equal(cols, title);
+    edges[title] = cols.map((c) => c.left);
+  }
+  // the three four-column tables start every column in the same place
+  for (const title of ["い-adjectives", "な-adjectives"]) {
+    edges[title].forEach((x, i) => expect(Math.abs(x - edges.Verbs[i]), `${title} column ${i + 1}`).toBeLessThanOrEqual(1));
+  }
+
+  // the Atlas panel keeps the narrow build layout (SAK-509): nothing scrolls,
+  // and the Japanese columns left in each row are equal among themselves
+  for (const width of [1440, 390]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto(`/atlas?sample&entry=${encodeURIComponent("grammar:te-permission")}`);
+    const tables = page.locator("[data-atlas-panel] table");
+    await expect(tables.filter({ hasText: "しずかでもいい" })).toHaveCount(1);
+    for (const table of await tables.all()) {
+      await table.scrollIntoViewIfNeeded();
+      const [scroll, client] = await table.evaluate((t) => [t.parentElement!.scrollWidth, t.parentElement!.clientWidth]);
+      expect(scroll, `${width}: the table's box`).toBe(client);
+      equal(await columns(table), `${width}: the Atlas table`);
+    }
+  }
+
+  // the Particle page has four equal columns where the panel is widened, and
+  // a long sentence wraps inside its column instead of running into the English
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await page.goto(`/atlas?sample&entry=${encodeURIComponent("term:particle")}`);
+  await page.getByRole("button", { name: "Widen this panel" }).click();
+  const particles = page.locator("[data-atlas-panel] table").filter({ hasText: "In a sentence" });
+  await expect(particles).toHaveCount(1);
+  const cols = await columns(particles);
+  expect(cols).toHaveLength(4);
+  equal(cols, "the Particle page");
+  const past = await particles.evaluate((t) => [...t.querySelectorAll("tbody td")].filter((td) => {
+    const range = document.createRange();
+    range.selectNodeContents(td);
+    return [...range.getClientRects()].some((r) => r.width > 0 && r.right > td.getBoundingClientRect().right + 0.5);
+  }).map((td) => td.textContent));
+  expect(past, "cells that run past their column").toEqual([]);
+});
