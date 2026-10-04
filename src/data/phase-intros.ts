@@ -645,6 +645,12 @@ export interface SentenceExample {
   /** The `[start, end)` span of `jp` this pattern actually built — the part to
    * highlight, not the whole sentence. */
   readonly span: readonly [number, number];
+  /** The `[start, end)` span of `en` that says what the marked Japanese says
+   * (SAK-498): "nap" for 昼寝を. Read off the hand-written table in
+   * src/data/grammar/sentence-english-marks.ts. null where the sentence was
+   * read and its English has no words for the marked piece; absent where no
+   * one has read it yet, which the table's test does not allow. */
+  readonly enSpan?: readonly [number, number] | null;
   /** The sentence's content words in their dictionary form, in the order the
    * sentence says them: the word the pattern is built on, and the others a
    * reader needs (SAK-506). The pattern's own fixed words (いい in てもいい)

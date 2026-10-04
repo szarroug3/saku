@@ -164,14 +164,16 @@ export interface TeachPage {
  * between two sentences (猫は好きです beside 猫が好きです), and a page that had to
  * spend an empty paragraph on the second one would read as a gap. An example's
  * `words` are drawn under its English, each word with its furigana and a
- * short meaning (SAK-488). */
+ * short meaning (SAK-488). `enRuns` replaces `en` when the English has words
+ * picked out in the accent, the words that say what the Japanese's marked
+ * piece says (SAK-498). */
 export interface TeachParagraph {
   heading?: string;
   lead?: string;
   text: string;
   accent?: string;
   runs?: SoundLine;
-  examples?: ReadonlyArray<{ jp: SoundLine; en: string; words?: readonly ExampleWord[] }>;
+  examples?: ReadonlyArray<{ jp: SoundLine; en: string; enRuns?: SoundLine; words?: readonly ExampleWord[] }>;
 }
 
 /** A word under an example sentence, with its furigana, and a short meaning:

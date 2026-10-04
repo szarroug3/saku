@@ -125,7 +125,7 @@ function Paragraph({ para }: { para: TeachParagraph }) {
         // where the paragraph starts again underneath it.
         <div key={i} className="mt-2 border-l-2 border-sky-line pl-3">
           <p className={`font-sky-display text-[16px] leading-snug text-sky-ink ${japaneseFont(ex.jp.map((r) => r.text).join(""))}`}><Sound line={ex.jp} /></p>
-          <p className="text-[13.5px] leading-relaxed text-sky-muted">{ex.en}</p>
+          <p className="text-[13.5px] leading-relaxed text-sky-muted">{ex.enRuns ? <Sound line={ex.enRuns} /> : ex.en}</p>
           {ex.words && ex.words.length > 0 && <ExampleWords words={ex.words} />}
         </div>
       ))}
