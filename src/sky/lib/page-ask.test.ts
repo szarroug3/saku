@@ -49,6 +49,21 @@ describe("pageAskPrompt", () => {
   });
 });
 
+describe("a thread", () => {
+  const next = { ...q, question: "And with 飲む?", earlier: [{ question: "What is ください?", answer: "It asks politely." }] };
+  it("carries the conversation and marks the next question", () => {
+    const prompt = pageAskPrompt(next);
+    for (const piece of ["THE CONVERSATION SO FAR", "Learner: What is ください?", "You: It asks politely.", "THE LEARNER'S NEXT QUESTION", "And with 飲む?", "Don't repeat what you already said."]) assert.ok(prompt.includes(piece), piece);
+  });
+  it("has neither on the first question", () => {
+    assert.doesNotMatch(pageAskPrompt(q), /CONVERSATION|NEXT QUESTION/);
+  });
+  it("counts the learner's earlier questions as given", () => {
+    const later = { ...q, question: "And this?", earlier: [{ question: "What about 飲む?", answer: "Later." }] };
+    assert.deepEqual(unlearned("飲む works too.", later), []);
+  });
+});
+
 describe("parsePageAnswer", () => {
   it("reads the answer field", () => assert.equal(parsePageAnswer('{"answer":" Because. "}'), "Because."));
   it("is null for no JSON or an empty answer", () => {

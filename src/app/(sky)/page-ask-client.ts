@@ -18,12 +18,12 @@ import type { Who } from "./who";
 
 function askerFor(who: Who): AskAboutPage {
   let learned: Promise<Learned> | undefined;
-  return async (page, question) => {
+  return async (page, question, earlier = []) => {
     const q = question.trim().slice(0, QUESTION_MAX);
     if (!q) return null;
     learned ??= pageAskLearned(who);
     learned.catch(() => { learned = undefined; });
-    return answerWith({ page, question: q, learned: await learned }, {
+    return answerWith({ page, question: q, learned: await learned, earlier }, {
       first: async (prompt) => askModel((await modelPair(PAGE_ASK_SCHEMA)).hybrid, prompt),
       cloud: async (prompt) => askModel((await modelPair(PAGE_ASK_SCHEMA)).cloud, prompt),
       online,

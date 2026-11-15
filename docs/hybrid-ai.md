@@ -53,7 +53,7 @@ The prompt also says to describe strokes only when a fact or the tip does, becau
 
 ## Questions about a card
 
-A learner who doesn't follow something on a card can ask about it in their own words. Under the card's teaching there's a "Don't follow something? Ask about this card" link that opens a question box. It's on every lesson card in a lesson, in the Atlas, and under a revealed quiz or practice answer.
+A learner who doesn't follow something on a card can ask about it in their own words, and keep asking. Each card has its own thread: the earlier questions and answers go back in the prompt, so a follow-up like "and when would I use が instead?" is read in light of them. A new card starts a new thread, and a thread stops at 6 questions, since every turn makes the prompt longer and Nano's window is small. The learner's own earlier questions count as given Japanese for the check, as the current one does. Under the card's teaching there's a "Don't follow something? Ask about this card" link that opens the thread. It's on every lesson card in a lesson, in the Atlas, and under a revealed quiz or practice answer.
 
 Gemini answers like a teacher would, going past the card when that helps, but the Japanese it writes is held to two things: the card, and what the learner has already learned. Anything else is explained in English. It describes how a character is drawn only when the card does, because it got stroke counts wrong when it was free to.
 

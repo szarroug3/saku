@@ -1,7 +1,7 @@
 // Questions about a page (#BuildHybridAI). A learner who doesn't follow
-// something on a card asks about it in their own words, and Gemini answers
-// from the card and from what the learner has already learned, and nothing
-// past that.
+// something on a card asks about it in their own words, in a short thread
+// that starts over on each card. Gemini explains like a teacher, and the
+// Japanese it writes is held to the card and what the learner has learned.
 //
 // This file is the model: the card as plain text, what the model is told,
 // the shape it answers in and the check on the answer. The learned list is
@@ -37,17 +37,30 @@ export interface Learned {
   grammar: readonly string[];
 }
 
+/** One question and its answer, earlier in the thread on a card. */
+export interface Turn {
+  question: string;
+  answer: string;
+}
+
 export interface PageQuestion {
   /** The card as the learner sees it, in plain text (`cardText`). */
   page: string;
   question: string;
   learned: Learned;
+  /** The thread so far on this card, oldest first. */
+  earlier?: readonly Turn[];
 }
 
 export type PageAnswer = Answer;
 
 /** The longest question the box takes. */
 export const QUESTION_MAX = 300;
+
+/** How many questions a thread on one card takes. Every turn goes back in
+ * the prompt, which is 7,000 to 9,000 characters before any of them, and
+ * Nano's window is small. */
+export const THREAD_MAX = 6;
 
 /** How much of a card goes in the prompt. Nano's window is small, and the
  * start of a card (the name, the meaning, the page's lead) is what it is
@@ -141,12 +154,14 @@ export function pageAskPrompt(q: PageQuestion): string {
     `words: ${list(q.learned.words, WORDS_LISTED)}`,
     `grammar: ${list(q.learned.grammar, GRAMMAR_LISTED)}`,
     "",
-    "THE QUESTION",
+    ...(q.earlier?.length ? ["THE CONVERSATION SO FAR", ...q.earlier.flatMap((t) => [`Learner: ${t.question}`, `You: ${t.answer}`]), ""] : []),
+    q.earlier?.length ? "THE LEARNER'S NEXT QUESTION" : "THE QUESTION",
     q.question,
     "",
     // Sam, 2026-11-15: the answers only said what the card already said. The
     // card is where an answer starts, and what limits it is the Japanese.
     "Answer in three to five short sentences of plain English, the way a good teacher would. Talk to the learner as \"you\".",
+    ...(q.earlier?.length ? ["- Read the next question in light of the conversation: \"it\" or \"that\" means what was just talked about. Don't repeat what you already said."] : []),
     "- Answer what they asked, and add what helps them understand it, from what you know about Japanese. Go past the card when that helps; don't just repeat it, and don't say what the card leaves out.",
     "- Write no Japanese except what is on the card, in the question, or in the lists above. When an example would help, build it only from those. When the answer needs a word, kanji or pattern they haven't learned, explain the idea in English without writing it in Japanese.",
     // "this card" alone turned away "When would I use が instead?" on は's card
@@ -176,12 +191,15 @@ export const parsePageAnswer = (reply: string) => jsonField(reply, "answer");
  * more kanji that aren't written in any of those. Empty means it can be
  * shown. */
 export function unlearned(text: string, q: PageQuestion): string[] {
-  const given = [q.page, q.question, q.learned.kana, ...q.learned.kanji, ...q.learned.words, ...q.learned.grammar].join("\n");
+  // the learner's own earlier questions count, as this one does; the earlier
+  // answers passed this check, so they add nothing
+  const asked = [q.question, ...(q.earlier ?? []).map((t) => t.question)];
+  const given = [q.page, ...asked, q.learned.kana, ...q.learned.kanji, ...q.learned.words, ...q.learned.grammar].join("\n");
   const chars = charsOutside(text, given);
   // a word of two or more kanji must be written somewhere as it is: 水道
   // passes 水 and 道 one at a time, and is still a word they haven't met
   // (the kanji lines are single characters, so they don't count)
-  const written = [q.page, q.question, ...q.learned.words, ...q.learned.grammar].join("\n");
+  const written = [q.page, ...asked, ...q.learned.words, ...q.learned.grammar].join("\n");
   const words = [...new Set(text.match(KANJI_RUN) ?? [])].filter((w) => !written.includes(w) && [...w].every((c) => !chars.includes(c)));
   return [...chars, ...words];
 }
