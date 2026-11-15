@@ -27,9 +27,9 @@ The Sky is a single night theme by choice: a dark ground, warm stars, gold for
 actions, one palette for standings. It lives as `--sky-*` custom properties on
 `:root` in `globals.css` (SAK-291), mapped into Tailwind as `bg-sky-ground`,
 `text-sky-ink`, `text-sky-mint`, `border-sky-line`, `font-sky-display`,
-`font-sky-ui` and the rest. They are not per app theme: the sky is the same
-night under aizome or kiri. A dawn variant would redefine the same names under
-a data attribute, and no component would change.
+`font-sky-ui` and the rest. The old app's palettes are gone (SAK-521), so
+these are the only colors there are. A dawn variant would redefine the same
+names under a data attribute, and no component would change.
 
 **Never write a raw hex value in Sky code.** If a semantic is missing, add it to
 the `--sky-*` block once and give it a name in the `@theme` block beside it.
@@ -7705,3 +7705,32 @@ A second drill in the Drills panel, "Write it in Japanese", at `/practice/write`
 **Nothing is saved**, like the readings drill. The score screen says how many were right and how many on the first try.
 
 **Where it lives.** The model is `src/sky/lib/write-drill.ts` (tests beside it), the screen `src/sky/components/sky-write-drill.tsx`, the pool `src/app/(sky)/write-drill.ts` (tests beside it), and the grader `src/app/(sky)/hybrid-grader.ts`, handed to the screen by `write-client.tsx`. Firebase is imported when the first answer is checked, so no other page carries it.
+
+## The old palettes go (SAK-521)
+
+SAK-374 took out the theme picker's machinery and left `<html>` wearing
+`data-theme="kiri" data-appearance="system" data-accent="magenta"`, because
+the stroke-order card still drew with the old app's `--text`, `--accent` and
+`--border`. Those three tokens kept about 2,100 lines of `globals.css` alive:
+four palettes in light and dark, seven accent overrides, each palette's
+special effects, the sentence-part colors, the shadcn token names and every
+`kq-*` class from the old screens. Nothing in the Sky used any of it.
+
+**Stroke order** now draws in `--sky-ink`, `--sky-muted`, `--sky-line` and
+`--sky-accent`. The stroke being introduced follows the learner's Accent
+setting instead of a fixed magenta. On a light-mode OS the card used to pick up
+kiri's light palette, dark ink strokes on the night sky; it is the same in both
+modes now. The box around the draw-along stays unfilled, as it was.
+
+**What `globals.css` keeps** above the Sky's tokens: the radius scale pinned to
+the 14px kiri drew under (so `rounded-lg` is still 14px, not Tailwind's 8px),
+the default kana face before the shell knows the learner's fonts, the
+`kvg-draw` keyframes and their `--animate-kvg-draw` token, the scrollbar gray,
+and `body` on the Sky's ground and ink. `--sky-accent` defaults to pink on its
+own now; it used to fall back through `--dark-accent`, which only the old
+palettes defined. The attributes are gone from `<html>`.
+
+**Also gone:** `class-variance-authority`, `lucide-react`, `radix-ui` and
+`tw-animate-css`, none of them imported anywhere; `components.json`, shadcn's
+config for folders that no longer exist; and the five create-next-app SVGs in
+`public/`.

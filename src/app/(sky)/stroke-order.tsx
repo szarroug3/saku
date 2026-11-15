@@ -30,9 +30,9 @@
 //
 // COLOR
 // ======
-// Everything is drawn in theme tokens (var(--text) for drawn strokes,
-// var(--accent) for the stroke being introduced, var(--border) for the writing
-// guide), so it reads on all four palettes in light and dark.
+// Everything is drawn in the Sky's tokens (var(--sky-ink) for drawn strokes,
+// var(--sky-accent) for the stroke being introduced, var(--sky-line) for the
+// writing guide), so the new stroke follows the learner's accent.
 //
 // AND ONE LINE OF PROSE
 // =====================
@@ -114,7 +114,7 @@ function strokeEase(i: number, cycle: number): string {
 function Guide() {
   const c = STROKE_GRID / 2;
   return (
-    <g stroke="var(--border)" strokeWidth={1} fill="none">
+    <g stroke="var(--sky-line)" strokeWidth={1} fill="none">
       <rect x={1} y={1} width={STROKE_GRID - 2} height={STROKE_GRID - 2} rx={4} />
       <line x1={c} y1={4} x2={c} y2={STROKE_GRID - 4} strokeDasharray="3 5" />
       <line x1={4} y1={c} x2={STROKE_GRID - 4} y2={c} strokeDasharray="3 5" />
@@ -142,7 +142,7 @@ function DrawAlong({
       <Guide />
       <g
         fill="none"
-        stroke="var(--text)"
+        stroke="var(--sky-ink)"
         strokeWidth={4.5}
         strokeLinecap="round"
         strokeLinejoin="round"
@@ -187,7 +187,7 @@ function StepCell({ strokes, upTo }: { strokes: string[]; upTo: number }) {
               <path
                 key={i}
                 d={d}
-                stroke={isNew ? "var(--accent)" : "var(--text-muted)"}
+                stroke={isNew ? "var(--sky-accent)" : "var(--sky-muted)"}
                 opacity={isNew ? 1 : 0.4}
               />
             );
@@ -285,7 +285,7 @@ export function StrokeOrder({ data }: { data: GlyphStrokes }) {
           pages. */}
       <div className="flex flex-col items-start gap-4 @md:flex-row @md:flex-nowrap">
         {/* The draw-along. It loops on its own, so there is nothing to press. */}
-        <div className="rounded-lg border border-border bg-card p-1">
+        <div className="rounded-lg border border-sky-line p-1">
           <DrawAlong strokes={strokes} animate={!reduced} />
         </div>
 
