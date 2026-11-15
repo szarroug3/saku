@@ -28,15 +28,6 @@ export const metadata: Metadata = {
     "Learn Japanese from the ground up: kana, kanji, vocabulary, grammar, and more.",
 };
 
-// The palette the app's own tokens resolve under. The Sky wears its own
-// `--sky-*` tokens and the wash, but three files in the route layer still use
-// the app's (stroke-order.tsx, why.tsx, pitch-mark.tsx) and globals.css only
-// defines those inside a `[data-theme]` block. So the attributes stay, as
-// literals; nothing reads or writes them after this (SAK-374).
-const THEME = "kiri";
-const APPEARANCE = "system";
-const ACCENT = "magenta";
-
 /** All four progress-row seeds in one DB round-trip. Each field falls back to
  * null on error so a partial Supabase failure cannot take down the whole shell. */
 async function seedAll(userId: string) {
@@ -75,7 +66,7 @@ export default async function RootLayout({
   const seeds = userId === null ? null : await seedAll(userId);
   const initialSettings = seeds?.settings ?? null;
   return (
-    <html lang="en" data-theme={THEME} data-appearance={APPEARANCE} data-accent={ACCENT}>
+    <html lang="en">
       <head>
         {/* Preload the wordmark so it is decoded before first paint. The
             Sky's shell draws it on every page (src/sky/components/

@@ -20,10 +20,10 @@
 // an empty writing guide. `path.getAnimations()` returned []: no keyframes by
 // that name existed to match.
 //
-// `gshake` and `kq-pairs-miss` survived the same build because the stylesheet
-// itself mentions them: one via a `--animate-*` theme token, the other via a
-// plain `.kq-pairs-miss { animation: ... }` rule. That is the difference, and
-// that is what this test checks for.
+// The old app's `gshake` and `kq-pairs-miss` survived the same build because
+// the stylesheet itself mentioned them: one via a `--animate-*` theme token,
+// the other via a plain `.kq-pairs-miss { animation: ... }` rule. That is the
+// difference, and that is what this test checks for.
 //
 // The diagram now LOOPS with no Replay button, so a re-broken animation is
 // silent in a new way: there is no longer a control on screen hinting that
