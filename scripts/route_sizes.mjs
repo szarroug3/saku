@@ -45,6 +45,8 @@ const ROUTES = {
   "/quiz": ["app/(sky)/quiz/page_client-reference-manifest.js", 1.5],
   "/practice": ["app/(sky)/practice/page_client-reference-manifest.js", 1.5],
   "/practice/run": ["app/(sky)/practice/run/page_client-reference-manifest.js", 1.5],
+  "/practice/readings": ["app/(sky)/practice/readings/page_client-reference-manifest.js", 1.5],
+  "/practice/write": ["app/(sky)/practice/write/page_client-reference-manifest.js", 1.5],
   "/atlas": ["app/(sky)/atlas/page_client-reference-manifest.js", 2],
   "/sessions": ["app/(sky)/sessions/page_client-reference-manifest.js", 1.5],
   "/settings": ["app/(sky)/settings/page_client-reference-manifest.js", 1.5],
@@ -52,6 +54,7 @@ const ROUTES = {
   "/how-it-works": ["app/(sky)/how-it-works/page_client-reference-manifest.js", 1.5],
   "/about": ["app/(sky)/about/page_client-reference-manifest.js", 1.5],
   "/login": ["app/(sky)/login/page_client-reference-manifest.js", 1.5],
+  "/read": ["app/(sky)/read/page_client-reference-manifest.js", 1.5],
 };
 
 // WHY THIS LIST IS CHECKED AGAINST THE TREE (SAK-433). The comment above has
