@@ -4,6 +4,12 @@
 // visit, and fetched ahead when a tile is hovered so a click finds the
 // entry ready. What is stored can be amended locally (a claim just made)
 // without another fetch.
+//
+// KEPT PER LOOKUP. The route makes a new lookup when the history it reads
+// changes (a claim, signed out, lands in the browser's copy). The fetches
+// made through the old one carry the old standings, so they are let go:
+// the Atlas refetched the open entry after "I know this", got the copy from
+// before the claim, and drew it back over the claim as Undiscovered.
 
 import { useCallback, useRef, useState } from "react";
 
@@ -19,13 +25,15 @@ interface Entries<T extends { id: string }> {
 
 export function useEntries<T extends { id: string }>(lookup: (id: string) => Promise<T>): Entries<T> {
   const [stored, setStored] = useState<ReadonlyMap<string, T>>(() => new Map());
-  const pending = useRef(new Map<string, Promise<T>>());
+  const pending = useRef({ lookup, fetches: new Map<string, Promise<T>>() });
   const fetch = useCallback((id: string): Promise<T> => {
-    const had = pending.current.get(id);
+    if (pending.current.lookup !== lookup) pending.current = { lookup, fetches: new Map() };
+    const fetches = pending.current.fetches;
+    const had = fetches.get(id);
     if (had) return had;
     const p = lookup(id).then((entry) => { setStored((prev) => new Map(prev).set(id, entry)); return entry; });
-    p.catch(() => pending.current.delete(id));
-    pending.current.set(id, p);
+    p.catch(() => fetches.delete(id));
+    fetches.set(id, p);
     return p;
   }, [lookup]);
   const peek = useCallback((id: string) => { void fetch(id).catch(() => undefined); }, [fetch]);
