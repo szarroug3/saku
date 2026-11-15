@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { activitySince, activityTitle, bearerMatches, toActivity } from "./home-base-activity.ts";
+import { activitySince, activityTitle, bearerMatches, toActivity } from "./slotes-activity.ts";
 import type { QuizSessionRecord } from "@/types/store";
 
 const record = (over: Partial<QuizSessionRecord> = {}): QuizSessionRecord => ({

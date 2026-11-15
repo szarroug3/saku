@@ -1,9 +1,9 @@
-// What GET /api/home-base/activity sends: the owner's quiz records as rows
-// for Home Base, the owner's private dashboard, which calls the route server
+// What GET /api/slotes/activity sends: the owner's quiz records as rows
+// for Slotes, the owner's private dashboard, which calls the route server
 // to server with a bearer token and shows them beside the rest of the week.
 //
 // Pure, so the route stays a thin shell around one read: the bearer check and
-// the shaping both live here and are tested here. The contract is Home Base's
+// the shaping both live here and are tested here. The contract is Slotes'
 // (its `saku` fetcher was deployed against it first), so the field names and
 // meanings below follow it rather than this app's own vocabulary.
 //
@@ -20,7 +20,7 @@ import type { QuizMode } from "@/types/sky";
 import type { QuizSessionRecord } from "@/types/store";
 
 /** One row of the response, in the contract's shape. */
-export interface HomeBaseActivity {
+export interface SlotesActivity {
   id: string;
   at: string;
   kind: "quiz";
@@ -87,7 +87,7 @@ function activityNote(record: QuizSessionRecord): string | undefined {
  * each other. A record written before ids existed gets one from its time and
  * mode, which is the same on every read.
  */
-export function toActivity(record: QuizSessionRecord, sessionsUrl?: string): HomeBaseActivity {
+export function toActivity(record: QuizSessionRecord, sessionsUrl?: string): SlotesActivity {
   const total = record.total;
   const accuracy = Math.max(0, Math.min(100, Math.round(record.forgivingPct)));
   const note = activityNote(record);
@@ -109,7 +109,7 @@ export function activitySince(
   sessions: readonly QuizSessionRecord[],
   sinceMs: number,
   sessionsUrl?: string,
-): HomeBaseActivity[] {
+): SlotesActivity[] {
   return sessions
     .filter((r) => Number.isFinite(r.ts) && r.ts >= sinceMs)
     .sort((a, b) => b.ts - a.ts)
