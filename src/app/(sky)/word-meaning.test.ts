@@ -8,6 +8,8 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 
+import { corpus } from "@/data/grammar/corpus";
+import { wordSound } from "./prose-sound";
 import { wordInSentence } from "./word-meaning";
 
 const said = (lemma: string, jp: string, en: string, gloss?: string) => {
@@ -112,5 +114,34 @@ describe("a kana word read as several words (SAK-519)", () => {
 
   it("nothing for a kana word with no kana spelling the English does not name", () => {
     assert.equal(said("いく", "彼女いくつだと思う", "Can you guess her age?"), undefined);
+  });
+});
+
+// UniDic reads the じ of 信じて as the older サ変 verb 信ずる, so the corpus
+// listed 信ずる for 信じているよ。 and the words line printed しん over 信. The
+// ingest now keeps the じる verb the sentence writes (`written_base` in
+// scripts/ingest/grammar.py).
+describe("a じる verb the sentence writes is not its older ずる form", () => {
+  const row = corpus().find((ex) => ex.id === 145741)!;
+
+  it("信じているよ。 lists 信じる", () => {
+    assert.equal(row.jp, "信じているよ。");
+    assert.ok(row.v.includes("信じる"), `the corpus lists ${row.v.join(", ")}`);
+    assert.ok(!row.v.includes("信ずる"));
+    assert.equal(row.sp["te-iru"]?.[2], "信じる");
+  });
+
+  it("the words line says 信じる, with しんじる over it, to believe", () => {
+    const w = wordInSentence("信じる", { id: row.id, jp: row.jp, en: row.en });
+    assert.equal(w?.word, "信じる");
+    assert.equal(w?.meaning, "to believe");
+    assert.deepEqual(wordSound("信じる"), [{ text: "信", ruby: "しん" }, { text: "じる" }]);
+  });
+
+  it("no corpus sentence lists a ずる verb it writes with じ", () => {
+    const wrong = corpus().flatMap((ex) =>
+      ex.v.filter((l) => l.endsWith("ずる") && ex.jp.includes(l.slice(0, -2) + "じ") && !ex.jp.includes(l.slice(0, -2) + "ず")).map((l) => `${ex.id} ${ex.jp} ${l}`),
+    );
+    assert.deepEqual(wrong, []);
   });
 });

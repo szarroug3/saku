@@ -123,6 +123,23 @@ except ImportError:
 # ---------------------------------------------------------------------------
 
 
+def written_base(surface, orth, ctype):
+    """The dictionary form of the verb the sentence writes, from UniDic's.
+
+    A verb like 信じる has two dictionary forms, 信じる and the older サ変
+    信ずる, and their 連用形 is the same じ. UniDic reads the じ of 信じて,
+    信じた and 信じない as the サ変 verb, so its base (orthBase and lemma
+    both) is 信ずる, a word the sentence does not use. When the base ends in
+    ずる, the verb is サ変, and the surface writes the stem with じ, the base
+    is the じる verb: 信じ is 信じる, 感じ is 感じる, 論じ is 論じる. A surface
+    that writes ず keeps the サ変 verb, so 先んずれば stays 先んずる and
+    信ずる者 stays 信ずる.
+    """
+    if orth.endswith("ずる") and ctype == "サ行変格" and surface.startswith(orth[:-2] + "じ"):
+        return orth[:-2] + "じる"
+    return orth
+
+
 def tok_fields(w):
     """The features we match on, normalized to plain strings."""
     f = w.feature
@@ -133,7 +150,7 @@ def tok_fields(w):
         "pos1": getattr(f, "pos1", None) or "",
         "pos2": getattr(f, "pos2", None) or "",
         "cForm": getattr(f, "cForm", None) or "",
-        "orth": getattr(f, "orthBase", None) or "",
+        "orth": written_base(w.surface, getattr(f, "orthBase", None) or "", getattr(f, "cType", None) or ""),
     }
 
 

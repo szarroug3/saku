@@ -45,6 +45,8 @@ import os
 import sys
 from collections import Counter
 
+from grammar import written_base  # noqa: E402  信じ is 信じる, not 信ずる
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, "..", "..", "src", "data", "generated")
 
@@ -91,7 +93,7 @@ def tok(w):
         "pos2": getattr(f, "pos2", None) or "",
         "cForm": getattr(f, "cForm", None) or "",
         "lemma": getattr(f, "lemma", None) or "",
-        "orth": getattr(f, "orthBase", None) or "",
+        "orth": written_base(w.surface, getattr(f, "orthBase", None) or "", getattr(f, "cType", None) or ""),
     }
 
 
