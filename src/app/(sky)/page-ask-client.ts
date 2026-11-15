@@ -9,21 +9,21 @@
 import { useMemo } from "react";
 
 import type { AskAboutPage } from "@/sky/components/sky-page-ask";
-import { answerWith, PAGE_ASK_SCHEMA, QUESTION_MAX, type Learned } from "@/sky/lib/page-ask";
+import { answerWith, PAGE_ASK_SCHEMA, QUESTION_MAX, type Learned, type PageKind } from "@/sky/lib/page-ask";
 
 import { pageAskLearned } from "./actions";
 import { aiConfigured, askModel, modelPair, online } from "./firebase-ai";
 import { useWho } from "./local";
 import type { Who } from "./who";
 
-function askerFor(who: Who): AskAboutPage {
+function askerFor(who: Who, kind: PageKind): AskAboutPage {
   let learned: Promise<Learned> | undefined;
   return async (page, question, earlier = []) => {
     const q = question.trim().slice(0, QUESTION_MAX);
     if (!q) return null;
     learned ??= pageAskLearned(who);
     learned.catch(() => { learned = undefined; });
-    return answerWith({ page, question: q, learned: await learned, earlier }, {
+    return answerWith({ page, kind, question: q, learned: await learned, earlier }, {
       first: async (prompt) => askModel((await modelPair(PAGE_ASK_SCHEMA)).hybrid, prompt),
       cloud: async (prompt) => askModel((await modelPair(PAGE_ASK_SCHEMA)).cloud, prompt),
       online,
@@ -31,10 +31,10 @@ function askerFor(who: Who): AskAboutPage {
   };
 }
 
-/** The question box's asker, for whoever's history this page reads.
- * Undefined until that is known, or where the site has no Firebase set up,
- * and the cards then draw no box. */
-export function usePageAsk(sample: boolean, signedIn: boolean): AskAboutPage | undefined {
+/** The question box's asker, for whoever's history this page reads, about
+ * a card or (the reader) a passage. Undefined until that is known, or where
+ * the site has no Firebase set up, and the page then draws no box. */
+export function usePageAsk(sample: boolean, signedIn: boolean, kind: PageKind = "card"): AskAboutPage | undefined {
   const who = useWho(sample, signedIn);
-  return useMemo(() => (who && aiConfigured() ? askerFor(who) : undefined), [who]);
+  return useMemo(() => (who && aiConfigured() ? askerFor(who, kind) : undefined), [who, kind]);
 }

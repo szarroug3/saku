@@ -21,6 +21,7 @@ const ENTRIES: readonly ShellEntry[] = [
   { href: "/observatory", label: "Observatory" },
   { href: "/atlas", label: "Atlas" },
   { href: "/practice", label: "Practice" },
+  { href: "/read", label: "Reader" },
   { href: "/sessions", label: "Sessions" },
   { href: "/settings", label: "Settings" },
   { href: "/how-it-works", label: "How Saku works", quiet: true },

@@ -28,9 +28,10 @@ const WHERE = {
 
 type Answered = Turn & { where: string };
 
-/** `page` is the card as plain text (`cardText`). */
-export function SkyPageAsk({ page, ask }: { page: string; ask: AskAboutPage }) {
-  const [open, setOpen] = useState(false);
+/** `page` is the card as plain text (`cardText`), or the passage being read.
+ * `about` names it in the box's words: "this card", "this part". */
+export function SkyPageAsk({ page, ask, about = "this card", startOpen = false }: { page: string; ask: AskAboutPage; about?: string; startOpen?: boolean }) {
+  const [open, setOpen] = useState(startOpen);
   const [thread, setThread] = useState<readonly Answered[]>([]);
   const [question, setQuestion] = useState("");
   const [state, setState] = useState<"ready" | "asking" | "failed">("ready");
@@ -54,7 +55,7 @@ export function SkyPageAsk({ page, ask }: { page: string; ask: AskAboutPage }) {
   return (
     <div className="flex flex-col gap-3">
       {thread.length > 0 && (
-        <ol className="flex flex-col gap-3" aria-label="Your questions about this card">
+        <ol className="flex flex-col gap-3" aria-label={`Your questions about ${about}`}>
           {thread.map((t, i) => (
             <li key={i} className="flex flex-col gap-1">
               <p className="text-[13.5px] font-semibold text-sky-ink">{t.question}</p>
@@ -66,13 +67,13 @@ export function SkyPageAsk({ page, ask }: { page: string; ask: AskAboutPage }) {
       )}
       {full ? (
         <p className="text-[13px] text-sky-muted">
-          That&apos;s as long as a thread on one card goes.{" "}
+          That&apos;s as long as a thread on {about} goes.{" "}
           <SkyTextButton onClick={startOver}>Start over</SkyTextButton>
         </p>
       ) : (
         <form className="flex flex-wrap items-center gap-2" onSubmit={(e) => { e.preventDefault(); void send(); }}>
           <SkyInput
-            aria-label={thread.length ? "Ask a follow-up" : "Your question about this card"}
+            aria-label={thread.length ? "Ask a follow-up" : `Your question about ${about}`}
             placeholder={thread.length ? "Ask a follow-up" : "What don't you follow?"}
             value={question}
             maxLength={QUESTION_MAX}
@@ -86,7 +87,7 @@ export function SkyPageAsk({ page, ask }: { page: string; ask: AskAboutPage }) {
       {state === "asking" && <p className="text-[13px] text-sky-muted" role="status">Asking Gemini…</p>}
       {state === "failed" && (
         <p className="text-[13px] text-sky-muted" role="status">
-          Gemini couldn&apos;t answer that from this card and what you&apos;ve learned.{" "}
+          Gemini couldn&apos;t answer that from {about} and what you&apos;ve learned.{" "}
           <SkyTextButton onClick={() => void send()}>Try again</SkyTextButton>
         </p>
       )}
