@@ -1,6 +1,6 @@
 // The route's gates and its one read, with the secret-key client swapped for a
 // fake so no test reaches a real database. The rows' shape is covered beside
-// it in src/lib/home-base-activity.test.ts.
+// it in src/lib/slotes-activity.test.ts.
 
 import assert from "node:assert/strict";
 import { afterEach, before, beforeEach, mock, test } from "node:test";
@@ -59,7 +59,7 @@ afterEach(() => {
 
 const call = async (auth: string | null, since: string | null = "2026-11-01T00:00:00Z") => {
   const { GET } = await import("./route.ts");
-  const url = `https://saku.test/api/home-base/activity${since === null ? "" : `?since=${encodeURIComponent(since)}`}`;
+  const url = `https://saku.test/api/slotes/activity${since === null ? "" : `?since=${encodeURIComponent(since)}`}`;
   return GET(new Request(url, { headers: auth === null ? {} : { authorization: auth } }));
 };
 
