@@ -19,6 +19,8 @@ import { factInfo } from "@/lib/facts";
 import { mixedWith } from "./quiz-mixups";
 import { coachRequest } from "./mixup-facts";
 import type { CoachRequest } from "@/sky/lib/mixup-coach";
+import { learnedFrom } from "./page-ask-learned";
+import type { Learned } from "@/sky/lib/page-ask";
 import { getStatsRows } from "@/lib/library/stats-rows";
 import { isSentenceTierMarkerFact } from "@/lib/sentence-ordering-progress";
 import { statForShowing, resolveShowing } from "@/lib/drill-stats";
@@ -216,6 +218,12 @@ export async function savePlace(place: SavedPlace): Promise<void> {
 export async function mixupCoachRequest(asked: string, other: string): Promise<CoachRequest | null> {
   if (typeof asked !== "string" || typeof other !== "string" || asked === other) return null;
   return coachRequest(asked as EntryId, other as EntryId);
+}
+
+/** What the learner has learned, for a question about a page: the kana,
+ * kanji, words and grammar they have met (page-ask-learned.ts). */
+export async function pageAskLearned(caller: Who): Promise<Learned> {
+  return learnedFrom(await historyFor(trustedWho(caller)));
 }
 
 export async function loadSessions(caller: Who): Promise<SkySession[]> {

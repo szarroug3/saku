@@ -44,6 +44,7 @@ import { useEffect, useMemo, useRef, useState, type CSSProperties, type PointerE
 
 import type { StarLook } from "@/sky/components/constellation";
 import { DragGrip } from "@/sky/components/drag-grip";
+import type { AskAboutPage } from "@/sky/components/sky-page-ask";
 import { LessonCard, type HearComponent, type PitchComponent } from "@/sky/components/lesson-card";
 import { SkyField } from "@/sky/components/sky-field";
 import { RoundButton, SkyButton } from "@/sky/components/sky-button";
@@ -72,6 +73,9 @@ export interface SkyLessonData {
 }
 
 interface SkyLessonProps {
+  /** Asks Gemini about the card being read (#BuildHybridAI). Left out where
+   * the site has no Firebase set up. */
+  askAboutPage?: AskAboutPage;
   data: SkyLessonData;
   /** Where Next goes after the last step: the drill. */
   drillHref?: string;
@@ -157,7 +161,7 @@ function RailRow({ current, locked = false, lit, glyph, label, eyebrow, onClick 
   );
 }
 
-export function SkyLesson({ data, drillHref, observatoryHref, written, hear, pitch, onOpen, startAt, openPages, onPlace, startSky, onSky, height }: SkyLessonProps) {
+export function SkyLesson({ data, askAboutPage, drillHref, observatoryHref, written, hear, pitch, onOpen, startAt, openPages, onPlace, startSky, onSky, height }: SkyLessonProps) {
   const graph = useMemo(() => buildGraph(data.items), [data.items]);
   const learned = useMemo(() => new Set(data.learned), [data.learned]);
   const steps = useMemo(() => lessonSteps(graph, data.picks, learned), [graph, data.picks, learned]);
@@ -484,7 +488,7 @@ export function SkyLesson({ data, drillHref, observatoryHref, written, hear, pit
             {openPage ? (
               // a page is the same card a star gets (Sam, 2026-09-05), with
               // nothing under it and nothing to hear of its own
-              <LessonCard className="min-h-full" item={openPage.item} teach={openPage.teach} madeOf={[]} partOf={[]} hear={hear} pitch={pitch} page={page} onPage={setPage} onSelect={open} />
+              <LessonCard className="min-h-full" item={openPage.item} teach={openPage.teach} madeOf={[]} partOf={[]} hear={hear} pitch={pitch} page={page} onPage={setPage} onSelect={open} ask={askAboutPage} />
             ) : current ? (
               <LessonCard
                 className="min-h-full"
@@ -493,6 +497,7 @@ export function SkyLesson({ data, drillHref, observatoryHref, written, hear, pit
                 madeOf={itemsOf(graph.prerequisitesOf(current.id))}
                 partOf={itemsOf(graph.dependentsOf(current.id).filter((d) => tonight.has(d)))}
                 written={written?.[current.id]}
+                ask={askAboutPage}
                 hear={hear}
                 pitch={pitch}
                 page={page}

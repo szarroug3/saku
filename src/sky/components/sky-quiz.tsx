@@ -25,6 +25,7 @@
 
 import { useEffect, useRef, useState, type FormEvent } from "react";
 
+import type { AskAboutPage } from "@/sky/components/sky-page-ask";
 import { LessonCard, type HearComponent, type PitchComponent } from "@/sky/components/lesson-card";
 import { QuizChoices, QuizOrder, QuizPrompt } from "@/sky/components/quiz-board";
 import { QuizQuestions } from "@/sky/components/quiz-questions";
@@ -55,6 +56,9 @@ interface SkyQuizProps {
    * it, whether the card was missed or got right after (#BuildHybridAI). Handed in like the grader; absent on a site
    * with no Firebase set up, and then the reveal offers nothing. */
   explainMixup?: ExplainMixup;
+  /** Asks Gemini about the card being read (#BuildHybridAI). Left out where
+   * the site has no Firebase set up. */
+  askAboutPage?: AskAboutPage;
   /** What the end of this deck offers, and where its answers go, in one piece
    * (SAK-420): the way back, the recorder, the retry, practice's naming, the
    * round after this one. Handed straight to the results screen, which owns
@@ -95,7 +99,7 @@ interface SkyQuizProps {
   height?: string;
 }
 
-export function SkyQuiz({ cards, grade, toKana, hear, pitch, explainMixup, results, settings, run, title = "Tonight's drill", height }: SkyQuizProps) {
+export function SkyQuiz({ cards, grade, toKana, hear, pitch, explainMixup, askAboutPage, results, settings, run, title = "Tonight's drill", height }: SkyQuizProps) {
   const { retries = DEFAULT_RETRIES, onRetries, timerSeconds = 0 } = settings ?? {};
 
   // The pass over this deck, in one object: where it is, what has been
@@ -456,7 +460,7 @@ export function SkyQuiz({ cards, grade, toKana, hear, pitch, explainMixup, resul
           // that, with a floor so it is never squeezed to nothing; past the
           // floor the column scrolls as a whole, which is the safety valve for
           // a screen too short to hold the card at all.
-          <LessonCard item={card.item} teach={card.teach} madeOf={[]} partOf={[]} onSelect={() => undefined} hear={hear} pitch={pitch} className="min-h-[120px] flex-1 overflow-y-auto" />
+          <LessonCard item={card.item} teach={card.teach} madeOf={[]} partOf={[]} onSelect={() => undefined} hear={hear} pitch={pitch} ask={askAboutPage} className="min-h-[120px] flex-1 overflow-y-auto" />
         )}
       </SkyPageBody>}
 

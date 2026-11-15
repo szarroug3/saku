@@ -26,6 +26,7 @@ import { AtlasRail } from "@/sky/components/atlas-rail";
 import { CoverageBar } from "@/sky/components/coverage-bar";
 import { DetailFrame } from "@/sky/components/detail-frame";
 import { DragGrip } from "@/sky/components/drag-grip";
+import type { AskAboutPage } from "@/sky/components/sky-page-ask";
 import { LessonCard, type HearComponent, type PitchComponent, type RelatedGroup } from "@/sky/components/lesson-card";
 import { RoundButton, SkyButton, SkyChip } from "@/sky/components/sky-button";
 import { Eyebrow } from "@/sky/components/sky-card";
@@ -114,6 +115,9 @@ export interface AtlasLookup {
 }
 
 interface SkyAtlasProps {
+  /** Asks Gemini about the card being read (#BuildHybridAI). Left out where
+   * the site has no Firebase set up. */
+  askAboutPage?: AskAboutPage;
   data: SkyAtlasData;
   lookup: AtlasLookup;
   /** Where "Add to lesson" goes, given the picks. From the route layer, which
@@ -186,7 +190,7 @@ function shelfHolding(data: SkyAtlasData, entry: string | undefined): string | u
   return kind ? data.shelves.find((s) => s.kind === kind)?.id : undefined;
 }
 
-export function SkyAtlas({ data, lookup, picksHref, quizHref, written: Written, hear, pitch, initialEntry, onClaim, onUnclaim, startWidth, onWidth, height }: SkyAtlasProps) {
+export function SkyAtlas({ data, askAboutPage, lookup, picksHref, quizHref, written: Written, hear, pitch, initialEntry, onClaim, onUnclaim, startWidth, onWidth, height }: SkyAtlasProps) {
   // what is drawn: the shelves' items, plus whatever search and the open
   // entries brought with them, so every tile and card has its parts
   const [extra, setExtra] = useState<readonly SkyItem[]>([]);
@@ -547,6 +551,7 @@ export function SkyAtlas({ data, lookup, picksHref, quizHref, written: Written, 
                   standing={!isPage(current.kind)}
                   toolbar={toolbar}
                   related={entry?.related ?? []}
+                  ask={askAboutPage}
                   written={Written && (current.kind === "kanji" || current.kind === "radical" || current.kind === "kana") ? <Written glyph={current.glyph} /> : undefined}
                   hear={hear}
                   pitch={pitch}

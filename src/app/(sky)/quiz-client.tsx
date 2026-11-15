@@ -56,6 +56,7 @@ import { PitchMark } from "./pitch-reading";
 import { keepLesson, keepRun, reportRun, usePlaceAtOpen } from "./quiz-run-store";
 import { recordAnswers } from "./writes";
 import { coachConfigured, explainMixup } from "./mixup-coach-client";
+import { usePageAsk } from "./page-ask-client";
 
 /** Whether the mix-up coach can be offered: Firebase is set up on this site. */
 const COACH = coachConfigured();
@@ -150,6 +151,8 @@ function QuizDeck({ resume, part, source, initial, picks, named, back, sample, s
 }
 
 function QuizRun({ cards, run, openRound, openBreak, lesson, source, picks, back, sample, signedIn, rounds, cfg, update, router }: { cards: readonly QuizCard[]; run: SavedRun | null; openRound: number; openBreak: Pause | null; lesson: boolean; source: RunSource; picks: readonly string[]; back: WayBack; sample: boolean; signedIn: boolean; rounds: number; cfg: QuizConfig; update: (patch: Partial<QuizConfig>) => void; router: ReturnType<typeof useRouter> }) {
+  // the question box under each card (#BuildHybridAI)
+  const askAboutPage = usePageAsk(sample, signedIn);
   const onFinish = sample ? undefined : recordAnswers;
   const deck = cards.map((c) => c.id).join("\n");
   // Where the sitting stands on this page: which round, the break it is in or
@@ -225,5 +228,5 @@ function QuizRun({ cards, run, openRound, openBreak, lesson, source, picks, back
   if (resting && pause) return <SkyRest until={pause.until} nextRound={pause.round + 1} rounds={rounds} onStart={startNext} minutes={restMinutes(pause.round + 1, cfg.restFirstMin, cfg.restThenMin)} onMinutes={setMinutes} back={back} />;
   const next = round < rounds ? { label: `Take a rest, then round ${round + 1} of ${rounds}`, onClick: takeRest } : undefined;
   // keyed by its cards and round, so a retry or the next round starts fresh
-  return <SkyQuiz key={`${deck}\n${round}`} cards={asked} grade={grade} toKana={typeKana} hear={HearButton} pitch={PitchMark} {...(COACH ? { explainMixup } : {})} results={{ back, onFinish: finish, onRetry: retry, next }} run={{ at: picked && run ? resumeAt(run) : 0, answers: picked ? run?.answers : undefined, onProgress: (state) => progress(state.at, state.answers) }} settings={{ retries: retriesOf(cfg), onRetries: (n) => update(retriesPatch(n)), timerSeconds: cfg.timer ? cfg.timerSec : 0 }} />;
+  return <SkyQuiz key={`${deck}\n${round}`} cards={asked} grade={grade} toKana={typeKana} hear={HearButton} pitch={PitchMark} {...(COACH ? { explainMixup } : {})} askAboutPage={askAboutPage} results={{ back, onFinish: finish, onRetry: retry, next }} run={{ at: picked && run ? resumeAt(run) : 0, answers: picked ? run?.answers : undefined, onProgress: (state) => progress(state.at, state.answers) }} settings={{ retries: retriesOf(cfg), onRetries: (n) => update(retriesPatch(n)), timerSeconds: cfg.timer ? cfg.timerSec : 0 }} />;
 }

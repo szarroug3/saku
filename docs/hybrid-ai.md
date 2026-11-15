@@ -1,4 +1,4 @@
-# Hybrid AI in Saku: the writing drill's grader and the mix-up coach
+# Hybrid AI in Saku: the writing drill's grader, the mix-up coach and questions about a card
 
 Built for #BuildHybridAI 2026 (deadline Mon Nov 30, 2:00 PM PT). The drill is at `/practice/write` and listed in Practice's Drills panel.
 
@@ -21,7 +21,7 @@ The note glosses every Japanese word or particle it names, with the kana reading
 Code:
 
 - `src/sky/lib/write-drill.ts`: the model (run, score, exact match, prompt, schema, parsing, and `gradeWith`, the grading steps with their time limits). Tests in `write-drill.test.ts` beside it, with fake graders for every path.
-- `src/app/(sky)/firebase-ai.ts`: Firebase, App Check, and a pair of models (on the device first, and the cloud only) for each answer shape. Shared by the grader and the mix-up coach. Firebase is imported on first use, so only the pages that use it load it.
+- `src/app/(sky)/firebase-ai.ts`: Firebase, App Check, and a pair of models (on the device first, and the cloud only) for each answer shape. Shared by the grader, the mix-up coach and card questions. Firebase is imported on first use, so only the pages that use it load it.
 - `src/app/(sky)/hybrid-grader.ts`: the grader's two models, handed to `gradeWith`.
 - `src/app/(sky)/write-drill.ts`: the pool, 200 short corpus sentences spread across patterns, each with its words line.
 - `src/sky/components/sky-write-drill.tsx`: the screen. `src/app/(sky)/write-client.tsx` hands it the grader. The end screen, `src/sky/components/drill-end.tsx`, is shared with the readings drill.
@@ -50,6 +50,20 @@ The prompt also says to describe strokes only when a fact or the tip does, becau
 ### What the cloud model wrote (2026-11-14)
 
 `gemini-3.5-flash-lite`, 12 pairs, 1 to 10 s each. Every answer passed the grounding check. Before the shape tips, the kana pairs got only their two stories retold, and 人/入 got an invented story about which "leg" leans. With the tips, シ/ツ, ソ/ン, ぬ/め, 日/目 and 人/入 each named the real difference. The shape tips were written for this and still need Sam's check.
+
+## Questions about a card
+
+A learner who doesn't follow something on a card can ask about it in their own words. Under the card's teaching there's a "Don't follow something? Ask about this card" link that opens a question box. It's on every lesson card in a lesson, in the Atlas, and under a revealed quiz or practice answer.
+
+Gemini answers like a teacher would, going past the card when that helps, but the Japanese it writes is held to two things: the card, and what the learner has already learned. Anything else is explained in English. It describes how a character is drawn only when the card does, because it got stroke counts wrong when it was free to.
+
+1. **The card, in the browser.** `cardText` in `src/sky/lib/page-ask.ts` writes the card as plain text: the thing and its meaning and reading, the notes and story, and the page that's open, with its tables and examples. It's cut at 4,000 characters because Nano's context is small.
+2. **What they've learned, on the server.** `pageAskLearned` (`actions.ts`, built by `page-ask-learned.ts`) lists every entry with a fact the learner has met: answered in a quiz, said they know, or opened in a lesson. That's the Sky's own `isFactMet`. The list is kana, kanji (components included) with the readings they've met, words with their reading and meaning, and grammar with its meaning, newest first. It's read once per page and learner. The prompt lists up to 150 words and 80 patterns; the check uses all of them.
+3. **Nano first, then the check.** The prompt says to write no Japanese except what's on the card, in the question or in the learned lists, and to explain anything else in English. `unlearned` holds the answer to that: every Japanese character in it must appear in the card, the question or the learned lists. A kanji they haven't learned, or katakana before they've started it, fails. A device answer that fails goes to the cloud, and a cloud answer that fails isn't shown. The screen says where the answer came from, including when Nano's was replaced.
+
+The order (first model, then the cloud on a failure, a timeout or a failed check) is shared with the mix-up coach: `askInOrder` in `src/sky/lib/ai-ask.ts`.
+
+Code: the model is `src/sky/lib/page-ask.ts` (tests beside it), the learned list is `src/app/(sky)/page-ask-learned.ts` (tests beside it), the browser half is `src/app/(sky)/page-ask-client.ts`, and the box is `src/sky/components/sky-page-ask.tsx`, drawn by `LessonCard`. The lesson, Atlas, quiz and practice clients hand it the asker through `usePageAsk`.
 
 ## Setup
 
@@ -103,5 +117,5 @@ So the split works as intended. Nano's "right" is trusted and costs nothing. The
 
 - [ ] Repo public, MIT license showing in the GitHub About box
 - [ ] Hosted URL works without signing in (the drill reads no learner)
-- [ ] Video under 3 minutes, on YouTube: Chrome with Nano (DevTools offline to show it on the device), then another browser falling back to the cloud, then a near miss getting a hint, then a missed quiz card's "What's the difference?" and the home panel's Why?
+- [ ] Video under 3 minutes, on YouTube: Chrome with Nano (DevTools offline to show it on the device), then another browser falling back to the cloud, then a near miss getting a hint, then a missed quiz card's "What's the difference?" and the home panel's Why?, then a question asked about a lesson card
 - [ ] Devpost: "Existing" project, start date 07-15-26, summary of what was built after Nov 11, platform Web (Chrome)

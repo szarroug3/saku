@@ -18,11 +18,10 @@ import { lean, type Who } from "./who";
  * been read. `full` keeps the sessions (the home's mix-ups, the sessions
  * page); everything else sends the lean copy.
  *
- * The two halves below `useSkyData` is made of. Not exported since the Quiz
- * and Practice came over to it (SAK-432) and left nothing calling them apart:
- * a page that wants one of these wants both, in this order, and that is what
- * `useSkyData` is. */
-function useWho(sample: boolean, signedIn: boolean, full = false): Who | null {
+ * One of the two halves `useSkyData` is made of. Exported for the question
+ * box under a card (page-ask-client.ts), which the Quiz draws a component
+ * below the one that loads its data. */
+export function useWho(sample: boolean, signedIn: boolean, full = false): Who | null {
   const { history, loaded } = useHistory();
   return useMemo(() => {
     if (sample) return { sample: true };

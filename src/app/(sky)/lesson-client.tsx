@@ -55,6 +55,7 @@ import { keepLesson, markLesson, usePlaceAtOpen } from "./quiz-run-store";
 import { readStored, useStored, writeStored } from "./stored";
 import { WrittenBlock } from "./written-block";
 import { freshFactsOf, seeId } from "./writes";
+import { usePageAsk } from "./page-ask-client";
 
 /** How much of the lesson's left column the sky was last left with (SAK-471).
  * This browser's, not this account's: it is how a learner likes to read on the
@@ -65,6 +66,8 @@ import { freshFactsOf, seeId } from "./writes";
 const LESSON_SKY_KEY = "sky:lesson:sky";
 
 export function LessonClient({ sample, showcase, signedIn, initial, picks, accountPlace = NO_PLACE }: { sample: boolean; showcase: boolean; signedIn: boolean; initial: SkyLessonData | null; picks: readonly string[]; accountPlace?: SavedPlace }) {
+  // the question box under each card (#BuildHybridAI)
+  const askAboutPage = usePageAsk(sample, signedIn);
   const load = useCallback((w: Parameters<typeof loadLesson>[0]) => loadLesson(w, picks), [picks]);
   const { data, loading } = useSkyData({ sample, signedIn, load, initial, eyebrow: "Lesson", title: "Tonight's lesson" });
   // The place this browser was holding when the page opened, read once: the
@@ -157,6 +160,7 @@ export function LessonClient({ sample, showcase, signedIn, initial, picks, accou
   return (
     <SkyLesson
       data={data}
+      askAboutPage={askAboutPage}
       drillHref={drillHref}
       observatoryHref={skyHref("/observatory", { sample })}
       written={written}

@@ -24,6 +24,7 @@ import { useStored, writeStored } from "./stored";
 import { WrittenBlock } from "./written-block";
 import { useRefreshed } from "./use-refresh";
 import { claimIds, unclaimIds } from "./writes";
+import { usePageAsk } from "./page-ask-client";
 
 /** How wide the entry panel was last left (SAK-471). This browser's, not this
  * account's, for the reason the lesson's height is: it is how a learner likes
@@ -33,6 +34,8 @@ import { claimIds, unclaimIds } from "./writes";
 const ATLAS_PANEL_KEY = "sky:atlas:panel";
 
 export function AtlasClient({ sample, signedIn, initial, entry }: { sample: boolean; signedIn: boolean; initial: AtlasPayload | null; entry?: string }) {
+  // the question box under each card (#BuildHybridAI)
+  const askAboutPage = usePageAsk(sample, signedIn);
   // read live rather than once: nothing in the Atlas depends on the width but
   // the layout, so a second tab changing it is not a problem
   const stored = useStored<unknown>(ATLAS_PANEL_KEY, null);
@@ -53,6 +56,7 @@ export function AtlasClient({ sample, signedIn, initial, entry }: { sample: bool
   return (
     <SkyAtlas
       data={data}
+      askAboutPage={askAboutPage}
       lookup={lookup}
       picksHref={(ids) => skyHref("/observatory", { sample, picks: ids })}
       quizHref={(ids) => skyHref("/quiz", { sample, from: "atlas", picks: ids })}

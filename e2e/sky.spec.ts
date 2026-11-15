@@ -1329,6 +1329,36 @@ test("a wrong pick is a mix-up, and the reveal offers to explain it (#BuildHybri
   await expect(page.getByRole("button", { name: "Try again" })).toBeVisible();
 });
 
+test("signed out, I know this in the Atlas stays known", async ({ page }) => {
+  // The claim landed in the browser's history, the Atlas refetched the open
+  // entry, and its cache handed back the copy from before the claim, so the
+  // card went straight back to Undiscovered and I know this.
+  await page.goto(`/atlas?entry=${encodeURIComponent("kana:じ")}`);
+  await page.getByRole("button", { name: "I know this" }).click();
+  await expect(page.getByRole("button", { name: "I don't know this" })).toBeVisible({ timeout: 15_000 });
+  await page.waitForTimeout(2000);
+  await expect(page.getByRole("button", { name: "I don't know this" })).toBeVisible();
+  await page.getByRole("button", { name: "I don't know this" }).click();
+  await expect(page.getByRole("button", { name: "I know this" })).toBeVisible({ timeout: 15_000 });
+});
+
+test("a card takes a question about itself (#BuildHybridAI)", async ({ page }) => {
+  // The card under a revealed quiz answer has a question box: Gemini answers
+  // from the card and what the learner has learned. Gemini is cut off here,
+  // so what is checked is the box and the way it fails, never a model's words.
+  test.skip(!hasFirebase(), "needs Firebase set up in .env.local");
+  await page.route(/firebase|googleapis\.com|recaptcha/, (route) => route.abort());
+  await page.goto(`/quiz?sample&cards=${encodeURIComponent("kanji:水/reading@水曜")}`);
+  await page.getByRole("button", { name: "I don't know" }).click();
+  await page.getByRole("button", { name: "Don't follow something? Ask about this card" }).click();
+  const box = page.getByRole("textbox", { name: "Your question about this card" });
+  await expect(page.getByRole("button", { name: "Ask", exact: true })).toBeDisabled();
+  await box.fill("Why is it すい here?");
+  await page.getByRole("button", { name: "Ask", exact: true }).click();
+  await expect(page.getByText("Gemini couldn't answer that from this card and what you've learned.")).toBeVisible({ timeout: 45_000 });
+  await expect(page.getByRole("button", { name: "Try again" })).toBeVisible();
+});
+
 test("the reveal explains which reading applies, and why", async ({ page }) => {
   // SAK-316. The quiz is mostly not asking what a thing means, it is asking
   // which reading applies: 水 is みず alone and すい in 水曜. The reveal used to

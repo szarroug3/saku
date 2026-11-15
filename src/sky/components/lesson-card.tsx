@@ -22,6 +22,8 @@ import { FoldRow, SkyChip } from "@/sky/components/sky-button";
 import { Eyebrow } from "@/sky/components/sky-card";
 import { StandingChip } from "@/sky/components/standing-legend";
 import { Pager, Parted, Sound, Table, TeachPageView } from "@/sky/components/teach-page";
+import { SkyPageAsk, type AskAboutPage } from "@/sky/components/sky-page-ask";
+import { cardText } from "@/sky/lib/page-ask";
 import { chipReading, japaneseFont } from "@/sky/lib/japanese";
 import { titleWordPitch, type LessonTeach, type SoundLine, type TeachPage } from "@/sky/lib/lesson";
 import { cutLine } from "@/sky/lib/sound-line";
@@ -61,6 +63,10 @@ interface LessonCardProps {
   standing?: boolean;
   related?: readonly RelatedGroup[];
   footer?: ReactNode;
+  /** Asks Gemini about the card (#BuildHybridAI), from whoever can: the
+   * routes pass it when the site has Firebase set up, and without it the card
+   * has no question box. */
+  ask?: AskAboutPage;
   /** A row of controls across the top of the card, above the eyebrow: a widen, a close. */
   toolbar?: ReactNode;
   /** The card fills its box and scrolls inside it, the footer pinned at the bottom. */
@@ -146,7 +152,7 @@ function namesItself(page: TeachPage, item: SkyItem, count: number): boolean {
   return eyebrow === item.glyph.toLowerCase() || (count === 1 && eyebrow === item.english.toLowerCase()) || eyebrow === page.say?.word.toLowerCase();
 }
 
-export function LessonCard({ item, teach, madeOf, partOf, onSelect, onRead, written, hear: Hear, pitch: Pitch, page = 0, onPage, standing = false, related = [], footer, toolbar, scroll = false, className = "" }: LessonCardProps) {
+export function LessonCard({ item, teach, madeOf, partOf, onSelect, onRead, written, hear: Hear, pitch: Pitch, page = 0, onPage, standing = false, related = [], footer, ask, toolbar, scroll = false, className = "" }: LessonCardProps) {
   const meanings = teach?.meanings?.length ? teach.meanings : [item.english];
   const kind = teach?.wordKind;
   const pages = teach?.pages ?? [];
@@ -412,6 +418,10 @@ export function LessonCard({ item, teach, madeOf, partOf, onSelect, onRead, writ
           <div className="flex flex-wrap gap-2">{partOf.map((p) => <StarButton key={p.id} item={p} onSelect={onSelect} />)}</div>
         </>
       )}
+
+      {/* a question about what is above it, before the folds: the open
+          page is what the learner was reading when they got stuck */}
+      {ask && <div className="mt-4"><SkyPageAsk key={`${item.id}\n${at}`} page={cardText(item, teach, pages[at])} ask={ask} /></div>}
 
       <div className="mt-4">
         {(on.length > 0 || kun.length > 0) && (
