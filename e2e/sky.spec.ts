@@ -1603,12 +1603,13 @@ test("a lesson is one sitting, offered back wherever it was left (SAK-444)", asy
   for (let i = 0; i < 40 && !(await drill.count()); i++) await page.getByRole("button", { name: "Next", exact: true }).click();
   // The step just walked marks its star seen through a server action, and the
   // lesson redraws when that lands, which can swap the link out from under a
-  // click. So the click is retried until the drill is really open.
+  // click, or land after the click and put the lesson back over the quiz with
+  // the URL already on /quiz. So the retry waits for the quiz's own card
+  // count, not the URL, and clicks again whenever the lesson is showing.
   await expect(async () => {
-    await drill.click();
-    await expect(page).toHaveURL(/\/quiz\?/, { timeout: 2_000 });
+    if (await drill.isVisible()) await drill.click();
+    await expect(count).toHaveText(/^1 of \d+$/, { timeout: 2_000 });
   }).toPass({ timeout: 20_000 });
-  await expect(count).toHaveText(/^1 of \d+$/);
   const cards = (await count.innerText()).split(" of ")[1];
   await missCards(page, 2);
   await expect(count).toHaveText(`3 of ${cards}`);
