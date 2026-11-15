@@ -63,6 +63,11 @@ export interface QuizOption {
    * on a card drilled on a word the learner knows in kanji. The choices
    * themselves are drawn plain while the card is open. */
   sound?: SoundLine;
+  /** The entry this choice belongs to, when it is not the card's own: what
+   * the mix-up coach explains the card against after a wrong pick of it.
+   * Absent on the answer and on another reading of the same character, which
+   * is a wrong answer about one thing, not a mix-up of two. */
+  other?: string;
 }
 
 /** One of a character's readings, as the reveal's breakdown lists it. */
@@ -224,6 +229,11 @@ export interface QuizAnswer {
    * placed.
    */
   said?: readonly string[];
+  /** The ids of the wrong choices picked, in order. A choice's id is the
+   * fact it answers, so the recorder can name what this card was mixed up
+   * with: picking 目 on 日's card is a 日/目 mix-up. `said` has only their
+   * labels, and two choices can share a label. */
+  picked?: readonly string[];
   /** Attempts it took: 1 for a perfect answer. */
   tries: number;
   /** The choices were shown before the answer landed. */

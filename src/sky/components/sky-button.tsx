@@ -80,14 +80,17 @@ interface SkyTextButtonProps {
   /** What the press does, for a button whose words alone do not say: the
    * particle は, which opens は's page. */
   title?: string;
+  /** Whether what it opens is open, for a word that opens something under
+   * it (a mix-up's Why?). */
+  expanded?: boolean;
   className?: string;
   children: ReactNode;
 }
 
 /** An underlined word inside a line of text: Clear, Undo, Rename, Delete.
  * Not a button in a row of buttons, which is `SkyButton`. */
-export function SkyTextButton({ onClick, tone = "ink", title, className = "", children }: SkyTextButtonProps) {
-  return <button type="button" onClick={onClick} title={title} className={`${TEXT_TONE[tone]}${className ? ` ${className}` : ""}`}>{children}</button>;
+export function SkyTextButton({ onClick, tone = "ink", title, expanded, className = "", children }: SkyTextButtonProps) {
+  return <button type="button" onClick={onClick} title={title} aria-expanded={expanded} className={`${TEXT_TONE[tone]}${className ? ` ${className}` : ""}`}>{children}</button>;
 }
 
 interface RoundButtonProps {

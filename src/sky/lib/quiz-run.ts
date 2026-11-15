@@ -76,6 +76,7 @@ function answerOf(raw: unknown): QuizAnswer | null {
     narrowed: a.narrowed === true,
     hinted: a.hinted === true,
     ...(isIds(a.said) ? { said: a.said } : {}),
+    ...(isIds(a.picked) ? { picked: a.picked } : {}),
     ...(a.meta && typeof a.meta === "object" ? { meta: a.meta as Readonly<Record<string, string>> } : {}),
   };
 }

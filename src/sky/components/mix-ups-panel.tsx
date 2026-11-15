@@ -5,8 +5,11 @@
 // caller gives the panel a height and it scrolls. Practice shows the same
 // panel for its pool.
 
+import { useState } from "react";
+
 import { Glyph } from "@/sky/components/glyph";
 import { SkyTextButton } from "@/sky/components/sky-button";
+import { SkyMixupCoach, type ExplainMixup } from "@/sky/components/sky-mixup-coach";
 import { SkyPanel } from "@/sky/components/sky-panel";
 import type { SkyItem } from "@/sky/lib/types";
 
@@ -28,6 +31,9 @@ interface MixUpsPanelProps {
   itemOf: (id: string) => SkyItem | undefined;
   /** Clears a pair by hand: it stops being watched until it happens again. */
   onClear?: (key: string) => Promise<void> | void;
+  /** Asks Gemini how the two differ (#BuildHybridAI): each row gets a Why?
+   * that opens the answer under it. Absent, the rows offer nothing. */
+  explain?: ExplainMixup;
   title?: string;
   className?: string;
 }
@@ -42,7 +48,9 @@ function Name({ item, id }: { item: SkyItem | undefined; id: string }) {
   );
 }
 
-export function MixUpsPanel({ pairs, itemOf, onClear, title = "Mix-ups", className = "" }: MixUpsPanelProps) {
+export function MixUpsPanel({ pairs, itemOf, onClear, explain, title = "Mix-ups", className = "" }: MixUpsPanelProps) {
+  // one pair's answer open at a time, so the panel doesn't grow a wall of text
+  const [open, setOpen] = useState<string>();
   return (
     <SkyPanel title={title} className={className}>
       {pairs.length === 0 ? (
@@ -57,8 +65,14 @@ export function MixUpsPanel({ pairs, itemOf, onClear, title = "Mix-ups", classNa
               <span className="ml-auto flex items-baseline gap-3 pl-4 text-[13px] tabular-nums text-sky-muted">
                 <span>{p.times} {p.times === 1 ? "time" : "times"}</span>
                 <span title="Clean runs in a row; the mix-up clears itself at the number set in Settings">{p.cleanRuns} of {p.needed} clean</span>
+                {explain && <SkyTextButton onClick={() => setOpen(open === p.key ? undefined : p.key)} expanded={open === p.key}>Why?</SkyTextButton>}
                 {onClear && <SkyTextButton onClick={() => onClear(p.key)}>Clear</SkyTextButton>}
               </span>
+              {explain && open === p.key && (
+                <div className="w-full pt-1">
+                  <SkyMixupCoach key={p.key} asked={p.a} other={p.b} explain={explain} label="Ask Gemini how to tell them apart" />
+                </div>
+              )}
             </li>
           ))}
         </ul>

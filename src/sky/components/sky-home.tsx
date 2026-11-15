@@ -15,6 +15,7 @@ import { useCallback, useMemo, useState } from "react";
 import type { StarLook } from "@/sky/components/constellation";
 import { DiscoveryPanel, discoveryTotals, type DiscoveryRow } from "@/sky/components/discovery-panel";
 import { MixUpsPanel, type MixUp } from "@/sky/components/mix-ups-panel";
+import type { ExplainMixup } from "@/sky/components/sky-mixup-coach";
 import { ContinueButton, type Resume } from "@/sky/components/quiz-resume";
 import { SkyField } from "@/sky/components/sky-field";
 import { BODY_ORDER, bodyOfItem } from "@/sky/lib/constellation";
@@ -54,6 +55,9 @@ interface SkyHomeProps {
   observatoryHref?: string;
   /** Clears a mix-up by hand. */
   onClearMixUp?: (key: string) => Promise<void> | void;
+  /** Asks Gemini how a mix-up's two sides differ (#BuildHybridAI); absent on
+   * a site with no Firebase set up. */
+  explainMixup?: ExplainMixup;
   /** The newest thing left part way through, lesson or quiz, offered back
    * beside the heading (SAK-404, SAK-444). The href is the route's, since
    * only it knows what a Sky URL looks like (SAK-367). Absent when there is
@@ -67,7 +71,7 @@ interface SkyHomeProps {
   height?: string;
 }
 
-export function SkyHome({ data, observatoryHref = "/observatory", onClearMixUp, resume, height }: SkyHomeProps) {
+export function SkyHome({ data, observatoryHref = "/observatory", onClearMixUp, explainMixup, resume, height }: SkyHomeProps) {
   const graph = useMemo(() => buildGraph(data.items), [data.items]);
   const stars = useMemo(() => [...new Set([...skyStars(graph, data.roots), ...(data.firmament ?? [])])], [graph, data.roots, data.firmament]);
   // the sky opens on the rarest body the learner has reached, which is
@@ -163,7 +167,7 @@ export function SkyHome({ data, observatoryHref = "/observatory", onClearMixUp, 
         {details && (
           <div id="sky-home-details" className="mt-4 grid min-h-0 gap-4 md:grid-cols-2 md:grid-rows-[minmax(0,1fr)]">
             <DiscoveryPanel className="min-h-0 overflow-y-auto" rows={data.discovery} />
-            <MixUpsPanel className="min-h-0 overflow-y-auto" pairs={data.mixUps} itemOf={graph.itemOf} onClear={onClearMixUp} />
+            <MixUpsPanel className="min-h-0 overflow-y-auto" pairs={data.mixUps} itemOf={graph.itemOf} onClear={onClearMixUp} explain={explainMixup} />
           </div>
         )}
       </div>

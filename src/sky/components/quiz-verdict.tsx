@@ -26,6 +26,7 @@
 import { Fragment } from "react";
 
 import { Eyebrow } from "@/sky/components/sky-card";
+import { SkyMixupCoach, type ExplainMixup } from "@/sky/components/sky-mixup-coach";
 import type { PitchComponent } from "@/sky/components/lesson-card";
 import { Mixed } from "@/sky/components/mixed-text";
 import { SkySurface } from "@/sky/components/sky-panel";
@@ -170,6 +171,22 @@ export function QuizWhy({ card, pitch: Pitch }: { card: QuizCard; pitch?: PitchC
           </li>
         ))}
       </ul>
+    </div>
+  );
+}
+
+/** How the card's answer differs from the last wrong choice picked, when
+ * that choice was another entry (#BuildHybridAI). Keyed on the card, so the
+ * next card starts with the button again rather than the last answer. */
+export function QuizMixup({ card, picked, explain }: { card: QuizCard; picked?: readonly string[]; explain: ExplainMixup }) {
+  const option = [...(picked ?? [])].reverse().map((id) => card.options.find((o) => o.id === id)).find((o) => o?.other);
+  if (!option?.other) return null;
+  return (
+    <div className="mt-4 flex flex-col gap-1">
+      <Eyebrow>
+        You picked <span className={`normal-case ${japaneseFont(option.label)}`}>{option.label}</span>
+      </Eyebrow>
+      <SkyMixupCoach key={card.id} asked={card.item.id} other={option.other} explain={explain} />
     </div>
   );
 }

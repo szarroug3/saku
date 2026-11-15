@@ -36,6 +36,10 @@ import { retriesOf, retriesPatch } from "./retries";
 import { useStored, writeStored } from "./stored";
 import { recordAnswers } from "./writes";
 import type { Who } from "./who";
+import { coachConfigured, explainMixup } from "./mixup-coach-client";
+
+/** Whether the mix-up coach can be offered: Firebase is set up on this site. */
+const COACH = coachConfigured();
 
 const SAVED_KEY = PRACTICE_SAVED_KEY;
 
@@ -130,5 +134,5 @@ function PracticeRun({ cards, run, source, sample, signedIn, recipe, cfg, update
   // Saved here, on the results, rather than by navigating back to Practice
   // with the recipe in the query and throwing the results away (SAK-395).
   const save = (name: string) => saveRecipes([...saved.filter((d) => d.name !== name), { name, recipe }]);
-  return <SkyQuiz key={cards.map((c) => c.id).join("\n")} cards={cards} grade={grade} toKana={typeKana} hear={HearButton} pitch={PitchMark} results={{ back, ...(finish ? { onFinish: finish } : {}), onRetry: retry, onSave: save, savedNames: saved.map((d) => d.name) }} title={RUN_TITLE} run={{ at: run ? resumeAt(run) : 0, answers: run?.answers, onProgress: (state) => progress(state.at, state.answers) }} settings={{ retries: retriesOf(cfg), onRetries: (n) => update(retriesPatch(n)), timerSeconds: cfg.timer ? cfg.timerSec : 0 }} />;
+  return <SkyQuiz key={cards.map((c) => c.id).join("\n")} cards={cards} grade={grade} toKana={typeKana} hear={HearButton} pitch={PitchMark} {...(COACH ? { explainMixup } : {})} results={{ back, ...(finish ? { onFinish: finish } : {}), onRetry: retry, onSave: save, savedNames: saved.map((d) => d.name) }} title={RUN_TITLE} run={{ at: run ? resumeAt(run) : 0, answers: run?.answers, onProgress: (state) => progress(state.at, state.answers) }} settings={{ retries: retriesOf(cfg), onRetries: (n) => update(retriesPatch(n)), timerSeconds: cfg.timer ? cfg.timerSec : 0 }} />;
 }

@@ -1,4 +1,4 @@
-# The writing drill's grader: Firebase AI Logic hybrid inference
+# Hybrid AI in Saku: the writing drill's grader and the mix-up coach
 
 Built for #BuildHybridAI 2026 (deadline Mon Nov 30, 2:00 PM PT). The drill is at `/practice/write` and listed in Practice's Drills panel.
 
@@ -21,9 +21,35 @@ The note glosses every Japanese word or particle it names, with the kana reading
 Code:
 
 - `src/sky/lib/write-drill.ts`: the model (run, score, exact match, prompt, schema, parsing, and `gradeWith`, the grading steps with their time limits). Tests in `write-drill.test.ts` beside it, with fake graders for every path.
-- `src/app/(sky)/hybrid-grader.ts`: Firebase, App Check and the two models, handed to `gradeWith`. Firebase is imported on first use, so it ships with this page only.
+- `src/app/(sky)/firebase-ai.ts`: Firebase, App Check, and a pair of models (on the device first, and the cloud only) for each answer shape. Shared by the grader and the mix-up coach. Firebase is imported on first use, so it ships only with what asks.
+- `src/app/(sky)/hybrid-grader.ts`: the grader's two models, handed to `gradeWith`.
 - `src/app/(sky)/write-drill.ts`: the pool, 200 short corpus sentences spread across patterns, each with its words line.
 - `src/sky/components/sky-write-drill.tsx`: the screen. `src/app/(sky)/write-client.tsx` hands it the grader. The end screen, `src/sky/components/drill-end.tsx`, is shared with the readings drill.
+
+## The mix-up coach
+
+When a learner mixes two things up (シ and ツ, 待 and 持), Gemini says how to tell them apart in two or three sentences. The coach shows up in two places. After a missed quiz card, the reveal says "You picked ツ" with a "What's the difference?" link. On the home page, each row of the Mix-ups panel has a "Why?".
+
+### Mix-ups are recorded now
+
+The home Mix-ups panel, the Practice "Mix-ups" filter and the weakness ranking all read `confused` counts on session records (`src/lib/confusions.ts`). Before this, the Sky quiz never wrote them. It kept a wrong pick's label and threw away which choice it was, so only the sample learner ever had a mix-up. Now:
+
+- `QuizAnswer.picked` carries the ids of the wrong choices picked on a card (`sky-quiz.tsx`), and a saved run keeps them.
+- `quizRecords` turns each into a mix-up through `mixedWith` (`src/app/(sky)/quiz-mixups.ts`). A wrong pick names its entry for certain. A wrong typed answer counts only when exactly one card in the quiz has it as an answer (the engine's `confusedWith`). Each entry counts once per card, and another reading of the same character is never a mix-up.
+
+One mix-up is enough for a pair to show on the home panel.
+
+### How an explanation is made
+
+1. **Facts, on the server.** `mixupCoachRequest` (`actions.ts`, built by `mixup-facts.ts`) collects Saku's own facts about the two entries. For kana that's the sound and the shape story, and for kanji the meanings, readings and parts (with what each part means). The pair's hand-written tip is added when there is one: the radical tips, or `src/data/shape-tips.ts` for the look-alike kana and the sample learner's kanji pairs. Nothing about the learner goes in.
+2. **Nano first.** The browser asks Gemini Nano (`PREFER_ON_DEVICE`, so the cloud where there's no Nano).
+3. **The grounding check.** Every Japanese character in the answer must appear in those facts (`ungrounded` in `src/sky/lib/mixup-coach.ts`). An answer that uses a reading, a part or a word the facts don't have is thrown out, and the cloud is asked instead. A cloud answer that fails the check isn't shown either. The screen says where the explanation came from, including when Nano's was replaced.
+
+The prompt also says to describe strokes only when a fact or the tip does, because English can't be checked the same way.
+
+### What the cloud model wrote (2026-11-14)
+
+`gemini-3.5-flash-lite`, 12 pairs, 1 to 10 s each. Every answer passed the grounding check. Before the shape tips, the kana pairs got only their two stories retold, and 人/入 got an invented story about which "leg" leans. With the tips, シ/ツ, ソ/ン, ぬ/め, 日/目 and 人/入 each named the real difference. The shape tips were written for this and still need Sam's check.
 
 ## Setup
 
@@ -77,5 +103,5 @@ So the split works as intended: Nano's "right" (trusted) is cheap, private and o
 
 - [ ] Repo public, MIT license showing in the GitHub About box
 - [ ] Hosted URL works without signing in (the drill reads no learner)
-- [ ] Video under 3 minutes, on YouTube: Chrome with Nano (DevTools offline to show it on the device), then Safari falling back to the cloud, then a near miss getting a hint
+- [ ] Video under 3 minutes, on YouTube: Chrome with Nano (DevTools offline to show it on the device), then another browser falling back to the cloud, then a near miss getting a hint, then a missed quiz card's "What's the difference?" and the home panel's Why?
 - [ ] Devpost: "Existing" project, start date 07-15-26, summary of what was built after Nov 11, platform Web (Chrome)

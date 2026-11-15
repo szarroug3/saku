@@ -24,6 +24,7 @@ import { useCatalogue } from "./use-catalogue";
 import { useRefreshed } from "./use-refresh";
 import { useResume } from "./use-resume";
 import { clearMixUpKey } from "./writes";
+import { coachConfigured, explainMixup } from "./mixup-coach-client";
 
 export function PlanetariumClient({ sample, signedIn, initial, graduateRuns, accountPlace = NO_PLACE }: { sample: boolean; signedIn: boolean; initial: SkyPayload | null; graduateRuns?: number; accountPlace?: SavedPlace }) {
   const load = useCallback((w: Parameters<typeof loadSky>[0]) => loadSky(w, graduateRuns), [graduateRuns]);
@@ -35,5 +36,5 @@ export function PlanetariumClient({ sample, signedIn, initial, graduateRuns, acc
   const resume = useResume(sample, signedIn, accountPlace);
   const clear = useRefreshed(clearMixUpKey);
   if (!payload || !stars) return loading;
-  return <SkyHome data={joinSky(stars, payload)} observatoryHref={skyHref("/observatory", { sample })} resume={resume} onClearMixUp={sample ? undefined : clear} />;
+  return <SkyHome data={joinSky(stars, payload)} observatoryHref={skyHref("/observatory", { sample })} resume={resume} onClearMixUp={sample ? undefined : clear} {...(coachConfigured() ? { explainMixup } : {})} />;
 }

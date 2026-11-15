@@ -439,7 +439,9 @@ export function quizCards(history: HistoryFile, facts: readonly FactId[], now = 
       // and why it was there, for the reveal to name (SAK-315)
       const why = whyOption(fact, f, !!vehicle);
       const sound = why && kanaCtx ? rubyOver(label, qt.optionLabel?.(f, dir, kanaCtx) ?? revealFor(f, dir, kanaCtx)) : undefined;
-      return { id: f, label, jp: /[぀-ヿ一-龯]/.test(label), ...(why ? { why } : {}), ...(sound ? { sound } : {}) };
+      // another entry, for the mix-up coach to explain against (#BuildHybridAI)
+      const other = entryOf(f) !== entryOf(fact) ? entryOf(f) : undefined;
+      return { id: f, label, jp: /[぀-ヿ一-龯]/.test(label), ...(why ? { why } : {}), ...(sound ? { sound } : {}), ...(other ? { other } : {}) };
     });
     // the answer is always among the options; the engine sees to it, but a
     // card with no board at all would be unanswerable by recognition

@@ -4,6 +4,11 @@
 // keeps, it keeps.
 
 import { test, expect, type Locator, type Page } from "./helpers/app";
+import { existsSync, readFileSync } from "node:fs";
+
+/** Whether this checkout's .env.local sets Firebase up, which the build the
+ * suite runs reads; without it the mix-up coach is never offered. */
+const hasFirebase = () => existsSync(".env.local") && /^NEXT_PUBLIC_FIREBASE_API_KEY=\S/m.test(readFileSync(".env.local", "utf8"));
 
 /**
  * Kana is the gate: every other track on the Observatory is behind it, so a
@@ -1300,6 +1305,28 @@ test("the reveal says why each of the others was on the board", async ({ page })
   await page.getByRole("button", { name: "I don't know" }).click();
   await expect(page.getByRole("button", { name: "Finish" })).toBeVisible();
   await expect(page.getByText("Why the others were there")).toHaveCount(0);
+});
+
+test("a wrong pick is a mix-up, and the reveal offers to explain it (#BuildHybridAI)", async ({ page }) => {
+  // The quiz kept a wrong pick's label and threw away which choice it was, so
+  // nothing ever recorded a mix-up. Now the answer carries the pick, and the
+  // reveal offers the mix-up coach for it. Gemini is cut off here, so what is
+  // checked is the offer and the way it fails, never a model's words.
+  test.skip(!hasFirebase(), "needs Firebase set up in .env.local");
+  await page.route(/firebase|googleapis\.com|recaptcha/, (route) => route.abort());
+  await page.goto(`/quiz?sample&cards=${encodeURIComponent("kana:シ/reading")}`);
+  await page.getByRole("button", { name: "Multiple choice" }).click();
+  // pick wrong choices until the card is out of tries
+  for (let i = 0; i < 4 && (await page.getByText(/^You picked/).count()) === 0; i++) {
+    const wrong = page.locator("main button[aria-pressed]:not([disabled])").filter({ hasNotText: /^shi$/ }).first();
+    if ((await wrong.count()) === 0) break;
+    await wrong.click();
+    await page.getByRole("button", { name: "Check" }).click();
+  }
+  await expect(page.getByText(/^You picked/)).toBeVisible();
+  await page.getByRole("button", { name: "What's the difference?" }).click();
+  await expect(page.getByText("Gemini couldn't explain this pair right now.")).toBeVisible({ timeout: 30_000 });
+  await expect(page.getByRole("button", { name: "Try again" })).toBeVisible();
 });
 
 test("the reveal explains which reading applies, and why", async ({ page }) => {

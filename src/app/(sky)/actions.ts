@@ -16,6 +16,9 @@
 import { timedSync } from "@/lib/server-timing";
 import { currentUserId } from "@/lib/auth";
 import { factInfo } from "@/lib/facts";
+import { mixedWith } from "./quiz-mixups";
+import { coachRequest } from "./mixup-facts";
+import type { CoachRequest } from "@/sky/lib/mixup-coach";
 import { getStatsRows } from "@/lib/library/stats-rows";
 import { isSentenceTierMarkerFact } from "@/lib/sentence-ordering-progress";
 import { statForShowing, resolveShowing } from "@/lib/drill-stats";
@@ -25,7 +28,7 @@ import { readSessionRow, writeSessionRow } from "@/lib/store/supabase-store";
 import { shuffleDeck, type QuizAnswer, type QuizCard } from "@/sky/lib/quiz";
 import { unmetFacts } from "@/lib/history-ops";
 import { NO_PLACE, placeDoc, readPlace, type SavedPlace } from "@/sky/lib/place";
-import type { FactId } from "@/types/facts";
+import type { EntryId, FactId } from "@/types/facts";
 import type { SessionStats } from "@/types/sky";
 import type { HistoryFile, QuizSessionRecord } from "@/types/store";
 import type { AtlasEntry, AtlasSearchResult, AtlasSection } from "@/sky/components/sky-atlas";
@@ -207,6 +210,14 @@ export async function savePlace(place: SavedPlace): Promise<void> {
   await writeSessionRow(userId, placeDoc(readPlace(placeDoc(place))));
 }
 
+/** What the mix-up coach is told about two entries: Saku's own facts about
+ * each, and nothing about the learner (mixup-facts.ts). Null for an id this
+ * build has no data for. Public data, so no account is asked for. */
+export async function mixupCoachRequest(asked: string, other: string): Promise<CoachRequest | null> {
+  if (typeof asked !== "string" || typeof other !== "string" || asked === other) return null;
+  return coachRequest(asked as EntryId, other as EntryId);
+}
+
 export async function loadSessions(caller: Who): Promise<SkySession[]> {
   const history = await historyFor(trustedWho(caller));
   return timedSync("sessions", () => sessionsFromHistory(history), "listing the sessions");
@@ -253,6 +264,8 @@ export async function quizRecords(answers: readonly QuizAnswer[], practice?: { n
   if (answers.length === 0) return [];
   const stats: SessionStats = {};
   const assembly: SessionStats = {};
+  // the space a wrong typed answer is matched in, for its mix-up
+  const deck = answers.map((a) => a.cardId.replace(/#listen$/, "") as FactId).filter((f) => factInfo(f));
   for (const a of answers) {
     if (isSentenceTierMarkerFact(a.cardId as FactId)) {
       for (const f of (a.meta?.facts ?? "").split("|").filter(Boolean) as FactId[]) {
@@ -270,6 +283,8 @@ export async function quizRecords(answers: readonly QuizAnswer[], practice?: { n
     const ok = a.grade !== "missed";
     resolveShowing(st, a.grade === "clean", ok, { dir: "jp2en", mode: a.narrowed ? "mc" : "typed", listen: a.cardId.endsWith("#listen") });
     if (!ok || a.tries > 1) st.misses += Math.max(1, a.tries - (ok ? 1 : 0));
+    // what the Mix-ups panel reads: this card, answered as another entry
+    for (const other of mixedWith(a, fact, deck)) st.confused[other] = (st.confused[other] ?? 0) + 1;
   }
   const ts = Date.now();
   const from = practice ? { practice } : {};

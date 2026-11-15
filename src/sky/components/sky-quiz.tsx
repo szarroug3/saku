@@ -28,7 +28,8 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { LessonCard, type HearComponent, type PitchComponent } from "@/sky/components/lesson-card";
 import { QuizChoices, QuizOrder, QuizPrompt } from "@/sky/components/quiz-board";
 import { QuizQuestions } from "@/sky/components/quiz-questions";
-import { QuizBuilt, QuizHint, QuizRuleBlock, QuizVerdict, QuizWhy } from "@/sky/components/quiz-verdict";
+import { QuizBuilt, QuizHint, QuizMixup, QuizRuleBlock, QuizVerdict, QuizWhy } from "@/sky/components/quiz-verdict";
+import type { ExplainMixup } from "@/sky/components/sky-mixup-coach";
 import { RoundButton, SkyButton } from "@/sky/components/sky-button";
 import { QuizResults, type QuizEnding } from "@/sky/components/quiz-results";
 import { useNarrow } from "@/sky/components/use-narrow";
@@ -50,6 +51,10 @@ interface SkyQuizProps {
   toKana?: (value: string, katakana: boolean) => string;
   hear?: HearComponent;
   pitch?: PitchComponent;
+  /** Asks Gemini how a card's answer differs from a wrong choice picked on
+   * it, whether the card was missed or got right after (#BuildHybridAI). Handed in like the grader; absent on a site
+   * with no Firebase set up, and then the reveal offers nothing. */
+  explainMixup?: ExplainMixup;
   /** What the end of this deck offers, and where its answers go, in one piece
    * (SAK-420): the way back, the recorder, the retry, practice's naming, the
    * round after this one. Handed straight to the results screen, which owns
@@ -90,7 +95,7 @@ interface SkyQuizProps {
   height?: string;
 }
 
-export function SkyQuiz({ cards, grade, toKana, hear, pitch, results, settings, run, title = "Tonight's drill", height }: SkyQuizProps) {
+export function SkyQuiz({ cards, grade, toKana, hear, pitch, explainMixup, results, settings, run, title = "Tonight's drill", height }: SkyQuizProps) {
   const { retries = DEFAULT_RETRIES, onRetries, timerSeconds = 0 } = settings ?? {};
 
   // The pass over this deck, in one object: where it is, what has been
@@ -180,7 +185,7 @@ export function SkyQuiz({ cards, grade, toKana, hear, pitch, results, settings, 
   /** The card's answer written into the pass, its position unmoved: a miss
    * stays on its own reveal, and a right answer is moved on separately. */
   const settle = (g: Grade, tries: number, extra: Partial<QuizAnswer> = {}): QuizPass => {
-    const answer: QuizAnswer = { cardId: card.id, grade: g, tries: Math.max(1, tries), narrowed: state.narrowed, hinted: state.hinted, ...(state.said.length ? { said: state.said } : {}), ...(card.meta ? { meta: card.meta } : {}), ...extra };
+    const answer: QuizAnswer = { cardId: card.id, grade: g, tries: Math.max(1, tries), narrowed: state.narrowed, hinted: state.hinted, ...(state.said.length ? { said: state.said } : {}), ...(state.wrong.length ? { picked: state.wrong } : {}), ...(card.meta ? { meta: card.meta } : {}), ...extra };
     return withAnswer(pass, answer);
   };
 
@@ -203,7 +208,10 @@ export function SkyQuiz({ cards, grade, toKana, hear, pitch, results, settings, 
     const tries = state.tries + 1;
     const tried = said === undefined ? state.said : [...state.said, said];
     if (right) { advance(settle(gradeFor(tries > 1 || state.narrowed || state.hinted), tries, { said: tried })); return "right"; }
-    if (tries >= maxTries) { setPass(settle("missed", tries, { said: tried })); setFeedback(null); return "missed"; }
+    // the pick that runs a card out is not in state.wrong yet; it comes in
+    // with `wrong`, so the answer still names every wrong choice
+    const picked = wrong?.wrong ?? state.wrong;
+    if (tries >= maxTries) { setPass(settle("missed", tries, { said: tried, ...(picked.length ? { picked } : {}) })); setFeedback(null); return "missed"; }
     patch({ tries, said: tried, ...wrong });
     setFeedback(`${note} ${triesNote(maxTries - tries)}`);
     return "again";
@@ -403,6 +411,9 @@ export function SkyQuiz({ cards, grade, toKana, hear, pitch, results, settings, 
               {/* why the others were there, but only when they were: naming
                   choices that were never on screen is noise (SAK-315) */}
               {answered && (!card.typed || answered.narrowed) && <QuizWhy card={card} pitch={pitch} />}
+              {/* the last wrong choice picked, when it was another entry:
+                  how to tell the two apart, from Gemini (#BuildHybridAI) */}
+              {answered && explainMixup && <QuizMixup card={card} picked={answered.picked} explain={explainMixup} />}
             </div>
 
             {/* the bar: help while the card is open, the way on once it is done */}
