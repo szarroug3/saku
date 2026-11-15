@@ -1350,13 +1350,74 @@ test("a card takes a question about itself (#BuildHybridAI)", async ({ page }) =
   await page.route(/firebase|googleapis\.com|recaptcha/, (route) => route.abort());
   await page.goto(`/quiz?sample&cards=${encodeURIComponent("kanji:水/reading@水曜")}`);
   await page.getByRole("button", { name: "I don't know" }).click();
-  await page.getByRole("button", { name: "Don't follow something? Ask about this card" }).click();
+  await page.getByRole("button", { name: "Have a question? Ask about this card" }).click();
   const box = page.getByRole("textbox", { name: "Your question about this card" });
   await expect(page.getByRole("button", { name: "Ask", exact: true })).toBeDisabled();
   await box.fill("Why is it すい here?");
   await page.getByRole("button", { name: "Ask", exact: true }).click();
   await expect(page.getByText("Gemini couldn't answer that from this card and what you've learned.")).toBeVisible({ timeout: 45_000 });
   await expect(page.getByRole("button", { name: "Try again" })).toBeVisible();
+});
+
+test("the reader colors a text and opens a word's card (#BuildHybridAI)", async ({ page }) => {
+  // Signed out, with nothing learned: every word Saku teaches is new, and
+  // clicking one opens its card with Add to lesson and I know this. I know
+  // this recolors it in the text and turns into I don't know this.
+  await page.goto("/read");
+  await page.getByRole("button", { name: "Try an example" }).click();
+  await page.getByRole("button", { name: "Read it" }).click();
+  const word = page.getByRole("button", { name: "映画, えいが" });
+  await expect(word).toBeVisible({ timeout: 30_000 });
+  // a new word has its reading over it
+  await expect(word.locator("rt")).toHaveText("えいが");
+  await word.click();
+  await expect(page.getByRole("link", { name: "Add to lesson" })).toBeVisible({ timeout: 15_000 });
+  await page.getByRole("button", { name: "I know this" }).click();
+  await expect(page.getByRole("button", { name: "I don't know this" })).toBeVisible({ timeout: 15_000 });
+  await expect(word.locator("rt")).toHaveCount(0);
+  await page.getByRole("button", { name: "I don't know this" }).click();
+  await expect(page.getByRole("button", { name: "I know this" })).toBeVisible({ timeout: 15_000 });
+  // the text is kept for a reload
+  await page.reload();
+  await expect(page.getByRole("button", { name: "映画, えいが" })).toBeVisible({ timeout: 30_000 });
+  await page.getByRole("button", { name: "New text" }).click();
+  await expect(page.getByRole("textbox", { name: "Japanese to read" })).toBeVisible();
+});
+
+test("the reader's selection can be translated or asked about (#BuildHybridAI)", async ({ page }) => {
+  // Gemini is cut off here, so what is checked is the selection panel and
+  // the way it fails, never a model's words.
+  test.skip(!hasFirebase(), "needs Firebase set up in .env.local");
+  await page.route(/firebase|googleapis\.com|recaptcha/, (route) => route.abort());
+  await page.goto("/read");
+  await page.getByRole("textbox", { name: "Japanese to read" }).fill("昨日、友達と映画を見に行きました。");
+  await page.getByRole("button", { name: "Read it" }).click();
+  const text = page.locator("p[lang=ja]").first();
+  await expect(text).toContainText("映画", { timeout: 30_000 });
+  // select the whole sentence the way a drag would, then let go
+  await text.evaluate((el) => {
+    const range = document.createRange();
+    range.selectNodeContents(el);
+    const sel = window.getSelection()!;
+    sel.removeAllRanges();
+    sel.addRange(range);
+    el.dispatchEvent(new MouseEvent("mouseup", { bubbles: true }));
+  });
+  // the readings drawn over the words aren't part of what was selected
+  await expect(page.getByText("昨日、友達と映画を見に行きました。", { exact: true }).last()).toBeVisible();
+  await page.getByRole("button", { name: "Translate" }).click();
+  await expect(page.getByText("Gemini couldn't translate that. Try again in a moment.")).toBeVisible({ timeout: 45_000 });
+  await page.getByRole("button", { name: "Ask Gemini about it" }).click();
+  await page.getByRole("textbox", { name: "Your question about this part" }).fill("Why に here?");
+  await page.getByRole("button", { name: "Ask", exact: true }).click();
+  await expect(page.getByText("Gemini couldn't answer that from this part and what you've learned.")).toBeVisible({ timeout: 45_000 });
+});
+
+test("the reader won't bring in a page that isn't on the public web (#BuildHybridAI)", async ({ page }) => {
+  await page.goto("/read");
+  await page.getByRole("textbox", { name: "Web page address" }).fill("http://localhost/");
+  await page.getByRole("button", { name: "Bring it in" }).click();
+  await expect(page.getByText("That page isn't on the public web.")).toBeVisible({ timeout: 15_000 });
 });
 
 test("the reveal explains which reading applies, and why", async ({ page }) => {

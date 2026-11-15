@@ -43,9 +43,16 @@ export interface Turn {
   answer: string;
 }
 
+/** What the question is about: a card of the course, or Japanese the
+ * learner is reading (the reader), where the page is the passage. */
+export type PageKind = "card" | "text";
+
 export interface PageQuestion {
-  /** The card as the learner sees it, in plain text (`cardText`). */
+  /** The card as the learner sees it, in plain text (`cardText`), or the
+   * passage they are reading. */
   page: string;
+  /** A card when left out. */
+  kind?: PageKind;
   question: string;
   learned: Learned;
   /** The thread so far on this card, oldest first. */
@@ -142,10 +149,14 @@ export function cardText(item: SkyItem, teach: LessonTeach | undefined, page?: T
 /** The prompt both models get. */
 export function pageAskPrompt(q: PageQuestion): string {
   const list = (items: readonly string[], max: number) => (items.length ? items.slice(0, max).join("; ") : "nothing yet");
+  const text = q.kind === "text";
+  const on = text ? "in the text" : "on the card";
   return [
-    "You answer a beginner's question about one card of a Japanese course. Answer only with the JSON asked for.",
+    text
+      ? "You answer a beginner's question about a piece of Japanese they are reading. Answer only with the JSON asked for."
+      : "You answer a beginner's question about one card of a Japanese course. Answer only with the JSON asked for.",
     "",
-    "THE CARD",
+    text ? "THE TEXT THEY ARE READING" : "THE CARD",
     q.page,
     "",
     "WHAT THE LEARNER HAS LEARNED SO FAR",
@@ -162,16 +173,18 @@ export function pageAskPrompt(q: PageQuestion): string {
     // card is where an answer starts, and what limits it is the Japanese.
     "Answer in three to five short sentences of plain English, the way a good teacher would. Talk to the learner as \"you\".",
     ...(q.earlier?.length ? ["- Read the next question in light of the conversation: \"it\" or \"that\" means what was just talked about. Don't repeat what you already said."] : []),
-    "- Answer what they asked, and add what helps them understand it, from what you know about Japanese. Go past the card when that helps; don't just repeat it, and don't say what the card leaves out.",
-    "- Write no Japanese except what is on the card, in the question, or in the lists above. When an example would help, build it only from those. When the answer needs a word, kanji or pattern they haven't learned, explain the idea in English without writing it in Japanese.",
+    text
+      ? "- Answer what they asked, and add what helps them understand it, from what you know about Japanese: what a word or ending is doing in this sentence, and what the sentence means."
+      : "- Answer what they asked, and add what helps them understand it, from what you know about Japanese. Go past the card when that helps; don't just repeat it, and don't say what the card leaves out.",
+    `- Write no Japanese except what is ${on}, in the question, or in the lists above. When an example would help, build it only from those. When the answer needs a word, kanji or pattern they haven't learned, explain the idea in English without writing it in Japanese.`,
     // "this card" alone turned away "When would I use が instead?" on は's card
     "- Questions about anything in Japanese are fine, related or not. Only when the question has nothing to do with Japanese, say you can only help with Japanese.",
     // the cloud told シ from ツ by a stroke count that was wrong (2026-11-15)
-    "- Only describe how a character is drawn (its strokes or parts) when the card describes it.",
+    ...(text ? [] : ["- Only describe how a character is drawn (its strokes or parts) when the card describes it."]),
     "- Put a Japanese word's meaning in round brackets after it the first time you write it, with its kana reading first if it has kanji: 私 (わたし, I).",
     // the cloud wrote すい as "suu" without it (2026-11-15), and English
     // can't be checked
-    "- Write a reading the way the card writes it, never in your own romaji.",
+    text ? "- Write readings in kana. Don't write romaji." : "- Write a reading the way the card writes it. Don't write your own romaji.",
     "- No dashes, no lists, no headings.",
   ].join("\n");
 }

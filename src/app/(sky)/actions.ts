@@ -21,6 +21,9 @@ import { coachRequest } from "./mixup-facts";
 import type { CoachRequest } from "@/sky/lib/mixup-coach";
 import { learnedFrom } from "./page-ask-learned";
 import type { Learned } from "@/sky/lib/page-ask";
+import { ImportError, importPage } from "@/lib/reader-import";
+import type { ReadText } from "@/sky/lib/reader";
+import { readFor } from "./reader";
 import { getStatsRows } from "@/lib/library/stats-rows";
 import { isSentenceTierMarkerFact } from "@/lib/sentence-ordering-progress";
 import { statForShowing, resolveShowing } from "@/lib/drill-stats";
@@ -224,6 +227,26 @@ export async function mixupCoachRequest(asked: string, other: string): Promise<C
  * kanji, words and grammar they have met (page-ask-learned.ts). */
 export async function pageAskLearned(caller: Who): Promise<Learned> {
   return learnedFrom(await historyFor(trustedWho(caller)));
+}
+
+/** Text for the reader (#BuildHybridAI), split into words and matched to
+ * the learner's sky (reader.ts). */
+export async function readText(caller: Who, text: string): Promise<ReadText> {
+  return readFor(await historyFor(trustedWho(caller)), text);
+}
+
+/** A web page for the reader: its Japanese text, read as `readText` reads.
+ * A page that can't be brought in comes back as the reason, since a thrown
+ * error's message doesn't reach the browser in production. */
+export async function readPage(caller: Who, url: string): Promise<ReadText | { error: string }> {
+  try {
+    const page = await importPage(url);
+    const read = await readFor(await historyFor(trustedWho(caller)), page.text);
+    return { ...read, ...(page.title ? { title: page.title } : {}), source: page.source };
+  } catch (e) {
+    if (e instanceof ImportError) return { error: e.message };
+    throw e;
+  }
 }
 
 export async function loadSessions(caller: Who): Promise<SkySession[]> {

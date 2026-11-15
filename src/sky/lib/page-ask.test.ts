@@ -49,6 +49,18 @@ describe("pageAskPrompt", () => {
   });
 });
 
+describe("a question about a passage (the reader)", () => {
+  const prompt = pageAskPrompt({ ...q, kind: "text", page: "昨日、映画を見ました。" });
+  it("calls it the text they are reading", () => {
+    assert.match(prompt, /a piece of Japanese they are reading/);
+    assert.match(prompt, /THE TEXT THEY ARE READING\n昨日、映画を見ました。/);
+    assert.doesNotMatch(prompt, /THE CARD|on the card/);
+  });
+  it("holds the Japanese to the text and the lists", () => {
+    assert.match(prompt, /Write no Japanese except what is in the text, in the question, or in the lists above/);
+  });
+});
+
 describe("a thread", () => {
   const next = { ...q, question: "And with 飲む?", earlier: [{ question: "What is ください?", answer: "It asks politely." }] };
   it("carries the conversation and marks the next question", () => {

@@ -1,4 +1,4 @@
-# Hybrid AI in Saku: the writing drill's grader, the mix-up coach and questions about a card
+# Hybrid AI in Saku: the writing drill's grader, the mix-up coach, questions about a card and the reader
 
 Built for #BuildHybridAI 2026 (deadline Mon Nov 30, 2:00 PM PT). The drill is at `/practice/write` and listed in Practice's Drills panel.
 
@@ -53,7 +53,7 @@ The prompt also says to describe strokes only when a fact or the tip does, becau
 
 ## Questions about a card
 
-A learner who doesn't follow something on a card can ask about it in their own words, and keep asking. Each card has its own thread: the earlier questions and answers go back in the prompt, so a follow-up like "and when would I use が instead?" is read in light of them. A new card starts a new thread, and a thread stops at 6 questions, since every turn makes the prompt longer and Nano's window is small. The learner's own earlier questions count as given Japanese for the check, as the current one does. Under the card's teaching there's a "Don't follow something? Ask about this card" link that opens the thread. It's on every lesson card in a lesson, in the Atlas, and under a revealed quiz or practice answer.
+A learner who doesn't follow something on a card can ask about it in their own words, and keep asking. Each card has its own thread: the earlier questions and answers go back in the prompt, so a follow-up like "and when would I use が instead?" is read in light of them. A new card starts a new thread, and a thread stops at 6 questions, since every turn makes the prompt longer and Nano's window is small. The learner's own earlier questions count as given Japanese for the check, as the current one does. Under the card's teaching there's a "Have a question? Ask about this card" link that opens the thread. It's on every lesson card in a lesson, in the Atlas, and under a revealed quiz or practice answer.
 
 Gemini answers like a teacher would, going past the card when that helps, but the Japanese it writes is held to two things: the card, and what the learner has already learned. Anything else is explained in English. It describes how a character is drawn only when the card does, because it got stroke counts wrong when it was free to.
 
@@ -107,6 +107,19 @@ Nano never called a mistake right, but it is far too strict on right answers. It
 
 So the split works as intended. Nano's "right" is trusted and costs nothing. The cloud gives the verdict and the note whenever an answer might be a mistake.
 
+## The reader
+
+`/read` (Reader in the menu) takes Japanese the learner brings: pasted, or brought in from a web page. Every word Saku teaches is drawn in the color of the learner's standing with it. A word that is new to them has a dotted line under it and its reading over it. Clicking a word opens its card beside the text, the Atlas's card with Add to lesson and I know this. A word Saku doesn't teach as a word opens the kanji in it. Selecting any part of the text offers Translate and Ask Gemini.
+
+1. **Splitting, on the server.** kuromoji (`src/lib/reader-split.ts`) splits each line into words with their dictionary form and reading. Its dictionary is 17 MB, so it runs on the server, and `next.config.ts` traces it into the `/read` function. `readFor` (`src/app/(sky)/reader.ts`) matches each word to a Saku word by its dictionary form, so 見 in 見に行きました opens 見る, and gives it the learner's standing. A text is cut at 12,000 characters, at a line, and the page says so.
+2. **Bringing in a page, on the server.** `importPage` (`src/lib/reader-import.ts`) fetches the page and keeps the lines with Japanese in them, from the `<article>` or `<main>` when there is one. The server fetches an address the learner typed, so the fetch is held to public web pages. It only allows http and https on the usual ports. Every address a host name resolves to is checked when the connection is made, so a name can't point at this server, the cloud's metadata address or a private network. Redirects are checked the same way. The page is cut off at 3 MB and 10 seconds.
+3. **Translate, Nano first.** `translateWith` (`src/sky/lib/reader-ask.ts`) sends the selection and the text around it through `askInOrder`. A translation that writes Japanese that isn't in the passage goes to the cloud.
+4. **Ask Gemini, the passage as the page.** A question about a selection is a question about a page (`page-ask.ts` with `kind: "text"`). The page is the passage around the selection with the readings of its words. The check is the card's: Japanese in the passage counts as given, and anything else must be something the learner has learned.
+
+The text read last is kept in the browser (`sky:reader:text`), so a reload reads it again against the learner's sky as it is then. Nothing on the server keeps it.
+
+Code: the model is `src/sky/lib/reader.ts` and `reader-ask.ts` (tests beside them), the server half is `src/lib/reader-split.ts`, `src/lib/reader-import.ts` and `src/app/(sky)/reader.ts` (tests beside them) through `readText` and `readPage` in `actions.ts`, the screen is `src/sky/components/sky-reader.tsx`, and `src/app/(sky)/reader-client.tsx` hands it the tools.
+
 ## The project as set up (2026-11-14)
 
 - Firebase project **Saku Hybrid AI** (`project-8806328f-21aa-4b00-b3d`), web app **Saku Web**. Billing is unlinked, so it is on the free Spark plan and Gemini's free tier. Linked to the Cloud free trial, the Gemini API refused every call ("prepayment credits are depleted"), and the trial ends Nov 18, before the deadline.
@@ -117,5 +130,5 @@ So the split works as intended. Nano's "right" is trusted and costs nothing. The
 
 - [ ] Repo public, MIT license showing in the GitHub About box
 - [ ] Hosted URL works without signing in (the drill reads no learner)
-- [ ] Video under 3 minutes, on YouTube: Chrome with Nano (DevTools offline to show it on the device), then another browser falling back to the cloud, then a near miss getting a hint, then a missed quiz card's "What's the difference?" and the home panel's Why?, then a question asked about a lesson card
+- [ ] Video under 3 minutes, on YouTube: Chrome with Nano (DevTools offline to show it on the device), then another browser falling back to the cloud, then a near miss getting a hint, then a missed quiz card's "What's the difference?" and the home panel's Why?, then a question asked about a lesson card, then the reader: a pasted text in color, a word's card, and a selection translated and asked about
 - [ ] Devpost: "Existing" project, start date 07-15-26, summary of what was built after Nov 11, platform Web (Chrome)
