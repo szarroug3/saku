@@ -19,7 +19,7 @@ export const SHAPE_TIPS: readonly { readonly group: readonly string[]; readonly 
   { group: ["シ", "ツ"], tip: "シ's two short strokes sit on the left, one above the other, and its long stroke sweeps up from the bottom. ツ's two short strokes sit side by side along the top, and its long stroke falls down from the top right." },
   { group: ["ソ", "ン"], tip: "ソ's short stroke is at the top, and its long stroke falls from the top right down to the left. ン's short stroke is on the left, and its long stroke sweeps up from the bottom left to the right." },
   { group: ["ク", "ワ", "フ", "ウ"], tip: "フ is one stroke: a flat top that bends down to the left. ク adds a short stroke at the top left. ワ adds a short stroke straight down on the left, so it looks like a box with no bottom. ウ is ワ with a small tick on top." },
-  { group: ["コ", "ユ"], tip: "コ is a box with its left side open. ユ has a long flat bottom line that runs out past the left." },
+  { group: ["コ", "ユ"], tip: "コ is a box with its left side open. ユ has a long flat bottom line that runs out past its right side." },
   { group: ["ス", "ヌ"], tip: "Both start like フ. ス adds one stroke going down to the right. ヌ adds a short stroke that crosses the first one." },
   { group: ["チ", "テ"], tip: "チ has one flat line, with a stroke that runs down through it and curves to the left. テ has two flat lines, and its last stroke hangs from the lower one." },
   { group: ["ナ", "メ"], tip: "ナ is a flat line crossed by a stroke that curves down to the left. メ has no flat line: two slanted strokes cross like an X." },
