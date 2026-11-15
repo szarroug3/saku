@@ -2,10 +2,15 @@
 // kuromoji: each word as written, its dictionary form (見 is 見る, 面白かっ is
 // 面白い) and its reading in hiragana.
 //
-// Server only. The dictionary is 17 MB of files read from node_modules, so
-// next.config.ts traces node_modules/kuromoji/dict into every function. It is
+// Server only. The dictionary is 17 MB of files read from node_modules. It is
 // loaded once per server and kept.
+//
+// pnpm makes node_modules/kuromoji a symlink into node_modules/.pnpm, and
+// Vercel won't deploy a function with files under a symlinked directory. So
+// next.config.ts traces the dictionary at its real path in .pnpm, and this
+// reads it there.
 
+import fs from "node:fs";
 import path from "node:path";
 
 import kuromoji, { type IpadicFeatures, type Tokenizer } from "kuromoji";
@@ -23,11 +28,21 @@ export interface SplitWord {
   mark?: true;
 }
 
+/** The dictionary's real directory, past pnpm's symlink. */
+function dictDir(): string {
+  const modules = path.join(process.cwd(), "node_modules");
+  const store = path.join(modules, ".pnpm");
+  const real = fs.existsSync(store)
+    ? fs.readdirSync(store).filter((d) => d.startsWith("kuromoji@")).map((d) => path.join(store, d, "node_modules/kuromoji/dict"))
+    : [];
+  return [...real, path.join(modules, "kuromoji/dict")].find((d) => fs.existsSync(d)) ?? path.join(modules, "kuromoji/dict");
+}
+
 let building: Promise<Tokenizer<IpadicFeatures>> | null = null;
 
 function tokenizer(): Promise<Tokenizer<IpadicFeatures>> {
   building ??= new Promise((resolve, reject) => {
-    kuromoji.builder({ dicPath: path.join(process.cwd(), "node_modules/kuromoji/dict") }).build((err, tk) => {
+    kuromoji.builder({ dicPath: dictDir() }).build((err, tk) => {
       if (err) {
         building = null;
         reject(err);

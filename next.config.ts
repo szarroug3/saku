@@ -31,8 +31,9 @@ const nextConfig: NextConfig = {
     "/api/tts/**": ["./bin/ffmpeg"],
     "/api/pitch-tts/**": ["./bin/ffmpeg"],
     // the reader's word splitter (src/lib/reader-split.ts); its actions run
-    // on the page that calls them
-    "/read": ["./node_modules/kuromoji/dict/**"],
+    // on the page that calls them. The real path in .pnpm, since Vercel
+    // refuses files under pnpm's node_modules/kuromoji symlink.
+    "/read": ["./node_modules/.pnpm/kuromoji@*/node_modules/kuromoji/dict/**"],
     // SAK-399: the tables read from disk on first use (src/lib/data-file.ts)
     // rather than baked into every server bundle; every route may need them.
     "/**": ["./src/data/generated/word-definitions.json", "./src/data/generated/en-synonyms.json", "./src/data/generated/kanji-etymology.json", "./src/data/generated/grammar-corpus.json"],
