@@ -5,7 +5,7 @@
 // Mix-ups panel. One click asks Gemini how to tell the two apart, from Saku's
 // own facts about them, and the answer says where it was worked out.
 //
-// A view and nothing else. The asking, the check that the answer stands on
+// A view and nothing else. The asking, the check that the answer uses only
 // the facts, and the order the models are tried in are
 // src/sky/lib/mixup-coach.ts; the route hands this an `explain` that does
 // them, the way the writing drill gets its grader.
@@ -21,7 +21,7 @@ export type ExplainMixup = (asked: string, other: string) => Promise<CoachAnswer
 const WHERE = {
   on_device: "Explained by Gemini Nano on your device.",
   in_cloud: "Explained by Gemini in the cloud.",
-  replaced: "Gemini Nano's answer went past what Saku knows about these two, so Gemini in the cloud explained it instead.",
+  replaced: "Gemini Nano's answer used things Saku doesn't know about these two. Gemini in the cloud explained it.",
 } as const;
 
 export function SkyMixupCoach({ asked, other, explain, label = "What's the difference?" }: {

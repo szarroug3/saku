@@ -4,24 +4,24 @@ Built for #BuildHybridAI 2026 (deadline Mon Nov 30, 2:00 PM PT). The drill is at
 
 ## What it does
 
-The learner sees an English sentence from the grammar corpus and writes it in Japanese, in kana or kanji, in their own words. Saku never marks a right answer wrong, and a string compare can't keep that promise for a sentence written from scratch: kana for kanji, a dropped subject, polite or plain, another word order are all right. That is why the assembly drill keeps only 605 of 9,654 sentences. A grader that reads meaning brings the rest back.
+The learner sees an English sentence from the grammar corpus and writes it in Japanese, in kana or kanji, in their own words. Saku never marks a right answer wrong. A string compare can't keep that promise for a sentence written from scratch. Kana for kanji, a dropped subject, polite or plain, and another word order are all right. That is why the assembly drill keeps only 605 of 9,654 sentences. A grader that reads for meaning can use the rest.
 
 ## How an answer is graded
 
 1. **Exact match.** The stored answer, give or take punctuation, is right with no model asked.
-2. **On the device.** Otherwise Gemini Nano grades it in Chrome through Firebase AI Logic (`InferenceMode.PREFER_ON_DEVICE`). The answer never leaves the machine, it's free, and it works offline. Where Nano isn't there (Safari, Firefox, a phone, a download in progress), the same call goes to Gemini in the cloud.
-3. **A second look in the cloud.** A device "right" stands. A device "close" or "wrong" is checked by the cloud model before the learner sees it, when there's a connection. The small model is quick and good at spotting a right answer, and the bigger one gets the last word before the learner is told they're wrong. Offline, the device's verdict stands.
+2. **On the device.** Otherwise Gemini Nano grades it in Chrome through Firebase AI Logic (`InferenceMode.PREFER_ON_DEVICE`). The answer stays on the machine and works offline. Where Nano isn't there (Safari, Firefox, a phone, a download in progress), the same call goes to Gemini in the cloud.
+3. **A second look in the cloud.** A device "right" stands. A device "close" or "wrong" is checked by the cloud model before the learner sees it, when there's a connection. The small model is quick and good at spotting a right answer, and the bigger one decides before the learner is told they're wrong. Offline, the device's verdict stands.
 
 Verdicts are `right`, `close` (one slip, so another try with the note as a hint) and `wrong` (the answer is shown). Both models get the same prompt and the same JSON schema: a response constraint on the device and a response schema in the cloud. The screen says where each answer was checked.
 
-Each model gets 15 seconds. Nano usually answers in a few seconds, but its first session after Chrome starts can take much longer, and before the limit a stuck session left the screen on "Checking…". When the device runs out of time the cloud grades the answer; when the cloud does too, the offline path takes over. A grader that fails or times out is logged to the console.
+Each model gets 15 seconds. Nano usually answers in a few seconds, but its first session after Chrome starts can take much longer, and before the limit a stuck session left the screen on "Checking…". When the device runs out of time the cloud grades the answer; when the cloud does too, the device's verdict is handled as it is offline. A grader that fails or times out is logged to the console.
 
 The note glosses every Japanese word or particle it names, with the kana reading first for a word in kanji: を (marks the direct object) instead of に (marks the target) after ギター (guitar). The example in the prompt uses words no drill answer has (私, 猫). An earlier example matched a real mistake word for word, and the model copied it.
 
 Code:
 
 - `src/sky/lib/write-drill.ts`: the model (run, score, exact match, prompt, schema, parsing, and `gradeWith`, the grading steps with their time limits). Tests in `write-drill.test.ts` beside it, with fake graders for every path.
-- `src/app/(sky)/firebase-ai.ts`: Firebase, App Check, and a pair of models (on the device first, and the cloud only) for each answer shape. Shared by the grader and the mix-up coach. Firebase is imported on first use, so it ships only with what asks.
+- `src/app/(sky)/firebase-ai.ts`: Firebase, App Check, and a pair of models (on the device first, and the cloud only) for each answer shape. Shared by the grader and the mix-up coach. Firebase is imported on first use, so only the pages that use it load it.
 - `src/app/(sky)/hybrid-grader.ts`: the grader's two models, handed to `gradeWith`.
 - `src/app/(sky)/write-drill.ts`: the pool, 200 short corpus sentences spread across patterns, each with its words line.
 - `src/sky/components/sky-write-drill.tsx`: the screen. `src/app/(sky)/write-client.tsx` hands it the grader. The end screen, `src/sky/components/drill-end.tsx`, is shared with the readings drill.
@@ -30,9 +30,9 @@ Code:
 
 When a learner mixes two things up (シ and ツ, 待 and 持), Gemini says how to tell them apart in two or three sentences. The coach shows up in two places. After a missed quiz card, the reveal says "You picked ツ" with a "What's the difference?" link. On the home page, each row of the Mix-ups panel has a "Why?".
 
-### Mix-ups are recorded now
+### How mix-ups are recorded
 
-The home Mix-ups panel, the Practice "Mix-ups" filter and the weakness ranking all read `confused` counts on session records (`src/lib/confusions.ts`). Before this, the Sky quiz never wrote them. It kept a wrong pick's label and threw away which choice it was, so only the sample learner ever had a mix-up. Now:
+The home Mix-ups panel, the Practice "Mix-ups" filter and the weakness ranking all read `confused` counts on session records (`src/lib/confusions.ts`). The quiz writes them:
 
 - `QuizAnswer.picked` carries the ids of the wrong choices picked on a card (`sky-quiz.tsx`), and a saved run keeps them.
 - `quizRecords` turns each into a mix-up through `mixedWith` (`src/app/(sky)/quiz-mixups.ts`). A wrong pick names its entry for certain. A wrong typed answer counts only when exactly one card in the quiz has it as an answer (the engine's `confusedWith`). Each entry counts once per card, and another reading of the same character is never a mix-up.
@@ -43,7 +43,7 @@ One mix-up is enough for a pair to show on the home panel.
 
 1. **Facts, on the server.** `mixupCoachRequest` (`actions.ts`, built by `mixup-facts.ts`) collects Saku's own facts about the two entries. For kana that's the sound and the shape story, and for kanji the meanings, readings and parts (with what each part means). The pair's hand-written tip is added when there is one: the radical tips, or `src/data/shape-tips.ts` for the look-alike kana and the sample learner's kanji pairs. Nothing about the learner goes in.
 2. **Nano first.** The browser asks Gemini Nano (`PREFER_ON_DEVICE`, so the cloud where there's no Nano).
-3. **The grounding check.** Every Japanese character in the answer must appear in those facts (`ungrounded` in `src/sky/lib/mixup-coach.ts`). An answer that uses a reading, a part or a word the facts don't have is thrown out, and the cloud is asked instead. A cloud answer that fails the check isn't shown either. The screen says where the explanation came from, including when Nano's was replaced.
+3. **The grounding check.** Every Japanese character in the answer must appear in those facts (`ungrounded` in `src/sky/lib/mixup-coach.ts`). An answer that uses a reading, a part or a word the facts don't have is thrown out, and the cloud model is asked. A cloud answer that fails the check isn't shown either. The screen says where the explanation came from, including when Nano's was replaced.
 
 The prompt also says to describe strokes only when a fact or the tip does, because English can't be checked the same way.
 
@@ -91,7 +91,7 @@ Nano never called a mistake right, but it is far too strict on right answers. It
 
 `gemini-3.5-flash-lite` through Firebase AI Logic, same prompt and schema, about 1 second per answer. With the first prompt it matched 10 of 12: it told a learner to drop the を from なにかをしてみましょう (fine Japanese) and called もどるたい wrong instead of close. After adding the line that an optional particle added or left out is right, it matched 12 of 12, with accurate notes. Like Nano, it never called a mistake right.
 
-So the split works as intended: Nano's "right" (trusted) is cheap, private and on the device, and the cloud gives the verdict and the note whenever an answer might be a mistake.
+So the split works as intended. Nano's "right" is trusted and costs nothing. The cloud gives the verdict and the note whenever an answer might be a mistake.
 
 ## The project as set up (2026-11-14)
 

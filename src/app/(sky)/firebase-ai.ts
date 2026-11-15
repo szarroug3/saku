@@ -10,8 +10,8 @@
 //   cloud   InferenceMode.ONLY_IN_CLOUD, for when the device's answer can't
 //           be used.
 //
-// Firebase is imported on first use, not at load, so it ships with the pages
-// that ask and no others.
+// Firebase is imported on first use, not at load, so only the pages that use it
+// load it.
 //
 // SETUP
 // =====

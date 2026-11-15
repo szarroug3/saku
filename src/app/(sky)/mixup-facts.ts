@@ -39,7 +39,7 @@ function component(c: string): string {
 
 /** One entry, as the coach is told about it. Null for an id this build has
  * no data for. */
-export function coachSide(id: EntryId): CoachSide | null {
+function coachSide(id: EntryId): CoachSide | null {
   const e = libEntry(id);
   if (!e || !e.glyph) return null;
   const facts: string[] = [];

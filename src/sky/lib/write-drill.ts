@@ -62,7 +62,7 @@ export type Verdict = "right" | "close" | "wrong";
  * "unsupported" is a browser with no Prompt API at all. */
 export type DeviceModelState = "available" | "downloadable" | "downloading" | "unavailable" | "unsupported";
 
-/** Where a verdict came from. `exact` never reached a model. */
+/** Where a verdict came from. `exact` was decided without a model. */
 export type GradeSource = "exact" | "on_device" | "in_cloud";
 
 /** A graded answer. */
@@ -76,7 +76,7 @@ export interface Graded {
   /** The device said close or wrong and the cloud could not check it
    * (offline, or the cloud failed). The verdict is not shown: on test
    * answers Nano called 5 of 6 right answers "close", and its notes on them
-   * were made up. The learner compares with the answer instead. */
+   * were made up. The learner compares with the answer. */
   unsure?: boolean;
 }
 
@@ -205,11 +205,11 @@ export interface Graders {
   warn?: (message: string, error: unknown) => void;
 }
 
-/** How long each grader gets before the next step takes over. Nano answered
+/** How long each grader gets before the next step runs. Nano answered
  * in 3 to 7.5 s on test answers, but its first session after Chrome starts
  * can take far longer; the cloud answers in about 1 s. Without a limit a
  * stuck session left the screen on "Checking…" for good (2026-11-14). */
-export const GRADER_MS = 15_000;
+const GRADER_MS = 15_000;
 
 /** The promise, or a rejection once `ms` have passed. */
 function within<T>(promise: Promise<T>, ms: number, what: string): Promise<T> {

@@ -177,7 +177,7 @@ export function QuizWhy({ card, pitch: Pitch }: { card: QuizCard; pitch?: PitchC
 
 /** How the card's answer differs from the last wrong choice picked, when
  * that choice was another entry (#BuildHybridAI). Keyed on the card, so the
- * next card starts with the button again rather than the last answer. */
+ * next card starts with the button again. */
 export function QuizMixup({ card, picked, explain }: { card: QuizCard; picked?: readonly string[]; explain: ExplainMixup }) {
   const option = [...(picked ?? [])].reverse().map((id) => card.options.find((o) => o.id === id)).find((o) => o?.other);
   if (!option?.other) return null;

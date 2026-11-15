@@ -4,7 +4,7 @@
 //
 // This file is everything about it that is not drawing and not the network:
 // what the model is told, the shape it answers in, the check that what it
-// said stands on the facts it was given, and the order the graders are
+// said uses only the facts it was given, and the order the graders are
 // asked in. The facts are gathered on the server (src/app/(sky)/mixup-facts.ts),
 // the model is asked in the browser (src/app/(sky)/mixup-coach-client.ts),
 // and the screens get a function that does both.
@@ -17,7 +17,7 @@
 // is Japanese (a reading, a component, a word), and every piece of Japanese
 // the model was given is in the facts. So the check is: every Japanese
 // character in the answer must appear somewhere in the facts. One that does
-// not means the model reached past what it was told, and the answer is
+// not means the model used something it wasn't given, and the answer is
 // thrown out. A device answer that fails goes to the cloud; a cloud answer
 // that fails is not shown. English can't be checked this way, which is why
 // the prompt says to use only the facts.
@@ -40,7 +40,7 @@ export interface CoachRequest {
   /** The one it was mixed up with. */
   other: CoachSide;
   /** A tip Saku already has for this pair (the radical tips), when there is
-   * one. The coach builds on it rather than replacing it. */
+   * one. The coach adds to it. */
   tip?: string;
 }
 
@@ -49,7 +49,7 @@ export interface CoachAnswer {
   text: string;
   source: "on_device" | "in_cloud";
   /** The first model answered, but with something the facts don't hold, so
-   * the cloud was asked instead. */
+   * the cloud was asked. */
   replaced?: boolean;
 }
 
@@ -71,7 +71,7 @@ export function coachPrompt(req: CoachRequest): string {
     "- Only describe strokes or the parts of a shape when a fact or the tip above describes them.",
     "- Point at the difference that matters most first: the shape, the sound or the meaning.",
     "- If a story or picture is listed for either one, use it.",
-    // it glossed 休 three times in one answer before this said "once"
+    // "once": without it the model glossed 休 three times in one answer
     "- Write any Japanese exactly as it appears above. Put its meaning in brackets after it once, the first time, and write it bare after that.",
     "- No dashes, no lists, no headings. Talk to the learner as \"you\".",
   ].join("\n");
@@ -110,7 +110,7 @@ const KANA_RUN = /[\p{Script=Hiragana}\p{Script=Katakana}ー]{2,}/gu;
 /** What in `text` the facts the model was given don't hold: a Japanese
  * character that appears nowhere in them, or a run of kana that isn't
  * written there (ひか for 日, whose facts have ひ and か but never ひか).
- * Empty means the answer stands on the facts. Kanji are checked one at a
+ * Empty means the answer uses only the facts. Kanji are checked one at a
  * time, so 待つ passes on 待 and つ; English can't be checked at all. */
 export function ungrounded(text: string, req: CoachRequest): string[] {
   // the facts, not the whole prompt: the prompt's own instructions must not
@@ -142,7 +142,7 @@ export interface Coaches {
 
 /** Nano took 3 to 7.5 s on the writing drill's prompts and can take longer
  * the first time after Chrome starts; the cloud takes about a second. */
-export const COACH_MS = 20_000;
+const COACH_MS = 20_000;
 
 function within<T>(promise: Promise<T>, ms: number, what: string): Promise<T> {
   return new Promise((resolve, reject) => {

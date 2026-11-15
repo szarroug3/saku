@@ -1,7 +1,7 @@
 // The mix-up coach's models (#BuildHybridAI). Browser only.
 //
 // `explainWith` in src/sky/lib/mixup-coach.ts asks them in order and checks
-// that each answer stands on the facts it was given. This file hands it the
+// that each answer uses only the facts it was given. This file hands it the
 // two models for an explanation, from firebase-ai.ts, and puts the server's
 // fact-gathering in front.
 
@@ -11,7 +11,7 @@ import { mixupCoachRequest } from "./actions";
 import { aiConfigured, askModel, modelPair, online } from "./firebase-ai";
 
 /** How two entries differ, from Gemini: Nano on the device when it can, the
- * cloud when not, or when Nano's answer reached past the facts. Null when
+ * cloud when not, or when Nano's answer used something outside the facts. Null when
  * nothing usable came back, or the site has no Firebase set up. */
 export async function explainMixup(asked: string, other: string): Promise<CoachAnswer | null> {
   if (!aiConfigured()) return null;

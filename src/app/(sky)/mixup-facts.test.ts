@@ -46,5 +46,5 @@ test("every look-alike kana group has a shape tip, and every tip's Japanese is i
 });
 
 test("tips use no dashes", () => {
-  for (const { tip } of SHAPE_TIPS) assert.doesNotMatch(tip, /[—–]/, tip);
+  for (const { tip } of SHAPE_TIPS) assert.doesNotMatch(tip, /[\u2014\u2013]/, tip);
 });

@@ -49,7 +49,7 @@ function Name({ item, id }: { item: SkyItem | undefined; id: string }) {
 }
 
 export function MixUpsPanel({ pairs, itemOf, onClear, explain, title = "Mix-ups", className = "" }: MixUpsPanelProps) {
-  // one pair's answer open at a time, so the panel doesn't grow a wall of text
+  // one pair's answer open at a time, so the panel stays short
   const [open, setOpen] = useState<string>();
   return (
     <SkyPanel title={title} className={className}>
