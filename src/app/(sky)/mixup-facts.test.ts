@@ -3,10 +3,12 @@ import { test } from "node:test";
 
 import { SHAPE_TIPS } from "@/data/shape-tips";
 import { LOOKALIKES } from "@/data/characters";
+import { KANJI, variantOriginal } from "@/data/kanji";
+import { builtPieces } from "@/data/kanji-etymology";
 import { ungrounded } from "@/sky/lib/mixup-coach";
 import type { EntryId } from "@/types/facts";
 
-import { coachRequest } from "./mixup-facts";
+import { coachRequest, shapeOrigin } from "./mixup-facts";
 
 const req = (a: string, b: string) => coachRequest(a as EntryId, b as EntryId);
 
@@ -47,4 +49,33 @@ test("every look-alike kana group has a shape tip, and every tip's Japanese is i
 
 test("tips use no dashes", () => {
   for (const { tip } of SHAPE_TIPS) assert.doesNotMatch(tip, /[\u2014\u2013]/, tip);
+});
+
+test("a kanji drawn from a picture says where its shape comes from", () => {
+  const r = req("kanji:本", "kanji:木");
+  assert.ok(r);
+  assert.ok(r.asked.facts.some((f) => /^where its shape comes from: .*roots/.test(f)), r.asked.facts.join("\n"));
+  assert.ok(r.other.facts.some((f) => f.startsWith("where its shape comes from: ")));
+});
+
+test("a sound-and-meaning kanji says which piece gives which, and no origin line", () => {
+  const r = req("kanji:持", "kanji:待");
+  assert.ok(r);
+  assert.ok(r.asked.facts.includes("what its pieces do: 扌 (a form of 手, hand) gives the meaning; 寺 gives the sound じ"), r.asked.facts.join("\n"));
+  assert.ok(!r.asked.facts.some((f) => f.startsWith("where its shape comes from")));
+});
+
+test("an origin names no character but the kanji and its own pieces", () => {
+  // the coach may repeat anything it is told, so a 'compare 末' aside can't go in
+  const allowed = /[\x20-\x7E‘’“”]/u;
+  let kept = 0;
+  for (const k of KANJI) {
+    const o = shapeOrigin(k.c);
+    if (!o) continue;
+    kept++;
+    const stray = [...o].filter((c) => !allowed.test(c) && c !== k.c && !(k.comps ?? []).includes(c) && !builtPieces(k.c).some((p) => p.glyph === c || variantOriginal(p.glyph) === c) && !(k.comps ?? []).some((p) => variantOriginal(p) === c));
+    assert.deepEqual(stray, [], `${k.c}: ${o}`);
+    assert.doesNotMatch(o, /\b(compare|contrast|see also)\b/i, `${k.c}: ${o}`);
+  }
+  assert.ok(kept > 300, `only ${kept} kanji have an origin line`);
 });
