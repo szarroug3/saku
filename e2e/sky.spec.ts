@@ -2992,7 +2992,7 @@ test("the readings drill sorts a kanji's readings, shows the right label on a mi
   // kun'yomi and さん its on'yomi. Nothing is stored, so the browser's copy
   // is the same after the drill as before it, and no server action is sent.
   await page.goto("/practice");
-  const entry = page.locator("[data-practice-drills]").getByRole("link", { name: "Start" });
+  const entry = page.locator("[data-practice-drills] li").filter({ hasText: "Kun'yomi or on'yomi?" }).getByRole("link", { name: "Start" });
   await expect(entry).toHaveAttribute("href", "/practice/readings");
   await entry.click();
   await expect(page.getByRole("heading", { name: "Kun'yomi or on'yomi?" })).toBeVisible();
@@ -3023,6 +3023,40 @@ test("the readings drill sorts a kanji's readings, shows the right label on a mi
   await expect(page.getByText("山", { exact: true })).toBeVisible();
 });
 
+test("the writing drill shows one way to say it with its words line, scores it, and keeps nothing", async ({ page }) => {
+  // #BuildHybridAI. Signed out. Grading needs Firebase, which the browser
+  // suite does not have, so this walks the path that needs no model: Show
+  // the answer. The grader's own logic is unit-tested in
+  // src/sky/lib/write-drill.test.ts.
+  await page.goto("/practice");
+  const entry = page.locator("[data-practice-drills] li").filter({ hasText: "Write it in Japanese" }).getByRole("link", { name: "Start" });
+  await entry.click();
+  await expect(page.getByRole("heading", { name: "Write it in Japanese" })).toBeVisible();
+  await expect(page.getByText("Write this in Japanese")).toBeVisible();
+  await expect(page.getByText("any natural way to say it counts")).toBeVisible();
+  const stored = () => page.evaluate(() => JSON.stringify(Object.entries(localStorage).sort()));
+  const before = await stored();
+
+  // romaji turns into kana as it is typed
+  const box = page.getByRole("textbox", { name: "Your Japanese" });
+  await box.pressSequentially("nani");
+  await expect(box).toHaveValue("なに");
+
+  await page.getByRole("button", { name: "Show the answer" }).click();
+  await expect(page.getByText("One way to say it")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Sentence from Tatoeba" })).toHaveAttribute("href", /^https:\/\/tatoeba\.org\/en\/sentences\/show\/\d+$/);
+  await expect(box).toBeDisabled();
+  await page.getByRole("button", { name: "Next sentence" }).click();
+  await expect(page.getByText("One way to say it")).toHaveCount(0);
+  await expect(box).toHaveValue("");
+
+  await page.getByRole("button", { name: "End quiz" }).click();
+  await expect(page.getByRole("heading", { name: "How it went" })).toBeVisible();
+  await expect(page.getByText("You wrote 0 of 1 sentence right, 0 on the first try.")).toBeVisible();
+  await expect(page.getByText("Nothing from this drill is saved.")).toBeVisible();
+  expect(await stored()).toBe(before);
+});
+
 test("Practice lists the readings drill in a Drills panel under the recipe, not beside the heading", async ({ page }) => {
   // SAK-520. Sam found the drill's button beside the Practice heading out of
   // place, so it moved into a Drills panel at the foot of the left column.
@@ -3040,8 +3074,12 @@ test("Practice lists the readings drill in a Drills panel under the recipe, not 
     await expect(drills.getByText("Kun'yomi or on'yomi?", { exact: true })).toBeVisible();
     await expect(drills.getByText("Sort each reading of a kanji as kun'yomi or on'yomi.")).toBeVisible();
     await expect(drills.getByText("Nothing from it is saved.")).toBeVisible();
-    const start = drills.getByRole("link", { name: "Start" });
+    const start = drills.locator("li").filter({ hasText: "Kun'yomi or on'yomi?" }).getByRole("link", { name: "Start" });
     await expect(start).toHaveAttribute("href", "/practice/readings");
+    // the writing drill (#BuildHybridAI) is the panel's second row
+    const write = drills.locator("li").filter({ hasText: "Write it in Japanese" });
+    await expect(write.getByText("Write an English sentence in Japanese, in your own words.")).toBeVisible();
+    await expect(write.getByRole("link", { name: "Start" })).toHaveAttribute("href", "/practice/write");
 
     // under the recipe, in the same column
     const recipe = page.locator("section").filter({ has: page.getByRole("heading", { name: "The recipe", exact: true }) });

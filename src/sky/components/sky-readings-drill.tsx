@@ -13,7 +13,7 @@
 import { useMemo, useState } from "react";
 
 import { SkyButton } from "@/sky/components/sky-button";
-import { Eyebrow } from "@/sky/components/sky-card";
+import { DrillEndView, newDrillSeed } from "@/sky/components/drill-end";
 import { SkyPageBody } from "@/sky/components/sky-page-body";
 import { SkyPageShell } from "@/sky/components/sky-page-shell";
 import { SkySurface } from "@/sky/components/sky-panel";
@@ -21,13 +21,11 @@ import { VERDICT } from "@/sky/components/quiz-results";
 import { useMounted } from "@/sky/components/use-mounted";
 import { japaneseFont } from "@/sky/lib/japanese";
 import { seeded } from "@/sky/lib/random";
-import { endRun, isRight, kanjiDone, labelReading, nextKanji, READING_LABEL, READINGS_DRILL, rightLabel, shuffleReadings, startRun, type DrillKanji, type DrillReading, type DrillRun, type DrillScore, type ReadingLabel } from "@/sky/lib/readings-drill";
+import { endRun, isRight, kanjiDone, labelReading, nextKanji, READING_LABEL, READINGS_DRILL, rightLabel, shuffleReadings, startRun, type DrillKanji, type DrillReading, type DrillRun, type ReadingLabel } from "@/sky/lib/readings-drill";
 
 const TITLE = READINGS_DRILL.name;
 const LABELS: readonly ReadingLabel[] = ["kun", "on"];
 
-/** A fresh seed for the readings' order, one per run. */
-const newSeed = () => Math.floor(Math.random() * 2 ** 31);
 
 export function SkyReadingsDrill({ pool, backHref, height }: {
   /** The kanji, in the order they are asked. */
@@ -37,7 +35,7 @@ export function SkyReadingsDrill({ pool, backHref, height }: {
   height?: string;
 }) {
   const [run, setRun] = useState<DrillRun>(startRun);
-  const [seed, setSeed] = useState(newSeed);
+  const [seed, setSeed] = useState(newDrillSeed);
   // the order is random, so it is only decided in the browser: the server's
   // order and the browser's would differ and the page would be drawn twice
   const mounted = useMounted();
@@ -45,7 +43,15 @@ export function SkyReadingsDrill({ pool, backHref, height }: {
   const readings = useMemo(() => (kanji ? shuffleReadings(kanji, seeded(seed + run.at)) : []), [kanji, seed, run.at]);
 
   if (run.ended) {
-    return <DrillScoreView score={run.score} backHref={backHref} height={height} onAgain={() => { setRun(startRun()); setSeed(newSeed()); }} />;
+    return <DrillEndView
+        right={run.score.right}
+        of={run.score.labeled}
+        line={`You sorted ${run.score.right} of ${run.score.labeled} ${run.score.labeled === 1 ? "reading" : "readings"} right, over ${run.score.kanji} kanji.`}
+        empty="You ended before sorting any readings."
+        backHref={backHref}
+        height={height}
+        onAgain={() => { setRun(startRun()); setSeed(newDrillSeed()); }}
+      />;
   }
 
   const done = kanjiDone(run, pool);
@@ -100,33 +106,5 @@ function ReadingRow({ reading, said, onLabel }: { reading: DrillReading; said?: 
         </span>
       )}
     </li>
-  );
-}
-
-/** The end: the score, and nothing saved. */
-function DrillScoreView({ score, backHref, height, onAgain }: { score: DrillScore; backHref: string; height?: string; onAgain: () => void }) {
-  return (
-    <SkyPageShell eyebrow="Practice" title="How it went" height={height}>
-      <SkyPageBody width="reading">
-        <SkySurface className="flex flex-col items-center gap-2 text-center">
-          {score.labeled > 0 ? (
-            <>
-              <Eyebrow tight>Your score</Eyebrow>
-              <p className="font-sky-display text-[44px] leading-none text-sky-ink tabular-nums">{score.right} of {score.labeled}</p>
-              <p className="text-[14px] text-sky-ink/90">
-                You sorted {score.right} of {score.labeled} {score.labeled === 1 ? "reading" : "readings"} right, over {score.kanji} kanji.
-              </p>
-            </>
-          ) : (
-            <p className="text-[14px] text-sky-ink/90">You ended before sorting any readings.</p>
-          )}
-          <p className="text-[13px] text-sky-muted">Nothing from this drill is saved.</p>
-        </SkySurface>
-        <div className="flex flex-wrap gap-2">
-          <SkyButton onClick={onAgain}>Start over</SkyButton>
-          <SkyButton variant="outline" href={backHref}>Back to practice</SkyButton>
-        </div>
-      </SkyPageBody>
-    </SkyPageShell>
   );
 }

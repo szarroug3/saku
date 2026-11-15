@@ -107,7 +107,7 @@ function Example({ example, n, count }: { example: TeachExample; n: number; coun
  * Japanese is drawn a step larger than the meanings, at the size where the
  * reading over it is still one a reader can make out. A word and its meaning
  * stay together when the line wraps. */
-function ExampleWords({ words }: { words: readonly ExampleWord[] }) {
+export function ExampleWords({ words }: { words: readonly ExampleWord[] }) {
   return (
     <p className="mt-1 text-[12.5px] leading-[2] text-sky-muted">
       {words.map((w, i) => (

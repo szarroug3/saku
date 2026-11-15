@@ -19,6 +19,7 @@ import { ResumeAsk } from "@/sky/components/quiz-resume";
 import { SkyPractice } from "@/sky/components/sky-practice";
 import { SkyQuiz } from "@/sky/components/sky-quiz";
 import { READINGS_DRILL } from "@/sky/lib/readings-drill";
+import { WRITE_DRILL } from "@/sky/lib/write-drill";
 import { EMPTY_RECIPE, recipeKey, sameRecipe, type PracticeCollection, type PracticePreview, type Recipe, type SavedRecipe } from "@/sky/lib/practice";
 import type { QuizAnswer, QuizCard } from "@/sky/lib/quiz";
 import { NO_PLACE, placeToUse, type SavedPlace } from "@/sky/lib/place";
@@ -67,7 +68,7 @@ export function PracticeClient({ collections, sample, signedIn, initialPreview }
   if (!preview) return loading;
   const initial = { recipe: EMPTY_RECIPE, preview };
   const onStart = (recipe: Recipe) => router.push(skyHref("/practice/run", { sample, recipe }));
-  return <SkyPractice collections={collections} lookup={lookup} initial={initial} saved={saved} onSaved={saveRecipes} onStart={onStart} drills={[{ ...READINGS_DRILL, href: skyHref("/practice/readings") }]} />;
+  return <SkyPractice collections={collections} lookup={lookup} initial={initial} saved={saved} onSaved={saveRecipes} onStart={onStart} drills={[{ ...READINGS_DRILL, href: skyHref("/practice/readings") }, { ...WRITE_DRILL, href: skyHref("/practice/write") }]} />;
 }
 
 /** A practice run: the Quiz's screen, and the Quiz's recorder behind it

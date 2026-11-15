@@ -71,7 +71,7 @@ const spans = (line: SoundLine) => line.map((s) => ({ text: s.text, ...(s.accent
  * (SAK-508), with its reading for the furigana, then the rules, which fold
  * 泳げる back to 泳ぐ (SAK-514) and pick the sense the English uses. A word
  * the vocabulary does not have and no row names is left off. */
-function sentenceWords(ex: SentenceExample): ExampleWord[] {
+export function sentenceWords(ex: SentenceExample): ExampleWord[] {
   return (ex.words ?? []).flatMap((lemma) => {
     const word = wordInSentence(lemma, { ...(ex.id !== undefined ? { id: ex.id } : {}), jp: ex.jp, en: ex.en, ...(ex.gloss ? { gloss: ex.gloss } : {}) });
     if (!word) return [];

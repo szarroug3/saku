@@ -7689,3 +7689,19 @@ Sam found the Sort kanji readings button beside the Practice heading out of plac
 **What stayed.** The readings intro's link to the drill (SAK-495) is unchanged, and so is the drill.
 
 **Tests.** The browser suite checks at 1440 and 390 that the heading row has no link, the Drills panel shows the drill's name, both lines and Start, the panel is under the recipe in the same column, and Start opens `/practice/readings`. At 390 it also checks that the panel is above "What you would get" and that no panel scrolls inside itself except that list. The SAK-495 test now enters the drill from the panel. `scripts/button-centering.mjs` has a "practice, the drills panel" entry, with nothing opened over the page, so the Start button is measured.
+
+## The writing drill: write an English sentence in Japanese (#BuildHybridAI)
+
+A second drill in the Drills panel, "Write it in Japanese", at `/practice/write`. The learner sees an English sentence and writes it in Japanese, in kana or kanji, in their own words. Romaji turns into kana as it is typed, the same as the quiz's box (`typeKana`). A line under the sentence names the pattern it uses, with its gloss, and says any natural way to say it counts.
+
+**Why a model grades it.** The never-mark-wrong rule is why the assembly drill keeps 605 of the corpus's sentences: a string compare can only grade a sentence with one right form. A sentence written from scratch has many. So an exact match (give or take punctuation) is right at once, and anything else goes to Firebase AI Logic. Gemini Nano grades on the device when Chrome has it, and Gemini in the cloud when it doesn't. A device "close" or "wrong" is checked again in the cloud before the learner sees it, so the small model is never the one that tells a learner a right answer is wrong. Setup and the reasoning are in `docs/hybrid-ai.md`.
+
+**Verdicts.** Right closes the sentence. Close ("Almost. Try again.") leaves it open, with the grader's note as the hint, the way a near miss gets another try in the quiz. Wrong closes it. Right or wrong, the card then shows "One way to say it": the corpus sentence, its words line (the pattern pages' `ExampleWords`, from `sentenceWords` in `teach.ts`), and a link to the sentence on Tatoeba. Show the answer closes it as answered, not right. Each verdict says where it was checked: on your device, in the cloud, or on your device then again in the cloud.
+
+**Where answers are checked.** A muted line at the top of the card says it: Gemini Nano on this device; Nano not downloaded yet, with a Download it link (Chrome starts the download only from a click); downloading, with its percent; or no on-device model in this browser. On a site with no Firebase values set, it says checking is not set up and the Check button is off. Show the answer still works.
+
+**The pool.** 200 sentences from the grammar corpus, six tokens or fewer, taken a round at a time across patterns so no pattern has more than a few. The screen shuffles them. About 46 KB on the page.
+
+**Nothing is saved**, like the readings drill. The score screen says how many were right and how many on the first try.
+
+**Where it lives.** The model is `src/sky/lib/write-drill.ts` (tests beside it), the screen `src/sky/components/sky-write-drill.tsx`, the pool `src/app/(sky)/write-drill.ts` (tests beside it), and the grader `src/app/(sky)/hybrid-grader.ts`, handed to the screen by `write-client.tsx`. Firebase is imported when the first answer is checked, so no other page carries it.
