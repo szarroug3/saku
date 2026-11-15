@@ -69,7 +69,7 @@ export const SENTENCE_WORD_MEANINGS: Readonly<Record<string, Readonly<Record<str
   // 〜なきゃ: 英語話者に通じなきゃ意味ないぞ。
   "75289": {
     話者: { reading: "わしゃ", meaning: "speaker" },
-    通ずる: { reading: "つうずる", meaning: "to get across" },
+    通じる: { reading: "つうじる", meaning: "to get across" },
   },
   // 〜ないといけない: 列車の遅れを見込んでおかないといけない。
   "77536": {

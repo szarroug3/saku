@@ -610,9 +610,13 @@ test("every example sentence highlights the word it is an example of", () => {
   // SAK-501, because the 19 sentences earlier audits had taken out came back
   // too and 8 words now take one of them. SAK-510 gave 5,808 / 4,731 / 1,077 /
   // 4,268: the rashii retag added 73 sentences, 5 words gained one, and the
-  // wider pool was cut again from the newer export.
-  assert.equal(spanned, 5808, "sentences that carry a highlight span");
-  assert.equal(literal, 4731, "spans that cover the word's dictionary spelling exactly");
+  // wider pool was cut again from the newer export. Then 5,807 / 4,730 /
+  // 1,077 / 4,268: the corpus files the じ of 信じて under 信じる and not
+  // 信ずる, so 信ずる, 感ずる, 演ずる and 論ずる lost sentences that never
+  // wrote them, 演じる, 論じる and 通じる gained them, and 信じる and 感じる
+  // moved to sentences that conjugate the word.
+  assert.equal(spanned, 5807, "sentences that carry a highlight span");
+  assert.equal(literal, 4730, "spans that cover the word's dictionary spelling exactly");
   assert.equal(spanned - literal, 1077, "spans that cover an inflected surface of the word");
   assert.equal(noForms, 4268, "spans on a word with no conjugation class, all of them its spelling");
 });

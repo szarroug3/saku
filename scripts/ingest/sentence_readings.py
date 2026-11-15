@@ -106,6 +106,7 @@ import sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 from aligner import align, is_kanji, kata2hira  # noqa: E402
+from grammar import written_base  # noqa: E402
 
 GEN = os.path.join(HERE, "..", "..", "src", "data", "generated")
 WORD_FORMS_TS = os.path.join(HERE, "..", "..", "src", "lib", "word-forms.ts")
@@ -323,9 +324,13 @@ def analyze_sentence(jp, tagger, krd, keb, entry_id, conjugates):
         pos1 = getattr(w.feature, "pos1", None) or ""
         if pos1 not in CONTENT_POS:
             continue
-        orth = getattr(w.feature, "orthBase", None) or ""
+        raw = getattr(w.feature, "orthBase", None) or ""
+        orth = written_base(w.surface, raw, getattr(w.feature, "cType", None) or "")
         lemma = getattr(w.feature, "lemma", None) or ""
-        if (orth or lemma) != keb:
+        # The 信じ of 信じたい is 信じる (see `written_base`), but the wider
+        # pool in word-example-candidates.json was filed under UniDic's own
+        # base, so a row for 命ずる may be 命じた. Either base finds the word.
+        if keb not in ((orth or lemma), (raw or lemma)):
             continue
         start = offsets[i]
         end = offsets[i] + len(w.surface)
