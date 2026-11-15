@@ -1,7 +1,7 @@
 "use client";
 
-// The question thread under a card (#BuildHybridAI): a learner who doesn't
-// follow something asks about it, and can keep asking, each answer read in
+// The question thread under a card (#BuildHybridAI): a learner asks about
+// what they'd like to know, and can keep asking, each answer read in
 // light of the ones before. The thread is the card's own: a new card starts
 // a new one (the caller keys this by the card), and it stops at THREAD_MAX
 // questions, since every turn goes back in the prompt.
@@ -49,7 +49,7 @@ export function SkyPageAsk({ page, ask, about = "this card", startOpen = false }
   const startOver = () => { setThread([]); setQuestion(""); setState("ready"); };
 
   if (!open) {
-    return <SkyTextButton onClick={() => setOpen(true)}>Don&apos;t follow something? Ask about this card</SkyTextButton>;
+    return <SkyTextButton onClick={() => setOpen(true)}>Have a question? Ask about this card</SkyTextButton>;
   }
   const full = thread.length >= THREAD_MAX;
   return (
@@ -74,7 +74,7 @@ export function SkyPageAsk({ page, ask, about = "this card", startOpen = false }
         <form className="flex flex-wrap items-center gap-2" onSubmit={(e) => { e.preventDefault(); void send(); }}>
           <SkyInput
             aria-label={thread.length ? "Ask a follow-up" : `Your question about ${about}`}
-            placeholder={thread.length ? "Ask a follow-up" : "What don't you follow?"}
+            placeholder={thread.length ? "Ask a follow-up" : "What would you like to know?"}
             value={question}
             maxLength={QUESTION_MAX}
             onChange={(e) => setQuestion(e.target.value)}

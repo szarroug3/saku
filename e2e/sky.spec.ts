@@ -1350,7 +1350,7 @@ test("a card takes a question about itself (#BuildHybridAI)", async ({ page }) =
   await page.route(/firebase|googleapis\.com|recaptcha/, (route) => route.abort());
   await page.goto(`/quiz?sample&cards=${encodeURIComponent("kanji:水/reading@水曜")}`);
   await page.getByRole("button", { name: "I don't know" }).click();
-  await page.getByRole("button", { name: "Don't follow something? Ask about this card" }).click();
+  await page.getByRole("button", { name: "Have a question? Ask about this card" }).click();
   const box = page.getByRole("textbox", { name: "Your question about this card" });
   await expect(page.getByRole("button", { name: "Ask", exact: true })).toBeDisabled();
   await box.fill("Why is it すい here?");
