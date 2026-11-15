@@ -153,7 +153,7 @@ describe("the generated artifact", () => {
     // UniDic had filed the じ of 信じて under 信ずる, so 信ずる, 感ずる,
     // 演ずる and 論ずる lost sentences that never wrote them, and 演じる,
     // 論じる and 通じる gained them.
-    assert.equal(covered, 3008,"corpus coverage moved; remeasure before editing this");
+    assert.equal(covered, 3008, "corpus coverage moved; remeasure before editing this");
     // Three of those words (タイ, パー, ホーム) have a corpus sentence but EVERY
     // one teaches the wrong sense, so the wrong-sense filter leaves them without
     // an example — better than a false one (task-20 item 3). ビル was a fourth
