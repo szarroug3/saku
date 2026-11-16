@@ -128,10 +128,15 @@ export function gradingPrompt(item: WriteItem, given: string): string {
     // 何かをしてみましょう, which is fine Japanese (2026-11-14 test set)
     "- Adding a particle the correct answer leaves out, or leaving out one it has, is right when the sentence still sounds natural (何かをしてみましょう and 何かしてみましょう are both right). A particle that changes the meaning or sounds wrong is not.",
     "- \"close\" means one small slip: a wrong particle, one wrong or missing kana, or one word in the wrong form.",
+    // the cloud model let くこう (for くうこう, airport) through as right, and
+    // called て in さけばないてください an extra kana (2026-11-15)
+    "- Compare the kana one by one. A sound with or without its voicing marks (て for で, か for が), a missing or extra っ or long vowel (くこう for くうこう), or a missing small ゃ, ゅ or ょ is one wrong kana, so the answer is close even when the meaning still comes through.",
     "- \"wrong\" means the meaning is different, or there is more than one mistake.",
     "",
     "Write the note to the learner in one short sentence of plain English.",
     "If it is right, say so briefly. If not, name the slip and what goes there instead.",
+    // the cloud model once read the learner's いきます as きます (2026-11-15)
+    "When the note quotes what the learner wrote, copy it exactly as they wrote it. For a wrong kana, say which kana they wrote and which one goes there.",
     // the model glossed the first word and skipped the rest ("を (marks the
     // object) instead of に after ギター"), so the line says every one
     // the example is about no real answer, so it can't be copied as a note

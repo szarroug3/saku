@@ -21,6 +21,36 @@ before they know its radicals. The progression is:
 the vocabulary: verified downstep marks are drawn on words throughout the app and
 in the Library, sourced from the Kanjium database (`src/data/pitch.ts`).
 
+## Hybrid AI: Gemini Nano first, the cloud when it has to
+
+Saku's entry for #BuildHybridAI 2026. Four features use Gemini through
+[Firebase AI Logic](https://firebase.google.com/docs/ai-logic), and each one
+asks Gemini Nano in Chrome first:
+
+- **The writing drill** (`/practice/write`). You write an English sentence in
+  Japanese your own way, and Gemini grades it for meaning. A sentence written
+  from scratch has many right answers, so a string match can't grade it. A
+  "right" from Nano stands, and anything else gets a second look from Gemini in
+  the cloud before you're told.
+- **The mix-up coach.** After you pick ツ for シ, or 木 (tree) for 本 (book),
+  "What's the difference?" explains the two using only facts Saku already has.
+- **Ask about a card.** Every lesson card and Atlas entry has a question box.
+  The answer can only use Japanese from the card or from what you've learned,
+  and Saku checks that in code before showing it.
+- **The reader** (`/read`). Paste Japanese or bring in a web page, and every word
+  is colored by how well you know it. Select a phrase to translate it or ask
+  about it.
+
+The point is a tutor for beginners that stays on your computer when it can,
+costs nothing to run, and never explains things in Japanese you can't read yet.
+
+The models are set up in `src/app/(sky)/firebase-ai.ts`: `getGenerativeModel`
+with `InferenceMode.PREFER_ON_DEVICE` for Nano and `InferenceMode.ONLY_IN_CLOUD`
+for the second look, with App Check (reCAPTCHA Enterprise) enforced. How each
+feature works, what Nano did on real answers, and how to set up your own
+Firebase project are in [docs/hybrid-ai.md](docs/hybrid-ai.md). Live at
+https://saku-san.vercel.app, no account needed; use desktop Chrome for Nano.
+
 ## Features
 
 - **A curriculum feed, not a builder.** Home (`/`) is the low-decision screen:

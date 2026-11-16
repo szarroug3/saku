@@ -107,6 +107,8 @@ Nano never called a mistake right, but it is far too strict on right answers. It
 
 So the split works as intended. Nano's "right" is trusted and costs nothing. The cloud gives the verdict and the note whenever an answer might be a mistake.
 
+On 2026-11-15 a second set found two more slips. くこうまでいきます (くこう for くうこう, airport) was called right, and the note on さけばないてください called its て an extra kana where it stands for で. Earlier, a note had read the learner's いきます as きます. The prompt now says to compare the kana one by one, that a voicing mark, a long vowel, a small っ or a small ゃゅょ is one wrong kana, and that the note quotes the learner exactly. With it, 12 of 13 answers matched on both of two runs, with notes that named the right kana. The one left is 行かないで (please don't go) for "Please don't go.", called close for leaving out ください; that reading is defensible.
+
 ## The reader
 
 `/read` (Reader in the menu) takes Japanese the learner brings: pasted, or brought in from a web page. Every word Saku teaches is drawn in the color of the learner's standing with it. A word that is new to them has a dotted line under it and its reading over it. Clicking a word opens its card beside the text, the Atlas's card with Add to lesson and I know this. A word Saku doesn't teach as a word opens the kanji in it. Selecting any part of the text offers Translate and Ask Gemini.
